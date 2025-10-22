@@ -15,7 +15,7 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   app.use(cookieParser());
   const configService = app.get(ConfigService);
-  const port = configService.get<number>('port') ?? 5000;
+  const port = configService.get<number>('port') ?? 5500;
   await app.listen(port);
   logger.info(`Server started on port ${port}`);
 }
