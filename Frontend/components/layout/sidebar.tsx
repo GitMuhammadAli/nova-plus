@@ -1,63 +1,120 @@
 "use client"
-import Link from "next/link"
-import { cn } from "@/lib/utils"
+
+import { motion } from "framer-motion";
+import { 
+  LayoutDashboard, 
+  Users, 
+  BarChart3, 
+  Settings, 
+  Zap,
+  FileText,
+  CreditCard,
+  Shield,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { cn } from "@/lib/utils";
 
 interface SidebarProps {
-  isOpen?: boolean
-  onClose?: () => void
+  collapsed: boolean;
+  onToggle: () => void;
 }
 
-export function Sidebar({ isOpen = true }: SidebarProps) {
-  const navItems = [
-    { label: "Dashboard", href: "/dashboard", icon: "📊" },
-    { label: "Analytics", href: "/analytics", icon: "📈" },
-    { label: "Users", href: "/users", icon: "👥" },
-    { label: "Automation", href: "/automation", icon: "⚙️" },
-    { label: "Billing", href: "/billing", icon: "💳" },
-    { label: "Settings", href: "/settings", icon: "⚙️" },
-  ]
+const navItems = [
+  { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
+  { icon: Users, label: "Users", path: "/users" },
+  { icon: BarChart3, label: "Analytics", path: "/analytics" },
+  { icon: Zap, label: "NovaFlow", path: "/automation" },
+  { icon: FileText, label: "Reports", path: "/reports" },
+  { icon: CreditCard, label: "Billing", path: "/billing" },
+  { icon: Shield, label: "Audit Logs", path: "/audit-logs" },
+  { icon: Settings, label: "Settings", path: "/settings" },
+];
+
+export function Sidebar({ collapsed, onToggle }: SidebarProps) {
+  const pathname = usePathname();
 
   return (
-    <aside
-      className={cn(
-        "fixed left-0 top-0 h-screen w-64 bg-sidebar text-sidebar-foreground border-r border-sidebar-border transition-transform duration-300 z-40",
-        !isOpen && "-translate-x-full",
-      )}
+    <motion.aside
+      initial={false}
+      animate={{ width: collapsed ? 64 : 256 }}
+      transition={{ duration: 0.2, ease: "easeInOut" }}
+     className="h-screen bg-sidebar border-r border-sidebar-border flex flex-col z-40 shrink-0"
     >
       {/* Logo */}
-      <div className="flex items-center gap-3 px-6 py-8 border-b border-sidebar-border">
-        <div className="w-8 h-8 rounded-lg bg-sidebar-primary flex items-center justify-center text-sidebar-primary-foreground font-bold text-lg">
-          N
-        </div>
-        <span className="font-bold text-lg">NovaPulse</span>
+      <div className="h-16 flex items-center justify-between px-4 border-b border-sidebar-border">
+        {!collapsed && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="flex items-center gap-2"
+          >
+            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+              <Zap className="w-5 h-5 text-primary-foreground" />
+            </div>
+            <span className="font-semibold text-lg text-sidebar-foreground">NovaPulse</span>
+          </motion.div>
+        )}
+        
+        {collapsed && (
+          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center mx-auto">
+            <Zap className="w-5 h-5 text-primary-foreground" />
+          </div>
+        )}
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-4 py-6 space-y-2">
-        {navItems.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className="flex items-center gap-3 px-4 py-3 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
-          >
-            <span className="text-lg">{item.icon}</span>
-            <span className="text-sm font-medium">{item.label}</span>
-          </Link>
-        ))}
+      <nav className="flex-1 overflow-y-auto py-4 px-2">
+        <ul className="space-y-1">
+          {navItems.map((item) => {
+            const isActive = pathname === item.path;
+            
+            return (
+              <li key={item.path}>
+                <Link
+                  href={item.path}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors",
+                    "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                    isActive
+                      ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                      : "text-sidebar-foreground"
+                  )}
+                >
+                  <item.icon className="w-5 h-5 shrink-0" />
+                  {!collapsed && (
+                    <motion.span
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="text-sm"
+                    >
+                      {item.label}
+                    </motion.span>
+                  )}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
       </nav>
 
-      {/* Footer */}
-      <div className="px-4 py-6 border-t border-sidebar-border">
-        <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-sidebar-accent/10">
-          <div className="w-8 h-8 rounded-full bg-sidebar-primary flex items-center justify-center text-sidebar-primary-foreground text-xs font-bold">
-            JD
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">John Doe</p>
-            <p className="text-xs text-sidebar-foreground/60 truncate">john@example.com</p>
-          </div>
-        </div>
+      {/* Toggle Button */}
+      <div className="p-2 border-t border-sidebar-border">
+        <button
+          onClick={onToggle}
+          className="w-full flex items-center justify-center p-2 rounded-lg hover:bg-sidebar-accent transition-colors"
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          {collapsed ? (
+            <ChevronRight className="w-5 h-5 text-sidebar-foreground" />
+          ) : (
+            <ChevronLeft className="w-5 h-5 text-sidebar-foreground" />
+          )}
+        </button>
       </div>
-    </aside>
-  )
+    </motion.aside>
+  );
 }

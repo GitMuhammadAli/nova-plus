@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { AppLayout } from "@/components/layout/app-layout"
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -68,7 +67,6 @@ export default function UsersPage() {
   )
 
   return (
-    <AppLayout title="Users">
       <div className="space-y-8">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -150,6 +148,5 @@ export default function UsersPage() {
           </CardContent>
         </AnimatedCard>
       </div>
-    </AppLayout>
   )
 }
