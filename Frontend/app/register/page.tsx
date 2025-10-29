@@ -1,29 +1,68 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useDispatch, useSelector } from "react-redux";
+import { register, clearError } from "@/app/store/authSlice";
+import { AppDispatch, RootState } from "@/app/store/store";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Zap, Mail, Lock, User, Building2, Github } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Zap, Mail, Lock, User, Building2, Github, AlertCircle } from "lucide-react";
 
 export default function Register() {
+  const router = useRouter();
+  const dispatch = useDispatch<AppDispatch>();
+  const { isLoading, error, isAuthenticated } = useSelector((state: RootState) => state.auth);
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
-    workspace: "",
+    // workspace: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [validationError, setValidationError] = useState<string | null>(null);
+
+  useEffect(() => {
+    dispatch(clearError());
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push("/dashboard");
+    }
+  }, [isAuthenticated, router]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle registration logic here
+    setValidationError(null);
+
+    // Validate password length
+    if (formData.password.length < 8) {
+      setValidationError("Password must be at least 8 characters long");
+      return;
+    }
+
+    const result = await dispatch(register({
+      name: formData.name,
+      email: formData.email,
+      password: formData.password,
+    }));
+
+    if (register.fulfilled.match(result)) {
+      router.push("/dashboard");
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
+
+  const displayError = validationError || error;
 
   return (
     <div className="min-h-screen w-full flex">
@@ -119,9 +158,17 @@ export default function Register() {
             </p>
           </div>
 
+          {/* Error Alert */}
+          {displayError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{displayError}</AlertDescription>
+            </Alert>
+          )}
+
           {/* Social Signup */}
           <div className="grid grid-cols-2 gap-3">
-            <Button variant="outline" className="w-full">
+            <Button variant="outline" className="w-full" disabled>
               <svg className="w-5 h-5" viewBox="0 0 24 24">
                 <path
                   fill="currentColor"
@@ -142,7 +189,7 @@ export default function Register() {
               </svg>
               <span className="ml-2">Google</span>
             </Button>
-            <Button variant="outline" className="w-full">
+            <Button variant="outline" className="w-full" disabled>
               <Github className="w-5 h-5" />
               <span className="ml-2">GitHub</span>
             </Button>
@@ -174,11 +221,12 @@ export default function Register() {
                   value={formData.name}
                   onChange={handleChange}
                   required
+                  disabled={isLoading}
                 />
               </div>
             </div>
 
-            <div className="space-y-2">
+            {/* <div className="space-y-2">
               <Label htmlFor="workspace">Workspace name</Label>
               <div className="relative">
                 <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -190,10 +238,10 @@ export default function Register() {
                   className="pl-9"
                   value={formData.workspace}
                   onChange={handleChange}
-                  required
+                  disabled={isLoading}
                 />
               </div>
-            </div>
+            </div> */}
 
             <div className="space-y-2">
               <Label htmlFor="email">Work email</Label>
@@ -208,6 +256,7 @@ export default function Register() {
                   value={formData.email}
                   onChange={handleChange}
                   required
+                  disabled={isLoading}
                 />
               </div>
             </div>
@@ -225,6 +274,7 @@ export default function Register() {
                   value={formData.password}
                   onChange={handleChange}
                   required
+                  disabled={isLoading}
                 />
               </div>
               <p className="text-xs text-muted-foreground">
@@ -232,8 +282,20 @@ export default function Register() {
               </p>
             </div>
 
-            <Button type="submit" className="w-full" size="lg">
-              Create account
+            <Button 
+              type="submit" 
+              className="w-full" 
+              size="lg"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Creating account...
+                </>
+              ) : (
+                "Create account"
+              )}
             </Button>
           </form>
 

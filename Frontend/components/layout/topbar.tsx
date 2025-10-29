@@ -12,8 +12,30 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useDispatch, useSelector } from "react-redux";
+import { useRouter } from "next/navigation";
+import { AppDispatch, RootState } from "@/app/store/store";
+
 
 export function Topbar() {
+  const router = useRouter();
+  const dispatch = useDispatch<AppDispatch>();
+  const { user } = useSelector((state: RootState) => state.auth);
+
+  const handleLogout = async () => {
+    await dispatch(logout());
+    router.push('/login');
+  };
+
+  const getInitials = (name?: string) => {
+    if (!name) return "U";
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
   return (
     <header className="h-16 border-b border-border bg-background flex items-center justify-between px-6">
       {/* Search */}
@@ -65,4 +87,13 @@ export function Topbar() {
       </div>
     </header>
   );
+}
+
+function dispatch(arg0: any) {
+  throw new Error("Function not implemented.");
+}
+
+
+function logout(): any {
+  throw new Error("Function not implemented.");
 }

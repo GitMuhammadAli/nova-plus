@@ -7,11 +7,13 @@ import {
   HttpCode,
   UseGuards,
   BadRequestException,
+  Get,
 } from '@nestjs/common';
 import type { Response, Request, CookieOptions } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -77,6 +79,12 @@ export class AuthController {
     return { accessToken: data.accessToken };
   }
 
+@Get('me')
+@UseGuards(JwtAuthGuard)
+async getCurrentUser(@Req() req: Request) {
+  return req.user;
+}
+
   @Post('logout')
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const refreshToken = req.cookies['refresh_token'];
@@ -111,12 +119,12 @@ export class AuthController {
 
   private cookieConfig(maxAge = 0): CookieOptions {
     return {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      // choose a concrete sameSite value; use 'lax' which is a safe default
-      sameSite: 'lax',
-      path: '/',
-      maxAge,
+     httpOnly: true,
+    secure: false,  
+    sameSite: 'lax',
+    path: '/',
+    maxAge,
+    domain: undefined,  
     };
   }
 }

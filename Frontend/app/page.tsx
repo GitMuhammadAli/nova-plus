@@ -2,12 +2,13 @@
 
 import { Card } from "@/components/ui/card"
 import { motion } from "framer-motion"
-import { Zap, Link, ArrowRight, BarChart3, Users, Workflow } from "lucide-react"
+import { Zap, ArrowRight, BarChart3, Users, Workflow } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import Link from "next/link"
 
 export default function Home() {
   return (
-  <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background">
       {/* Navigation */}
       <nav className="border-b border-border">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -18,10 +19,10 @@ export default function Home() {
             <span className="text-lg font-bold">NovaPulse</span>
           </div>
           <div className="flex items-center gap-3">
-            <Link to="/login">
+            <Link href="/login">
               <Button variant="ghost">Sign in</Button>
             </Link>
-            <Link to="/register">
+            <Link href="/register">
               <Button>Get started</Button>
             </Link>
           </div>
@@ -36,7 +37,7 @@ export default function Home() {
           transition={{ duration: 0.5 }}
           className="text-center max-w-4xl mx-auto"
         >
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary-subtle text-primary text-sm font-medium mb-6">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
             <Zap className="w-4 h-4" />
             <span>Smart Admin Platform</span>
           </div>
@@ -50,13 +51,13 @@ export default function Home() {
             management in one beautiful platform.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/register">
+            <Link href="/register">
               <Button size="lg" className="group">
                 Start free trial
                 <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
               </Button>
             </Link>
-            <Link to="/login">
+            <Link href="/login">
               <Button size="lg" variant="outline">
                 View demo
               </Button>
@@ -74,7 +75,7 @@ export default function Home() {
             transition={{ duration: 0.5, delay: 0.1 }}
             className="text-center p-6"
           >
-            <div className="w-12 h-12 rounded-xl bg-primary-subtle flex items-center justify-center mx-auto mb-4">
+            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
               <BarChart3 className="w-6 h-6 text-primary" />
             </div>
             <h3 className="text-xl font-semibold mb-2">Powerful Analytics</h3>
@@ -88,8 +89,8 @@ export default function Home() {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="text-center p-6"
           >
-            <div className="w-12 h-12 rounded-xl bg-success-subtle flex items-center justify-center mx-auto mb-4">
-              <Users className="w-6 h-6 text-success" />
+            <div className="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center mx-auto mb-4">
+              <Users className="w-6 h-6 text-green-600" />
             </div>
             <h3 className="text-xl font-semibold mb-2">User Management</h3>
             <p className="text-muted-foreground">
@@ -102,8 +103,8 @@ export default function Home() {
             transition={{ duration: 0.5, delay: 0.3 }}
             className="text-center p-6"
           >
-            <div className="w-12 h-12 rounded-xl bg-info-subtle flex items-center justify-center mx-auto mb-4">
-              <Workflow className="w-6 h-6 text-info" />
+            <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center mx-auto mb-4">
+              <Workflow className="w-6 h-6 text-blue-600" />
             </div>
             <h3 className="text-xl font-semibold mb-2">NovaFlow Automation</h3>
             <p className="text-muted-foreground">
@@ -119,7 +120,7 @@ export default function Home() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="bg-gradient-to-r from-primary to-info rounded-2xl p-12 text-center text-white"
+          className="bg-gradient-to-r from-primary to-blue-600 rounded-2xl p-12 text-center text-white"
         >
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
             Ready to transform your workflow?
@@ -127,7 +128,7 @@ export default function Home() {
           <p className="text-lg mb-8 text-white/90">
             Join thousands of teams already using NovaPulse
           </p>
-          <Link to="/register">
+          <Link href="/register">
             <Button size="lg" variant="secondary">
               Get started free
             </Button>

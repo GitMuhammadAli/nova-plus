@@ -1,6 +1,8 @@
 "use client"
 
 import React, { useState } from 'react';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/app/store/store';
 import { motion } from 'framer-motion';
 import {
   TrendingUp, Users, DollarSign, Activity,
@@ -329,13 +331,18 @@ const kpiCards = [
 ];
 
 const DashboardPage = () => {
+  // Get user from Redux
+  const { user } = useSelector((state: RootState) => state.auth);
+
   return (
       <div className="space-y-8 max-w-7xl mx-auto">
-        {/* Header */}
+        {/* Header with personalized greeting */}
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
+          <h1 className="text-3xl font-bold text-foreground">
+            Welcome back, {user?.name || 'User'}! 👋
+          </h1>
           <p className="text-muted-foreground mt-1">
-            Welcome back! Here's what's happening with your **NovaPulse** workspace.
+            Here's what's happening with your <strong>NovaPulse</strong> workspace.
           </p>
         </div>
 

@@ -21,6 +21,7 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
+    console.log("data is " , dto);
     const existing = await this.userModel.findOne({ email: dto.email });
     if (existing) throw new ForbiddenException('Email already registered.');
 

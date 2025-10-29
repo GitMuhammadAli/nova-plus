@@ -2,8 +2,8 @@ import { configureStore, combineReducers } from "@reduxjs/toolkit";
 import { persistReducer, persistStore } from "redux-persist";
 import createWebStorage from "redux-persist/lib/storage/createWebStorage";
 import authReducer from "./authSlice";
+import usersReducer from "./usersSlice";
 
-// Create a noop storage for SSR
 const createNoopStorage = () => {
   return {
     getItem(_key: string) {
@@ -18,19 +18,20 @@ const createNoopStorage = () => {
   };
 };
 
-// Use real storage in browser, noop storage on server
 const storage = typeof window !== "undefined" 
   ? createWebStorage("local") 
   : createNoopStorage();
 
 const rootReducer = combineReducers({
   auth: authReducer,
+  users: usersReducer,
+  // Add more reducers here as needed
 });
 
 const persistConfig = {
   key: "root",
   storage,
-  whitelist: ["auth"], 
+  whitelist: ["auth"], // Only persist auth (user data, not tokens)
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -39,7 +40,9 @@ export const store = configureStore({
   reducer: persistedReducer,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
-      serializableCheck: false, // required for redux-persist
+      serializableCheck: {
+        ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
+      },
     }),
 });
 

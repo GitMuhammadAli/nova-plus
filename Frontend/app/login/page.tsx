@@ -1,26 +1,49 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useDispatch, useSelector } from "react-redux";
+import { login, clearError } from "@/app/store/authSlice";
+import { AppDispatch, RootState } from "@/app/store/store";
 import Link from "next/link"; 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Zap, Mail, Lock, Github, ArrowRight } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Zap, Mail, Lock, Github, ArrowRight, AlertCircle } from "lucide-react";
 
 const LoginPage = () => {
+  const router = useRouter();
+  const dispatch = useDispatch<AppDispatch>();
+  const { isLoading, error, isAuthenticated } = useSelector((state: RootState) => state.auth);
+
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
 
-  const handleSubmit = (e :any) => {
+  useEffect(() => {
+    dispatch(clearError());
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push("/dashboard");
+    }
+  }, [isAuthenticated, router]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Placeholder for actual login logic (e.g., calling an API)
-    console.log("Attempting login with:", formData);
+    
+    const result = await dispatch(login(formData));
+    
+    if (login.fulfilled.match(result)) {
+      router.push("/dashboard");
+    }
   };
 
-  const handleChange = (e:any) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
@@ -76,9 +99,17 @@ const LoginPage = () => {
             </p>
           </div>
 
+          {/* Error Alert */}
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
           {/* Social Signup */}
           <div className="grid grid-cols-2 gap-3">
-            <Button variant="outline" className="w-full shadow-sm hover:bg-muted/50">
+            <Button variant="outline" className="w-full shadow-sm hover:bg-muted/50" disabled>
               <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                 {/* Google Icon SVG */}
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -88,7 +119,7 @@ const LoginPage = () => {
               </svg>
               <span>Google</span>
             </Button>
-            <Button variant="outline" className="w-full shadow-sm hover:bg-muted/50">
+            <Button variant="outline" className="w-full shadow-sm hover:bg-muted/50" disabled>
               <Github className="w-5 h-5 mr-2" />
               <span>GitHub</span>
             </Button>
@@ -120,6 +151,7 @@ const LoginPage = () => {
                   value={formData.email}
                   onChange={handleChange}
                   required
+                  disabled={isLoading}
                 />
               </div>
             </div>
@@ -142,13 +174,28 @@ const LoginPage = () => {
                   value={formData.password}
                   onChange={handleChange}
                   required
+                  disabled={isLoading}
                 />
               </div>
             </div>
 
-            <Button type="submit" className="w-full group shadow-md hover:shadow-lg transition-shadow" size="lg">
-              Sign in
-              <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+            <Button 
+              type="submit" 
+              className="w-full group shadow-md hover:shadow-lg transition-shadow" 
+              size="lg"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Signing in...
+                </>
+              ) : (
+                <>
+                  Sign in
+                  <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                </>
+              )}
             </Button>
           </form>
 
