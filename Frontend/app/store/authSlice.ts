@@ -29,10 +29,23 @@ export const login = createAsyncThunk(
   'auth/login',
   async (credentials: { email: string; password: string }, { rejectWithValue }) => {
     try {
+      console.log('🔵 Calling API login with:', credentials.email);
+      
       const response = await authAPI.login(credentials);
-      // Backend returns: { user: {...} } (tokens in cookies)
-      return response.data.user;
+      
+      console.log('🟢 API response:', response.data);
+      
+      // Backend wraps response: {success: true, data: {user: {...}}}
+      // Handle all possible structures
+      const user = response.data?.data?.user || response.data?.user || response.data;
+      
+      console.log('✅ User extracted:', user);
+      
+      return user;
     } catch (error: any) {
+      console.log('🔴 Login error:', error);
+      console.log('🔴 Error response:', error.response?.data);
+      
       const message = error.response?.data?.message || 'Login failed';
       return rejectWithValue(message);
     }
@@ -43,10 +56,21 @@ export const register = createAsyncThunk(
   'auth/register',
   async (data: { email: string; password: string; name: string; role?: string }, { rejectWithValue }) => {
     try {
+      console.log('🔵 Calling API register with:', data.email);
+      
       const response = await authAPI.register(data);
-      // Backend returns: { user: {...} } (tokens in cookies)
-      return response.data.user;
+      
+      console.log('🟢 API response:', response.data);
+      
+      // Backend wraps response: {success: true, data: {user: {...}}}
+      const user = response.data?.data?.user || response.data?.user || response.data;
+      
+      console.log('✅ User extracted:', user);
+      
+      return user;
     } catch (error: any) {
+      console.log('🔴 Register error:', error);
+      
       const message = error.response?.data?.message || 'Registration failed';
       return rejectWithValue(message);
     }
@@ -57,9 +81,22 @@ export const fetchMe = createAsyncThunk(
   'auth/fetchMe',
   async (_, { rejectWithValue }) => {
     try {
+      console.log('🔵 Calling /auth/me...');
+      
       const response = await authAPI.getCurrentUser();
-      return response.data.data || response.data;
+      
+      console.log('✅ /auth/me success:', response.data);
+      
+      // Backend returns user directly (not wrapped in data)
+      return response.data;
     } catch (error: any) {
+      console.log('🔴 /auth/me failed:', error.response?.status);
+      
+      // Don't show error message for 401 (just means not logged in)
+      if (error.response?.status === 401) {
+        return rejectWithValue('Not authenticated');
+      }
+      
       const message = error.response?.data?.message || 'Failed to fetch user';
       return rejectWithValue(message);
     }
@@ -146,7 +183,7 @@ const authSlice = createSlice({
       })
       .addCase(fetchMe.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = action.payload as string;
+        // Don't set error for fetchMe - it's normal to fail when not logged in
         state.isAuthenticated = false;
         state.user = null;
       });

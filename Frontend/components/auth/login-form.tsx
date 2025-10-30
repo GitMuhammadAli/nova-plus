@@ -38,9 +38,14 @@ export function LoginForm() {
     const result = await dispatch(login(formData));
     
     console.log('🟢 Login result:', result);
+    console.log('🟢 Login result type:', result.type);
+    console.log('🟢 Login payload:', result.payload);
     
     if (login.fulfilled.match(result)) {
-      console.log('✅ Login successful, redirecting...');
+      console.log('✅ Login successful!');
+      console.log('✅ User data:', result.payload);
+      console.log('✅ Redirecting to dashboard...');
+      
       router.push("/dashboard");
     } else {
       console.log('❌ Login failed:', result.payload);
