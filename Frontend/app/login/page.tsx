@@ -16,7 +16,7 @@ import { Zap, Mail, Lock, Github, ArrowRight, AlertCircle } from "lucide-react";
 const LoginPage = () => {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
-  const { isLoading, error, isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const { isLoading, error, isAuthenticated, user } = useSelector((state: RootState) => state.auth);
 
   const [formData, setFormData] = useState({
     email: "",
@@ -28,10 +28,12 @@ const LoginPage = () => {
   }, [dispatch]);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      router.push("/dashboard");
+    // Only redirect if authenticated and user data exists
+    if (isAuthenticated && user) {
+      // Use replace to prevent back button issues
+      router.replace("/dashboard");
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, user, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

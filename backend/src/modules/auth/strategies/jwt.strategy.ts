@@ -11,17 +11,52 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(@InjectModel(User.name) private userModel: Model<User>) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
-        (request: Request) => request?.cookies?.access_token,
+        (request: Request) => {
+          // Debug: Log cookie extraction (remove in production)
+          if (process.env.NODE_ENV === 'development') {
+            const token = request?.cookies?.access_token || request?.cookies?.['access_token'];
+            console.log('🍪 Cookie extraction:', {
+              hasCookies: !!request?.cookies,
+              cookieKeys: request?.cookies ? Object.keys(request.cookies) : [],
+              accessToken: token ? `Found (length: ${token.length})` : 'Missing',
+              secretKey: process.env.JWT_SECRET || process.env.JWT_ACCESS_SECRET || 'Using default',
+            });
+          }
+          
+          // Try cookies first (primary method)
+          const token = request?.cookies?.access_token || request?.cookies?.['access_token'];
+          if (token && typeof token === 'string') {
+            return token;
+          }
+          
+          // Fallback to Authorization header
+          const authHeader = request?.headers?.authorization;
+          if (authHeader && typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+            return authHeader.substring(7);
+          }
+          return null;
+        },
       ]),
       ignoreExpiration: false,
-      secretOrKey: process.env.JWT_SECRET || 'your-secret-key',
+      secretOrKey: process.env.JWT_SECRET || process.env.JWT_ACCESS_SECRET || 'supersecretkey',
     });
   }
 
   async validate(payload: any) {
+    if (!payload || !payload.sub) {
+      throw new UnauthorizedException('Invalid token payload');
+    }
+    
     const user = await this.userModel.findById(payload.sub);
-    if (!user) throw new UnauthorizedException('User not found');
-    const { password, ...userWithoutPassword } = user.toObject();
-    return userWithoutPassword;
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+    
+    // Return user without password
+    const userObj: any = user.toObject();
+    if (userObj.password) {
+      delete userObj.password;
+    }
+    return userObj;
   }
 }

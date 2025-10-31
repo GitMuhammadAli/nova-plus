@@ -27,13 +27,17 @@ export class AuthController {
     const { accessToken, refreshToken, user } =
       await this.authService.register(dto);
     this.setAuthCookies(res, accessToken, refreshToken);
-   return {
-    message: 'User registered successfully',
-    user,
-    accessToken,
-    refreshToken,
-  };
-}
+    
+    // Return consistent format - user object (password excluded)
+    const userObj = user.toObject ? user.toObject() : user;
+    const { password: _, ...userWithoutPassword } = userObj;
+    
+    return {
+      success: true,
+      message: 'User registered successfully',
+      user: userWithoutPassword,
+    };
+  }
 
   @Post('login')
   @HttpCode(200)
@@ -49,13 +53,30 @@ export class AuthController {
       userAgent,
       ip,
     );
+    
+    // Set cookies BEFORE returning response
     this.setAuthCookies(res, accessToken, refreshToken);
-    return {
-    message: 'Login successful',
-    user,
-    accessToken,
-    refreshToken,
-  };
+    
+    // Return consistent format - user object (password excluded)
+    const userObj = user.toObject ? user.toObject() : user;
+    const { password: _, ...userWithoutPassword } = userObj;
+    
+    const response = {
+      success: true,
+      message: 'Login successful',
+      user: userWithoutPassword,
+    };
+    
+    // Debug logging (remove in production)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('✅ Login response:', {
+        hasUser: !!userWithoutPassword,
+        userId: userWithoutPassword._id,
+        email: userWithoutPassword.email,
+      });
+    }
+    
+    return response;
   }
 
   @Post('refresh')
@@ -63,27 +84,45 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const refreshToken = req.cookies['refresh_token'];
+    // Try to get refresh token from cookies
+    const refreshToken = req.cookies?.['refresh_token'] || req.cookies?.refresh_token;
+    
     if (!refreshToken) {
       throw new BadRequestException('Refresh token not provided');
     }
 
-    const payload: any =
-      this.authService['jwtService']?.decode(refreshToken) ?? null;
-    if (!payload || !payload.sub) {
-      throw new BadRequestException('Invalid refresh token');
+    // Decode the refresh token to get user ID
+    let payload: any = null;
+    try {
+      const secret = process.env.JWT_SECRET || process.env.JWT_ACCESS_SECRET || 'supersecretkey';
+      const jwt = require('jsonwebtoken');
+      payload = jwt.decode(refreshToken);
+    } catch (error) {
+      throw new BadRequestException('Invalid refresh token format');
     }
 
+    if (!payload || !payload.sub) {
+      throw new BadRequestException('Invalid refresh token payload');
+    }
+
+    // Refresh the access token
     const data = await this.authService.refresh(payload.sub, refreshToken);
-    res.cookie('access_token', data.accessToken, this.cookieConfig());
-    return { accessToken: data.accessToken };
+    
+    // Set new access token cookie with proper expiration
+    res.cookie('access_token', data.accessToken, this.cookieConfig(15 * 60 * 1000));
+    
+    return { 
+      success: true,
+      accessToken: data.accessToken 
+    };
   }
 
-@Get('me')
-@UseGuards(JwtAuthGuard)
-async getCurrentUser(@Req() req: Request) {
-  return req.user;
-}
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  async getCurrentUser(@Req() req: Request) {
+    // req.user is set by JwtStrategy.validate() which already excludes password
+    return req.user;
+  }
 
   @Post('logout')
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
@@ -92,8 +131,9 @@ async getCurrentUser(@Req() req: Request) {
       throw new BadRequestException('Refresh token not provided');
     }
 
-    const payload: any =
-      this.authService['jwtService']?.decode(refreshToken) ?? null;
+    // Decode refresh token
+    const jwt = require('jsonwebtoken');
+    const payload: any = jwt.decode(refreshToken);
     if (!payload || !payload.sub) {
       throw new BadRequestException('Invalid refresh token');
     }
@@ -109,22 +149,40 @@ async getCurrentUser(@Req() req: Request) {
     accessToken: string,
     refreshToken: string,
   ) {
-    res.cookie('access_token', accessToken, this.cookieConfig(15 * 60 * 1000));
-    res.cookie(
-      'refresh_token',
-      refreshToken,
-      this.cookieConfig(7 * 24 * 60 * 60 * 1000),
-    );
+    const accessConfig = this.cookieConfig(15 * 60 * 1000);
+    const refreshConfig = this.cookieConfig(7 * 24 * 60 * 60 * 1000);
+    
+    // Debug logging (remove in production)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🍪 Setting cookies:', {
+        accessTokenLength: accessToken?.length || 0,
+        refreshTokenLength: refreshToken?.length || 0,
+        accessConfig,
+        refreshConfig,
+      });
+    }
+    
+    res.cookie('access_token', accessToken, accessConfig);
+    res.cookie('refresh_token', refreshToken, refreshConfig);
   }
 
   private cookieConfig(maxAge = 0): CookieOptions {
-    return {
-     httpOnly: true,
-    secure: false,  
-    sameSite: 'lax',
-    path: '/',
-    maxAge,
-    domain: undefined,  
+    const isProduction = process.env.NODE_ENV === 'production';
+    const cookieOptions: CookieOptions = {
+      httpOnly: true,
+      secure: isProduction && process.env.COOKIE_SECURE === 'true',
+      sameSite: (process.env.COOKIE_SAME_SITE as 'lax' | 'strict' | 'none') || 'lax',
+      path: '/',
     };
+    
+    if (maxAge > 0) {
+      cookieOptions.maxAge = maxAge;
+    }
+    
+    if (process.env.COOKIE_DOMAIN) {
+      cookieOptions.domain = process.env.COOKIE_DOMAIN;
+    }
+    
+    return cookieOptions;
   }
 }

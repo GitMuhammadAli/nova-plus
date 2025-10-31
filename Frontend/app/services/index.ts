@@ -137,3 +137,18 @@ export const uploadsAPI = {
 export const healthAPI = {
   check: () => api.get('/health'),
 };
+
+// ============================================
+// DASHBOARD API
+// ============================================
+export const dashboardAPI = {
+  getSummary: () => api.get('/api/dashboard/summary'),
+  getStats: (period?: string) => api.get('/api/dashboard/stats', { params: { period } }),
+};
+
+// ============================================
+// ACTIVITY API
+// ============================================
+export const activityAPI = {
+  getRecent: (limit?: number) => api.get('/api/activity/recent', { params: { limit } }),
+};

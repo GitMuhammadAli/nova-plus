@@ -40,9 +40,12 @@ export class AuthService {
     return this.buildResponseTokens(user, userAgent, ip);
   }
 
-  async buildResponseTokens(user: User, userAgent?: string, ip?: string) {
-    const payload = { sub: user._id, email: user.email };
+  async buildResponseTokens(user: User | any, userAgent?: string, ip?: string) {
+    const userId = user._id?.toString() || user._id;
+    const payload = { sub: userId, email: user.email, role: user.role };
 
+    // Use JwtService with the secret configured in JwtModule
+    // The module is configured with: process.env.JWT_SECRET || process.env.JWT_ACCESS_SECRET || 'supersecretkey'
     const accessToken = this.jwtService.sign(payload, {
       expiresIn: '15m',
     });
@@ -53,7 +56,7 @@ export class AuthService {
 
     const refreshHash = await bcrypt.hash(refreshToken, 10);
     await this.sessionModel.create({
-      userId: user._id,
+      userId: userId,
       refreshTokenHash: refreshHash,
       userAgent,
       ip,
@@ -63,26 +66,72 @@ export class AuthService {
   }
 
   async refresh(userId: string, refreshToken: string) {
-    const sessions = await this.sessionModel.find({ userId });
-    const valid = await Promise.any(
-      sessions.map(async (s) => {
-        const match = await bcrypt.compare(refreshToken, s.refreshTokenHash);
-        return match ? s : null;
-      }),
-    ).catch(() => null);
+    // Convert userId to string if it's ObjectId
+    const userIdStr = userId?.toString() || userId;
+    
+    // Find all sessions for this user (try both string and ObjectId format)
+    const sessions = await this.sessionModel.find({
+      $or: [
+        { userId: userIdStr },
+        { userId: userId }
+      ]
+    }).exec();
+    
+    if (!sessions || sessions.length === 0) {
+      throw new ForbiddenException('No sessions found for user.');
+    }
 
-    if (!valid) throw new ForbiddenException('Invalid session.');
+    // Try to match the refresh token with any session
+    let validSession: any = null;
+    for (const session of sessions) {
+      try {
+        const match = await bcrypt.compare(refreshToken, session.refreshTokenHash);
+        if (match) {
+          validSession = session;
+          break;
+        }
+      } catch (error) {
+        // Continue to next session if comparison fails
+        continue;
+      }
+    }
 
-    const payload = { sub: userId };
-    const newAccessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
+    if (!validSession) {
+      throw new ForbiddenException('Invalid refresh token.');
+    }
+
+    // Get user to include email in token
+    const user = await this.userModel.findById(userIdStr);
+    if (!user) {
+      throw new ForbiddenException('User not found');
+    }
+
+    // Generate new access token with user info
+    // Use JwtService with the secret configured in JwtModule (same as used for verification)
+    const payload = { sub: userIdStr, email: user.email, role: user.role };
+    const newAccessToken = this.jwtService.sign(payload, { 
+      expiresIn: '15m' 
+    });
     return { accessToken: newAccessToken };
   }
 
   async logout(userId: string, refreshToken: string) {
-    const sessions = await this.sessionModel.find({ userId });
+    const userIdStr = userId?.toString() || userId;
+    const sessions = await this.sessionModel.find({
+      $or: [
+        { userId: userIdStr },
+        { userId: userId }
+      ]
+    }).exec();
+    
     for (const s of sessions) {
-      if (await bcrypt.compare(refreshToken, s.refreshTokenHash)) {
-        await this.sessionModel.deleteOne({ _id: s._id });
+      try {
+        if (await bcrypt.compare(refreshToken, s.refreshTokenHash)) {
+          await this.sessionModel.deleteOne({ _id: s._id });
+          return { message: 'Logged out successfully' };
+        }
+      } catch (error) {
+        continue;
       }
     }
     return { message: 'Logged out successfully' };

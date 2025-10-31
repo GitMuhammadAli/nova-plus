@@ -14,25 +14,20 @@ export function AuthInit() {
   const hasInitialized = useRef(false);
 
   useEffect(() => {
+    // Skip on public routes
     if (PUBLIC_ROUTES.includes(pathname)) {
-      if (process.env.NODE_ENV !== 'production') {
-        console.log('AuthInit: on public page, skipping fetchMe');
-      }
       return;
     }
 
+    // Skip if already initialized, has user, or is loading
     if (hasInitialized.current || user || isLoading) {
       return;
     }
 
+    // Mark as initialized and fetch user
     hasInitialized.current = true;
-
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('AuthInit: calling fetchMe');
-    }
-
     dispatch(fetchMe()).catch(() => {
-      // The auth guard will handle redirects
+      // Auth guard will handle redirects - silent fail here
     });
   }, [dispatch, user, isLoading, pathname]);
 

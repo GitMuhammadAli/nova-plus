@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
@@ -12,10 +13,17 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const { isAuthenticated, isLoading } = useAuthGuard();
+  const router = useRouter();
+  const { isAuthenticated, isLoading, user } = useAuthGuard();
 
+  // Redirect to login if not authenticated (after loading check)
+  useEffect(() => {
+    if (!isLoading && (!isAuthenticated || !user)) {
+      router.replace('/login');
+    }
+  }, [isAuthenticated, isLoading, user, router]);
 
-    if (isLoading) {
+  if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
         <div className="text-center">
@@ -26,8 +34,8 @@ export default function DashboardLayout({
     );
   }
 
-  if (!isAuthenticated) {
-    return null; // Will redirect in useAuthGuard
+  if (!isAuthenticated || !user) {
+    return null; // Will redirect via useEffect
   }
 
   return (

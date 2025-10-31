@@ -15,6 +15,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import { AppDispatch, RootState } from "@/app/store/store";
+import { logout } from "@/app/store/authSlice";
 
 
 export function Topbar() {
@@ -24,7 +25,7 @@ export function Topbar() {
 
   const handleLogout = async () => {
     await dispatch(logout());
-    router.push('/login');
+    router.replace('/login');
   };
 
   const getInitials = (name?: string) => {
@@ -68,10 +69,12 @@ export function Topbar() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="gap-2">
               <Avatar className="w-8 h-8">
-                <AvatarImage src="/placeholder-user.jpg" alt="User" />
-                <AvatarFallback>JD</AvatarFallback>
+                <AvatarImage src="/placeholder-user.jpg" alt={user?.name || 'User'} />
+                <AvatarFallback>
+                  {user?.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : 'U'}
+                </AvatarFallback>
               </Avatar>
-              <span className="text-sm font-medium hidden md:inline">John Doe</span>
+              <span className="text-sm font-medium hidden md:inline">{user?.name || 'User'}</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
@@ -81,19 +84,10 @@ export function Topbar() {
             <DropdownMenuItem>Settings</DropdownMenuItem>
             <DropdownMenuItem>Team</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Log out</DropdownMenuItem>
+            <DropdownMenuItem onClick={handleLogout}>Log out</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
     </header>
   );
-}
-
-function dispatch(arg0: any) {
-  throw new Error("Function not implemented.");
-}
-
-
-function logout(): any {
-  throw new Error("Function not implemented.");
 }

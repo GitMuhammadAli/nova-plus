@@ -36,9 +36,9 @@ const initialState: UsersState = {
 
 export const fetchUsers = createAsyncThunk(
   'users/fetchAll',
-  async (params: { page?: number; limit?: number; search?: string } = {}, { rejectWithValue }) => {
+  async (params?: { page?: number; limit?: number; search?: string }, { rejectWithValue }) => {
     try {
-      const response = await usersAPI.getAll(params);
+      const response = await usersAPI.getAll(params || {});
       return response.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch users');
@@ -111,14 +111,31 @@ const usersSlice = createSlice({
       })
       .addCase(fetchUsers.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.users = action.payload.data || action.payload;
-        if (action.payload.pagination) {
+        // Handle both response formats and ensure it's always an array
+        const users = action.payload?.data || action.payload || [];
+        state.users = Array.isArray(users) ? users : [];
+        if (action.payload?.pagination) {
           state.pagination = action.payload.pagination;
+        } else {
+          // Reset pagination if not provided
+          state.pagination = {
+            page: 1,
+            limit: state.users.length || 10,
+            total: state.users.length,
+          };
         }
       })
       .addCase(fetchUsers.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = action.payload as string;
+        // Only set error for actual errors, not empty results
+        const errorMessage = action.payload as string;
+        if (errorMessage && !errorMessage.includes('Cannot GET')) {
+          state.error = errorMessage;
+        } else {
+          // If it's a 404 or "Cannot GET", treat as empty users
+          state.users = [];
+          state.error = null;
+        }
       });
 
     // Fetch User by ID

@@ -20,7 +20,7 @@ import { Session, SessionSchema } from './entities/session.entity';
       { name: Session.name, schema: SessionSchema },
     ]),
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'supersecretkey',
+      secret: process.env.JWT_SECRET || process.env.JWT_ACCESS_SECRET || 'supersecretkey',
       signOptions: { expiresIn: '15m' },
     }),
   ],

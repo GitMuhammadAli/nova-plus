@@ -29,24 +29,21 @@ export const login = createAsyncThunk(
   'auth/login',
   async (credentials: { email: string; password: string }, { rejectWithValue }) => {
     try {
-      console.log('🔵 Calling API login with:', credentials.email);
-      
       const response = await authAPI.login(credentials);
       
-      console.log('🟢 API response:', response.data);
+      // Handle both response formats (with or without transform interceptor)
+      // Direct format: { success: true, message: '...', user: {...} }
+      // Wrapped format: { success: true, data: { success: true, message: '...', user: {...} } }
+      const user = response.data?.user || response.data?.data?.user;
       
-      // Backend wraps response: {success: true, data: {user: {...}}}
-      // Handle all possible structures
-      const user = response.data?.data?.user || response.data?.user || response.data;
-      
-      console.log('✅ User extracted:', user);
+      if (!user) {
+        console.error('Login response structure:', response.data);
+        throw new Error('User data not found in response');
+      }
       
       return user;
     } catch (error: any) {
-      console.log('🔴 Login error:', error);
-      console.log('🔴 Error response:', error.response?.data);
-      
-      const message = error.response?.data?.message || 'Login failed';
+      const message = error.response?.data?.message || error.response?.data?.data?.message || error.message || 'Login failed';
       return rejectWithValue(message);
     }
   }
@@ -56,22 +53,19 @@ export const register = createAsyncThunk(
   'auth/register',
   async (data: { email: string; password: string; name: string; role?: string }, { rejectWithValue }) => {
     try {
-      console.log('🔵 Calling API register with:', data.email);
-      
       const response = await authAPI.register(data);
       
-      console.log('🟢 API response:', response.data);
+      // Handle both response formats (with or without transform interceptor)
+      const user = response.data?.user || response.data?.data?.user;
       
-      // Backend wraps response: {success: true, data: {user: {...}}}
-      const user = response.data?.data?.user || response.data?.user || response.data;
-      
-      console.log('✅ User extracted:', user);
+      if (!user) {
+        console.error('Register response structure:', response.data);
+        throw new Error('User data not found in response');
+      }
       
       return user;
     } catch (error: any) {
-      console.log('🔴 Register error:', error);
-      
-      const message = error.response?.data?.message || 'Registration failed';
+      const message = error.response?.data?.message || error.response?.data?.data?.message || error.message || 'Registration failed';
       return rejectWithValue(message);
     }
   }
@@ -81,18 +75,18 @@ export const fetchMe = createAsyncThunk(
   'auth/fetchMe',
   async (_, { rejectWithValue }) => {
     try {
-      console.log('🔵 Calling /auth/me...');
-      
       const response = await authAPI.getCurrentUser();
       
-      console.log('✅ /auth/me success:', response.data);
+      // Backend returns user directly from req.user
+      const user = response.data;
       
-      // Backend returns user directly (not wrapped in data)
-      return response.data;
+      if (!user) {
+        throw new Error('User data not found');
+      }
+      
+      return user;
     } catch (error: any) {
-      console.log('🔴 /auth/me failed:', error.response?.status);
-      
-      // Don't show error message for 401 (just means not logged in)
+      // 401 means not authenticated - this is expected when not logged in
       if (error.response?.status === 401) {
         return rejectWithValue('Not authenticated');
       }
@@ -111,8 +105,9 @@ export const logout = createAsyncThunk(
       // Cookies are cleared by backend
       return;
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Logout failed';
-      return rejectWithValue(message);
+      // Even if API fails, clear local state
+      // Don't show error message - just logout locally
+      return;
     }
   }
 );

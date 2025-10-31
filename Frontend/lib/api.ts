@@ -15,6 +15,13 @@ api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
     const originalRequest = error.config as any;
+    const url = originalRequest?.url || '';
+
+    // Don't intercept auth-related endpoints - let them fail naturally
+    // This prevents redirect loops when checking auth status
+    if (url.includes('/auth/me') || url.includes('/auth/refresh') || url.includes('/auth/login')) {
+      return Promise.reject(error);
+    }
 
     // If 401 and we haven't retried yet, try to refresh
     if (error.response?.status === 401 && !originalRequest._retry) {
@@ -27,8 +34,9 @@ api.interceptors.response.use(
         // Retry the original request
         return api(originalRequest);
       } catch (refreshError) {
-        // Refresh failed, redirect to login
-        if (typeof window !== 'undefined') {
+        // Refresh failed, redirect to login (only for protected API calls)
+        if (typeof window !== 'undefined' && !url.includes('/auth/')) {
+          // Clear any auth state before redirecting
           window.location.href = '/login';
         }
         return Promise.reject(refreshError);

@@ -7,6 +7,7 @@ import { HealthModule } from './modules/health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { TasksModule } from './modules/task/task.module';
 import { TeamsModule } from './modules/team/team.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { TeamsModule } from './modules/team/team.module';
     }),
     HealthModule,
     AuthModule,
+    DashboardModule,
   ],
   controllers: [],
   providers: [],

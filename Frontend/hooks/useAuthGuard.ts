@@ -1,51 +1,61 @@
 "use client"
 
 import { useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchMe } from '@/app/store/authSlice';
 import { AppDispatch, RootState } from '@/app/store/store';
 
 export function useAuthGuard() {
   const router = useRouter();
+  const pathname = usePathname();
   const dispatch = useDispatch<AppDispatch>();
   const { isAuthenticated, isLoading, user } = useSelector((state: RootState) => state.auth);
   const hasFetched = useRef(false);
-
-  console.log('🟡 useAuthGuard - isAuth:', isAuthenticated, 'isLoading:', isLoading, 'user:', user?.email);
+  const isRedirecting = useRef(false);
 
   useEffect(() => {
-    console.log('🟡 useAuthGuard effect - isAuth:', isAuthenticated, 'user:', user?.email, 'hasFetched:', hasFetched.current);
-    
-    // If already authenticated, no need to fetch
-    if (isAuthenticated || user) {
-      console.log('✅ useAuthGuard - Already authenticated');
+    // Skip auth check for public routes
+    const publicRoutes = ['/login', '/register', '/'];
+    if (publicRoutes.includes(pathname)) {
       return;
     }
 
-    // If currently loading or already fetched, don't fetch again
-    if (isLoading || hasFetched.current) {
-      console.log('🟡 useAuthGuard - Loading or already fetched');
+    // If already authenticated with user data, allow access
+    if (isAuthenticated && user) {
       return;
     }
 
-    // Mark as fetched to prevent duplicate calls
+    // Wait for loading to complete
+    if (isLoading) {
+      return;
+    }
+
+    // If already fetched and we're not authenticated, redirect once
+    if (hasFetched.current && !isAuthenticated && !user && !isRedirecting.current) {
+      isRedirecting.current = true;
+      router.replace('/login');
+      return;
+    }
+
+    // Don't fetch again if already fetched
+    if (hasFetched.current) {
+      return;
+    }
+
+    // Mark as fetched and fetch user
     hasFetched.current = true;
-
-    console.log('🔵 useAuthGuard - Fetching user...');
     
-    // Try to fetch user from cookie
     dispatch(fetchMe())
       .unwrap()
-      .then((user) => {
-        console.log('✅ useAuthGuard - User fetched:', user.email);
+      .then(() => {
+        isRedirecting.current = false;
       })
-      .catch((error) => {
-        console.log('❌ useAuthGuard - Fetch failed, redirecting to /');
-        // If fetch fails, redirect to landing page
-        router.push('/');
+      .catch(() => {
+        // Failed to authenticate - will be handled by the check above
+        isRedirecting.current = false;
       });
-  }, [isAuthenticated, isLoading, user, dispatch, router]);
+  }, [isAuthenticated, isLoading, user, pathname, dispatch, router]);
 
   return { isAuthenticated, isLoading, user };
 }

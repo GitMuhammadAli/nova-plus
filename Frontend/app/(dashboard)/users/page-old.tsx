@@ -98,8 +98,7 @@ export default function UsersPage() {
     );
   }
 
-  // Only show error if it's not a "Cannot GET" error (which means no users)
-  if (error && !error.includes('Cannot GET')) {
+  if (error) {
     return (
       <div className="flex items-center justify-center h-screen">
         <Card className="p-6 max-w-md">
@@ -261,32 +260,12 @@ export default function UsersPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {(!users || users.length === 0) ? (
+            {filteredUsers.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center py-12">
                   <div className="flex flex-col items-center gap-2">
                     <Users className="w-12 h-12 text-muted-foreground" />
-                    <p className="text-muted-foreground">No users yet</p>
-                    <p className="text-sm text-muted-foreground">Users will appear here once they register</p>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ) : filteredUsers.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center py-12">
-                  <div className="flex flex-col items-center gap-2">
-                    <Users className="w-12 h-12 text-muted-foreground" />
-                    <p className="text-muted-foreground">No users match your filters</p>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => {
-                        setSearchQuery('');
-                        setRoleFilter('all');
-                      }}
-                    >
-                      Clear Filters
-                    </Button>
+                    <p className="text-muted-foreground">No users found</p>
                   </div>
                 </TableCell>
               </TableRow>
