@@ -36,7 +36,7 @@ const initialState: UsersState = {
 
 export const fetchUsers = createAsyncThunk(
   'users/fetchAll',
-  async (params?: { page?: number; limit?: number; search?: string }, { rejectWithValue }) => {
+  async (params: { page?: number; limit?: number; search?: string } = {}, { rejectWithValue }) => {
     try {
       const response = await usersAPI.getAll(params || {});
       return response.data;
