@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 type UserRole = "ADMIN" | "MANAGER" | "EDITOR" | "USER" | "VIEWER";
 
 interface RoleBadgeProps {
-  role: UserRole;
+  role: UserRole | string;
   className?: string;
 }
 
@@ -48,7 +48,9 @@ const roleConfig: Record<
 };
 
 export function RoleBadge({ role, className }: RoleBadgeProps) {
-  const config = roleConfig[role] || roleConfig.USER;
+  // Normalize role to uppercase for lookup
+  const normalizedRole = (typeof role === 'string' ? role.toUpperCase() : role) as UserRole;
+  const config = roleConfig[normalizedRole] || roleConfig.USER;
   const Icon = config.icon;
 
   return (

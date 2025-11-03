@@ -144,13 +144,15 @@ export class AuthService {
     role: user.role,  // ✅ include role in token
   };
 
+  // Use JwtService with the secret configured in JwtModule (same as buildResponseTokens)
+  // This ensures consistency - all tokens use the same secret source
   const accessToken = this.jwtService.sign(payload, {
-    secret: process.env.JWT_ACCESS_SECRET,
     expiresIn: '15m',
   });
 
+  // For refresh token, use same secret source for consistency
+  // If you need separate refresh secret, configure it in JwtModule
   const refreshToken = this.jwtService.sign(payload, {
-    secret: process.env.JWT_REFRESH_SECRET,
     expiresIn: '7d',
   });
 

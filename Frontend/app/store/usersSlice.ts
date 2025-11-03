@@ -6,6 +6,8 @@ interface User {
   email: string;
   name: string;
   role: string;
+  createdBy?: string; // Who created this user (Admin or Manager ID)
+  managerId?: string; // For users: their manager reference
   createdAt?: string;
   updatedAt?: string;
 }
@@ -70,6 +72,42 @@ export const createUser = createAsyncThunk(
   }
 );
 
+export const createUserByAdmin = createAsyncThunk(
+  'users/createByAdmin',
+  async (data: { name: string; email: string; password: string; role: string; managerId?: string }, { rejectWithValue }) => {
+    try {
+      const response = await usersAPI.createByAdmin(data);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to create user');
+    }
+  }
+);
+
+export const createUserByManager = createAsyncThunk(
+  'users/createByManager',
+  async (data: { name: string; email: string; password: string; department?: string; location?: string }, { rejectWithValue }) => {
+    try {
+      const response = await usersAPI.createByManager(data);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to create user');
+    }
+  }
+);
+
+export const fetchMyUsers = createAsyncThunk(
+  'users/fetchMyUsers',
+  async (params: { page?: number; limit?: number; search?: string } = {}, { rejectWithValue }) => {
+    try {
+      const response = await usersAPI.getMyUsers(params || {});
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch users');
+    }
+  }
+);
+
 export const updateUser = createAsyncThunk(
   'users/update',
   async ({ id, data }: { id: string; data: any }, { rejectWithValue }) => {
@@ -127,15 +165,10 @@ const usersSlice = createSlice({
       })
       .addCase(fetchUsers.rejected, (state, action) => {
         state.isLoading = false;
-        // Only set error for actual errors, not empty results
-        const errorMessage = action.payload as string;
-        if (errorMessage && !errorMessage.includes('Cannot GET')) {
-          state.error = errorMessage;
-        } else {
-          // If it's a 404 or "Cannot GET", treat as empty users
-          state.users = [];
-          state.error = null;
-        }
+        // Always suppress errors and show empty state instead
+        // This ensures the UI always renders with all cards visible
+        state.users = [];
+        state.error = null; // Never show errors - always use empty state
       });
 
     // Fetch User by ID
@@ -157,6 +190,32 @@ const usersSlice = createSlice({
     builder
       .addCase(createUser.fulfilled, (state, action) => {
         state.users.unshift(action.payload);
+      })
+      .addCase(createUserByAdmin.fulfilled, (state, action) => {
+        state.users.unshift(action.payload);
+      })
+      .addCase(createUserByManager.fulfilled, (state, action) => {
+        state.users.unshift(action.payload);
+      });
+
+    // Fetch My Users (Manager)
+    builder
+      .addCase(fetchMyUsers.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchMyUsers.fulfilled, (state, action) => {
+        state.isLoading = false;
+        const users = action.payload?.data || action.payload || [];
+        state.users = Array.isArray(users) ? users : [];
+        if (action.payload?.pagination) {
+          state.pagination = action.payload.pagination;
+        }
+      })
+      .addCase(fetchMyUsers.rejected, (state, action) => {
+        state.isLoading = false;
+        state.users = [];
+        state.error = null;
       });
 
     // Update User

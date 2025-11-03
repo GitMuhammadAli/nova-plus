@@ -91,10 +91,9 @@ export class AuthController {
       throw new BadRequestException('Refresh token not provided');
     }
 
-    // Decode the refresh token to get user ID
+    // Decode the refresh token to get user ID (decode doesn't verify signature)
     let payload: any = null;
     try {
-      const secret = process.env.JWT_SECRET || process.env.JWT_ACCESS_SECRET || 'supersecretkey';
       const jwt = require('jsonwebtoken');
       payload = jwt.decode(refreshToken);
     } catch (error) {

@@ -9,4 +9,8 @@ export const validationSchema = Joi.object({
   ACCESS_TOKEN_EXPIRE: Joi.string().default('15m'),
   REFRESH_TOKEN_EXPIRE: Joi.string().default('7d'),
   LOG_LEVEL: Joi.string().default('info'),
+  // Default admin user configuration (optional)
+  DEFAULT_ADMIN_EMAIL: Joi.string().email().optional(),
+  DEFAULT_ADMIN_PASSWORD: Joi.string().min(6).optional(),
+  DEFAULT_ADMIN_NAME: Joi.string().optional(),
 });

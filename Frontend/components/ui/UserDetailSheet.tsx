@@ -26,7 +26,7 @@ interface User {
   _id: string;
   name: string;
   email: string;
-  role: "ADMIN" | "MANAGER" | "EDITOR" | "USER" | "VIEWER";
+  role: "ADMIN" | "MANAGER" | "EDITOR" | "USER" | "VIEWER" | string;
   createdAt?: string;
   updatedAt?: string;
 }

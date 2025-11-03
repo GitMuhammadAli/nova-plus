@@ -5,6 +5,7 @@ import { Request } from 'express';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User } from '../../user/entities/user.entity';
+import { getJwtSecret } from '../utils/jwt-secret.util';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -19,7 +20,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
               hasCookies: !!request?.cookies,
               cookieKeys: request?.cookies ? Object.keys(request.cookies) : [],
               accessToken: token ? `Found (length: ${token.length})` : 'Missing',
-              secretKey: process.env.JWT_SECRET || process.env.JWT_ACCESS_SECRET || 'Using default',
+              secretKey: getJwtSecret(),
             });
           }
           
@@ -38,7 +39,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         },
       ]),
       ignoreExpiration: false,
-      secretOrKey: process.env.JWT_SECRET || process.env.JWT_ACCESS_SECRET || 'supersecretkey',
+      secretOrKey: getJwtSecret(),
     });
   }
 

@@ -10,6 +10,7 @@ import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { User, UserSchema } from './../user/entities/user.entity'; 
 import { Session, SessionSchema } from './entities/session.entity';
+import { getJwtSecret } from './utils/jwt-secret.util';
 
 @Module({
   imports: [
@@ -20,7 +21,7 @@ import { Session, SessionSchema } from './entities/session.entity';
       { name: Session.name, schema: SessionSchema },
     ]),
     JwtModule.register({
-      secret: process.env.JWT_SECRET || process.env.JWT_ACCESS_SECRET || 'supersecretkey',
+      secret: getJwtSecret(),
       signOptions: { expiresIn: '15m' },
     }),
   ],

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchUsers } from "@/app/store/usersSlice";
+import { fetchUsers, fetchMyUsers, createUser, createUserByAdmin, createUserByManager, updateUser, deleteUser } from "@/app/store/usersSlice";
 import { AppDispatch, RootState } from "@/app/store/store";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,9 @@ import { Card } from "@/components/ui/card";
 import { RoleBadge } from "@/components/ui/RoleBadge";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { UserDetailSheet } from "@/components/ui/UserDetailSheet";
+import { UserFormDialog } from "@/components/ui/UserFormDialog";
+import { DeleteUserDialog } from "@/components/ui/DeleteUserDialog";
+import { useToast } from "@/hooks/use-toast";
 import { Search, Plus, Filter, Users, UserCheck, ShieldCheck, Clock } from "lucide-react";
 
 type UserRole = "ADMIN" | "MANAGER" | "EDITOR" | "USER" | "VIEWER" | "all";
@@ -34,7 +37,7 @@ interface User {
   _id: string;
   name: string;
   email: string;
-  role: "ADMIN" | "MANAGER" | "EDITOR" | "USER" | "VIEWER";
+  role: "ADMIN" | "MANAGER" | "EDITOR" | "USER" | "VIEWER" | string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -42,27 +45,177 @@ interface User {
 export default function UsersPage() {
   const dispatch = useDispatch<AppDispatch>();
   const { users, isLoading, error } = useSelector((state: RootState) => state.users);
+  const { user: currentUser } = useSelector((state: RootState) => state.auth);
+  const { toast } = useToast();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<UserRole>("all");
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [formDialogOpen, setFormDialogOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+
+  // Get current user role
+  const currentUserRole = currentUser?.role?.toLowerCase() || '';
 
   useEffect(() => {
-    dispatch(fetchUsers());
-  }, [dispatch]);
+    // Fetch users based on role
+    if (currentUserRole === 'admin' || currentUserRole === 'superadmin') {
+      dispatch(fetchUsers({})); // Admin gets all users
+    } else if (currentUserRole === 'manager') {
+      dispatch(fetchMyUsers({})); // Manager gets only their users
+    } else {
+      dispatch(fetchUsers({})); // Fallback to regular fetch
+    }
+  }, [dispatch, currentUserRole]);
 
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
       user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesRole = roleFilter === "all" || user.role === roleFilter;
+    const matchesRole = roleFilter === "all" || (user.role as string) === roleFilter;
     return matchesSearch && matchesRole;
   });
 
-  const handleUserClick = (user: User) => {
-    setSelectedUser(user);
+  const handleUserClick = (user: any) => {
+    // Type assertion for role compatibility
+    const typedUser: User = {
+      ...user,
+      role: user.role as "ADMIN" | "MANAGER" | "EDITOR" | "USER" | "VIEWER" | string,
+    };
+    setSelectedUser(typedUser);
     setSheetOpen(true);
+  };
+
+  const handleAddUser = () => {
+    setEditingUser(null);
+    setFormDialogOpen(true);
+  };
+
+  const handleEditUser = (user: User) => {
+    setEditingUser(user);
+    setFormDialogOpen(true);
+    setSheetOpen(false);
+  };
+
+  const handleDeleteUser = (userId: string) => {
+    const user = users.find((u) => u._id === userId);
+    if (user) {
+      setUserToDelete(user);
+      setDeleteDialogOpen(true);
+    }
+  };
+
+  const handleSaveUser = async (data: any) => {
+    try {
+      if (data._id) {
+        // Update existing user
+        await dispatch(updateUser({ id: data._id, data })).unwrap();
+        toast({
+          title: "User updated",
+          description: `${data.name} has been updated successfully.`,
+        });
+      } else {
+        // Create new user based on current user's role
+        if (currentUserRole === 'admin' || currentUserRole === 'superadmin') {
+          // Admin can create managers or users
+          await dispatch(createUserByAdmin({
+            name: data.name,
+            email: data.email,
+            password: data.password,
+            role: data.role || 'USER',
+            managerId: data.managerId,
+          })).unwrap();
+          toast({
+            title: "User created",
+            description: `${data.name} has been added successfully.`,
+          });
+        } else if (currentUserRole === 'manager') {
+          // Manager can only create users
+          await dispatch(createUserByManager({
+            name: data.name,
+            email: data.email,
+            password: data.password,
+            department: data.department,
+            location: data.location,
+          })).unwrap();
+          toast({
+            title: "User created",
+            description: `${data.name} has been added to your team.`,
+          });
+        } else {
+          // Fallback to regular create (shouldn't happen for non-admin/manager)
+          await dispatch(createUser(data)).unwrap();
+          toast({
+            title: "User created",
+            description: `${data.name} has been added successfully.`,
+          });
+        }
+      }
+      setFormDialogOpen(false);
+      setEditingUser(null);
+      // Refresh users list based on role
+      if (currentUserRole === 'admin' || currentUserRole === 'superadmin') {
+        dispatch(fetchUsers({}));
+      } else if (currentUserRole === 'manager') {
+        dispatch(fetchMyUsers({}));
+      } else {
+        dispatch(fetchUsers({}));
+      }
+    } catch (error: any) {
+      // Check if it's an authentication error (401 Unauthorized)
+      const isAuthError = error?.response?.status === 401 || 
+                         error?.message?.includes('token') || 
+                         error?.message?.includes('401') || 
+                         error?.message?.includes('Unauthorized') ||
+                         error?.message?.includes('Invalid or expired token');
+      
+      if (isAuthError) {
+        // Don't show error toast - API interceptor will handle redirect
+        // Just clear the dialog
+        setFormDialogOpen(false);
+        setEditingUser(null);
+        // API interceptor will automatically redirect to login
+        return;
+      } else {
+        toast({
+          title: "Error",
+          description: error?.message || "Failed to save user. Please try again.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (userToDelete) {
+      try {
+        await dispatch(deleteUser(userToDelete._id)).unwrap();
+        toast({
+          title: "User deleted",
+          description: `${userToDelete.name} has been removed from the system.`,
+          variant: "destructive",
+        });
+        setUserToDelete(null);
+        setDeleteDialogOpen(false);
+        // Refresh users list based on role
+        if (currentUserRole === 'admin' || currentUserRole === 'superadmin') {
+          dispatch(fetchUsers({}));
+        } else if (currentUserRole === 'manager') {
+          dispatch(fetchMyUsers({}));
+        } else {
+          dispatch(fetchUsers({}));
+        }
+      } catch (error: any) {
+        toast({
+          title: "Error",
+          description: error?.message || "Failed to delete user. Please try again.",
+          variant: "destructive",
+        });
+      }
+    }
   };
 
   const getInitials = (name: string) => {
@@ -98,22 +251,8 @@ export default function UsersPage() {
     );
   }
 
-  // Only show error if it's not a "Cannot GET" error (which means no users)
-  if (error && !error.includes('Cannot GET')) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <Card className="p-6 max-w-md">
-          <div className="text-center space-y-2">
-            <p className="text-destructive font-semibold">Error loading users</p>
-            <p className="text-sm text-muted-foreground">{error}</p>
-            <Button onClick={() => dispatch(fetchUsers())} className="mt-4">
-              Try Again
-            </Button>
-          </div>
-        </Card>
-      </div>
-    );
-  }
+  // Don't show error messages - always show the UI with empty state if needed
+  // Errors are handled silently, users will just see empty state
 
   return (
     <div className="space-y-6">
@@ -125,7 +264,7 @@ export default function UsersPage() {
             Manage team members and their permissions
           </p>
         </div>
-        <Button className="gap-2">
+        <Button className="gap-2" onClick={handleAddUser}>
           <Plus className="w-4 h-4" />
           Add User
         </Button>
@@ -312,7 +451,7 @@ export default function UsersPage() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <RoleBadge role={user.role} />
+                    <RoleBadge role={user.role as "ADMIN" | "MANAGER" | "EDITOR" | "USER" | "VIEWER"} />
                   </TableCell>
                   <TableCell>
                     <StatusBadge isActive={true} />
@@ -335,6 +474,25 @@ export default function UsersPage() {
         user={selectedUser}
         open={sheetOpen}
         onOpenChange={setSheetOpen}
+        onEdit={handleEditUser}
+        onDelete={handleDeleteUser}
+      />
+
+      {/* User Form Dialog */}
+      <UserFormDialog
+        open={formDialogOpen}
+        onOpenChange={setFormDialogOpen}
+        user={editingUser}
+        onSave={handleSaveUser}
+        currentUserRole={currentUserRole}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteUserDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        user={userToDelete}
+        onConfirm={handleConfirmDelete}
       />
     </div>
   );

@@ -24,9 +24,21 @@ export const usersAPI = {
   getAll: (params?: { page?: number; limit?: number; search?: string }) =>
     api.get('/user', { params }),
   
+  getAllForAdmin: (params?: { page?: number; limit?: number; search?: string }) =>
+    api.get('/user/all', { params }),
+  
+  getMyUsers: (params?: { page?: number; limit?: number; search?: string }) =>
+    api.get('/user/my-users', { params }),
+  
   getById: (id: string) => api.get(`/user/${id}`),
   
   create: (data: any) => api.post('/user', data),
+  
+  createByAdmin: (data: { name: string; email: string; password: string; role: string; managerId?: string }) =>
+    api.post('/user/create-by-admin', data),
+  
+  createByManager: (data: { name: string; email: string; password: string; department?: string; location?: string }) =>
+    api.post('/user/create-by-manager', data),
   
   update: (id: string, data: any) => api.patch(`/user/${id}`, data),
   
