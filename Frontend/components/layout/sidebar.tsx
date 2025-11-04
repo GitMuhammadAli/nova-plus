@@ -12,29 +12,42 @@ import {
   Shield,
   ChevronLeft,
   ChevronRight,
+  FolderKanban,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { useSelector } from "react-redux";
+import { RootState } from "@/app/store/store";
 
 interface SidebarProps {
   collapsed: boolean;
   onToggle: () => void;
 }
 
-const navItems = [
-  { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
-  { icon: Users, label: "Users", path: "/users" },
-  { icon: BarChart3, label: "Analytics", path: "/analytics" },
-  { icon: Zap, label: "NovaFlow", path: "/automation" },
-  { icon: FileText, label: "Reports", path: "/reports" },
-  { icon: CreditCard, label: "Billing", path: "/billing" },
-  { icon: Shield, label: "Audit Logs", path: "/audit-logs" },
-  { icon: Settings, label: "Settings", path: "/settings" },
+// Define all navigation items with role-based access
+const allNavItems = [
+  { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard", roles: ['admin', 'manager', 'user'] },
+  { icon: Users, label: "Users", path: "/users", roles: ['admin', 'manager'] },
+  { icon: FolderKanban, label: "Projects", path: "/projects", roles: ['manager'] },
+  { icon: FileText, label: "My Tasks", path: "/tasks", roles: ['user'] },
+  { icon: BarChart3, label: "Analytics", path: "/analytics", roles: ['admin', 'manager'] },
+  { icon: Zap, label: "NovaFlow", path: "/automation", roles: ['admin', 'manager'] },
+  { icon: FileText, label: "Reports", path: "/reports", roles: ['admin', 'manager'] },
+  { icon: CreditCard, label: "Billing", path: "/billing", roles: ['admin'] },
+  { icon: Shield, label: "Audit Logs", path: "/audit-logs", roles: ['admin'] },
+  { icon: Settings, label: "Settings", path: "/settings", roles: ['admin', 'manager', 'user'] },
 ];
 
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const pathname = usePathname();
+  const { user } = useSelector((state: RootState) => state.auth);
+  const userRole = user?.role?.toLowerCase() || '';
+
+  // Filter nav items based on user role
+  const navItems = allNavItems.filter(item => 
+    item.roles.includes(userRole)
+  );
 
   return (
     <motion.aside

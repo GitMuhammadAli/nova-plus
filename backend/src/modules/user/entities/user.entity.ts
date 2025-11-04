@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Types } from 'mongoose';
 
 export type UserDocument = User & Document ;
 
@@ -14,16 +14,6 @@ export enum UserRole {
 
 @Schema({ timestamps: true })
 export class User {
-  toObject(): { [x: string]: any; password: any; } {
-    throw new Error('Method not implemented.');
-  }
-  toObject(): { [x: string]: any; password: any; } {
-    throw new Error('Method not implemented.');
-  }
-  toObject(): { [x: string]: any; password: any; } {
-    throw new Error('Method not implemented.');
-  }
-
   readonly _id?: string;
 
   @Prop({ required: true, unique: true })
@@ -38,11 +28,17 @@ export class User {
   @Prop({ type: String, enum: UserRole, default: UserRole.USER })
   role: UserRole;
 
-  @Prop({ type: String, ref: 'User' })
-  createdBy?: string; // Who created this user (Admin or Manager ID)
+  @Prop({ type: Types.ObjectId, ref: 'Organization', required: true })
+  orgId: Types.ObjectId; // Organization this user belongs to
 
-  @Prop({ type: String, ref: 'User' })
-  managerId?: string; // For users: their manager reference (only for role: 'user')
+  @Prop({ type: Types.ObjectId, ref: 'User' })
+  createdBy?: Types.ObjectId; // Who created this user (Admin or Manager ID)
+
+  @Prop({ type: Types.ObjectId, ref: 'User' })
+  managerId?: Types.ObjectId; // For users: their manager reference (only for role: 'user')
+
+  @Prop({ default: true })
+  isActive: boolean;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

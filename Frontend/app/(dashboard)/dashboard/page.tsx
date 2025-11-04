@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/app/store/store';
 import { motion } from 'framer-motion';
@@ -282,12 +283,39 @@ const UserActivityChart = ({ stats, loading }: UserActivityChartProps) => {
 // --- MAIN NEXT.JS PAGE COMPONENT (App) ---
 
 const DashboardPage = () => {
+  const router = useRouter();
   const { user } = useSelector((state: RootState) => state.auth);
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [activities, setActivities] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Redirect to role-specific dashboard
+  useEffect(() => {
+    if (user) {
+      const role = user.role?.toLowerCase();
+      if (role === 'admin') {
+        router.replace('/dashboard/admin');
+      } else if (role === 'manager') {
+        router.replace('/dashboard/manager');
+      } else if (role === 'user') {
+        router.replace('/dashboard/user');
+      }
+    }
+  }, [user, router]);
+
+  // Show loading while redirecting
+  if (user) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Redirecting...</p>
+        </div>
+      </div>
+    );
+  }
 
   useEffect(() => {
     const fetchDashboardData = async () => {

@@ -30,16 +30,21 @@ export class UserController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN)
   async getAllUsers(
+    @Req() req,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('search') search?: string,
   ) {
+    const orgId = req.user.orgId?.toString() || req.user.orgId;
+    if (!orgId) {
+      throw new ForbiddenException('User must belong to an organization');
+    }
     const params = {
       page: page ? parseInt(page, 10) : undefined,
       limit: limit ? parseInt(limit, 10) : undefined,
       search,
     };
-    return this.usersService.findAllForAdmin(params);
+    return this.usersService.findAllForAdmin(orgId, params);
   }
 
   /**
@@ -55,12 +60,16 @@ export class UserController {
     @Query('search') search?: string,
   ) {
     const managerId = req.user._id || req.user.id;
+    const orgId = req.user.orgId?.toString() || req.user.orgId;
+    if (!orgId) {
+      throw new ForbiddenException('User must belong to an organization');
+    }
     const params = {
       page: page ? parseInt(page, 10) : undefined,
       limit: limit ? parseInt(limit, 10) : undefined,
       search,
     };
-    return this.usersService.findUsersByManager(managerId, params);
+    return this.usersService.findUsersByManager(managerId, orgId, params);
   }
 
   /**
@@ -83,15 +92,23 @@ export class UserController {
       search,
     };
 
-    // Admin sees all users
+    // Admin sees all users in their org
     if (currentUser.role === UserRole.ADMIN || currentUser.role === UserRole.SUPERADMIN) {
-      return this.usersService.findAllForAdmin(params);
+      const orgId = currentUser.orgId?.toString() || currentUser.orgId;
+      if (!orgId) {
+        throw new ForbiddenException('User must belong to an organization');
+      }
+      return this.usersService.findAllForAdmin(orgId, params);
     }
 
-    // Manager sees only their users
+    // Manager sees only their users in same org
     if (currentUser.role === UserRole.MANAGER) {
       const managerId = currentUser._id || currentUser.id;
-      return this.usersService.findUsersByManager(managerId, params);
+      const orgId = currentUser.orgId?.toString() || currentUser.orgId;
+      if (!orgId) {
+        throw new ForbiddenException('User must belong to an organization');
+      }
+      return this.usersService.findUsersByManager(managerId, orgId, params);
     }
 
     // Regular users see nothing (or return empty)
@@ -110,8 +127,10 @@ export class UserController {
    * Get user by ID
    */
   @Get(':id')
-  async getUserById(@Param('id') id: string) {
-    return this.usersService.findById(id);
+  async getUserById(@Req() req, @Param('id') id: string) {
+    const orgId = req.user?.orgId?.toString() || req.user?.orgId;
+    // If user is authenticated, scope by orgId for security
+    return this.usersService.findById(id, orgId);
   }
 
   /**
@@ -122,15 +141,20 @@ export class UserController {
   @Roles(UserRole.ADMIN)
   async createUserByAdmin(@Req() req, @Body() createUserDto: CreateUserByAdminDto) {
     const creatorId = req.user._id || req.user.id;
-    const savedUser = await this.usersService.createByAdmin(creatorId, {
+    const orgId = req.user.orgId?.toString() || req.user.orgId;
+    if (!orgId) {
+      throw new ForbiddenException('User must belong to an organization');
+    }
+    const savedUser = await this.usersService.createByAdmin(creatorId, orgId, {
       name: createUserDto.name,
       email: createUserDto.email,
       password: createUserDto.password,
       role: createUserDto.role,
       managerId: createUserDto.managerId,
     });
-    // Return without password
-    const { password, ...userWithoutPassword } = savedUser.toObject();
+    // Return without password - Mongoose documents have toObject() method
+    const userObj = (savedUser as any).toObject ? (savedUser as any).toObject() : savedUser;
+    const { password, ...userWithoutPassword } = userObj;
     return userWithoutPassword;
   }
 
@@ -142,15 +166,20 @@ export class UserController {
   @Roles(UserRole.MANAGER)
   async createUserByManager(@Req() req, @Body() createUserDto: CreateUserByManagerDto) {
     const creatorId = req.user._id || req.user.id;
-    const savedUser = await this.usersService.createByManager(creatorId, {
+    const orgId = req.user.orgId?.toString() || req.user.orgId;
+    if (!orgId) {
+      throw new ForbiddenException('User must belong to an organization');
+    }
+    const savedUser = await this.usersService.createByManager(creatorId, orgId, {
       name: createUserDto.name,
       email: createUserDto.email,
       password: createUserDto.password,
       department: createUserDto.department,
       location: createUserDto.location,
     });
-    // Return without password
-    const { password, ...userWithoutPassword } = savedUser.toObject();
+    // Return without password - Mongoose documents have toObject() method
+    const userObj = (savedUser as any).toObject ? (savedUser as any).toObject() : savedUser;
+    const { password, ...userWithoutPassword } = userObj;
     return userWithoutPassword;
   }
 
@@ -161,14 +190,21 @@ export class UserController {
   @Post()
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN)
-  async createUser(@Body() createUserDto: any) {
-    const savedUser = await this.usersService.create(
-      createUserDto.email,
-      createUserDto.password,
-      createUserDto.name,
-    );
-    // Return without password
-    const { password, ...userWithoutPassword } = savedUser.toObject();
+  async createUser(@Req() req, @Body() createUserDto: any) {
+    const orgId = req.user.orgId?.toString() || req.user.orgId;
+    if (!orgId) {
+      throw new ForbiddenException('User must belong to an organization');
+    }
+    const savedUser = await this.usersService.create({
+      email: createUserDto.email,
+      password: createUserDto.password,
+      name: createUserDto.name,
+      orgId: orgId,
+      role: createUserDto.role || UserRole.USER,
+    });
+    // Return without password - Mongoose documents have toObject() method
+    const userObj = (savedUser as any).toObject ? (savedUser as any).toObject() : savedUser;
+    const { password, ...userWithoutPassword } = userObj;
     return userWithoutPassword;
   }
 
@@ -182,7 +218,13 @@ export class UserController {
   @Roles(UserRole.ADMIN, UserRole.MANAGER)
   async updateUser(@Req() req, @Param('id') id: string, @Body() updateUserDto: any) {
     const currentUser = req.user;
-    const userToUpdate = await this.usersService.findById(id);
+    const orgId = currentUser.orgId?.toString() || currentUser.orgId;
+    if (!orgId) {
+      throw new ForbiddenException('User must belong to an organization');
+    }
+
+    // Ensure user is in same org
+    const userToUpdate = await this.usersService.findById(id, orgId);
 
     // Manager can only update users they created
     if (currentUser.role === UserRole.MANAGER) {
@@ -204,7 +246,13 @@ export class UserController {
   @Roles(UserRole.ADMIN, UserRole.MANAGER)
   async deleteUser(@Req() req, @Param('id') id: string) {
     const currentUser = req.user;
-    const userToDelete = await this.usersService.findById(id);
+    const orgId = currentUser.orgId?.toString() || currentUser.orgId;
+    if (!orgId) {
+      throw new ForbiddenException('User must belong to an organization');
+    }
+
+    // Ensure user is in same org
+    const userToDelete = await this.usersService.findById(id, orgId);
 
     // Manager can only delete users they created
     if (currentUser.role === UserRole.MANAGER) {

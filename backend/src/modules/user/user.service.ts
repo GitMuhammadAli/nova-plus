@@ -14,9 +14,27 @@ export class UsersService {
     return this.userModel.findOne({ email }).exec();
   }
 
-  async create(email: string, password: string, name: string): Promise<User> {
-    const hashed = await bcrypt.hash(password, 10);
-    const user = new this.userModel({ email, password: hashed, name });
+  async create(data: {
+    email: string;
+    password: string;
+    name: string;
+    role?: UserRole;
+    orgId?: string;
+    createdBy?: string;
+    managerId?: string;
+    isActive?: boolean;
+  }): Promise<User> {
+    const hashed = await bcrypt.hash(data.password, 10);
+    const user = new this.userModel({
+      email: data.email,
+      password: hashed,
+      name: data.name,
+      role: data.role || UserRole.USER,
+      orgId: data.orgId,
+      createdBy: data.createdBy,
+      managerId: data.managerId,
+      isActive: data.isActive !== undefined ? data.isActive : true,
+    });
     return user.save();
   }
 
@@ -26,6 +44,7 @@ export class UsersService {
    */
   async createByAdmin(
     creatorId: string,
+    creatorOrgId: string,
     data: {
       name: string;
       email: string;
@@ -45,11 +64,14 @@ export class UsersService {
       throw new BadRequestException('Email already exists');
     }
 
-    // If creating a user and managerId is provided, verify manager exists
+    // If creating a user and managerId is provided, verify manager exists and is in same org
     if (data.role === UserRole.USER && data.managerId) {
       const manager = await this.userModel.findById(data.managerId).exec();
       if (!manager || manager.role !== UserRole.MANAGER) {
         throw new BadRequestException('Invalid manager ID or manager does not exist');
+      }
+      if (manager.orgId?.toString() !== creatorOrgId) {
+        throw new ForbiddenException('Manager must be in the same organization');
       }
     }
 
@@ -59,8 +81,10 @@ export class UsersService {
       email: data.email,
       password: hashedPassword,
       role: data.role,
+      orgId: creatorOrgId,
       createdBy: creatorId,
       managerId: data.role === UserRole.USER ? data.managerId : undefined,
+      isActive: true,
     });
 
     const savedUser = await user.save();
@@ -73,6 +97,7 @@ export class UsersService {
    */
   async createByManager(
     creatorId: string,
+    creatorOrgId: string,
     data: {
       name: string;
       email: string;
@@ -87,6 +112,11 @@ export class UsersService {
       throw new ForbiddenException('Only managers can create users through this endpoint');
     }
 
+    // Ensure manager is in the same org
+    if (creator.orgId?.toString() !== creatorOrgId) {
+      throw new ForbiddenException('Manager must be in the same organization');
+    }
+
     // Check if email already exists
     const existingUser = await this.userModel.findOne({ email: data.email }).exec();
     if (existingUser) {
@@ -99,8 +129,10 @@ export class UsersService {
       email: data.email,
       password: hashedPassword,
       role: UserRole.USER,
+      orgId: creatorOrgId,
       createdBy: creatorId,
       managerId: creatorId, // User's manager is the creator
+      isActive: true,
     });
 
     const savedUser = await user.save();
@@ -108,9 +140,9 @@ export class UsersService {
   }
 
   /**
-   * Get all users created by a specific manager
+   * Get all users created by a specific manager (scoped to same org)
    */
-  async findUsersByManager(managerId: string, params?: { page?: number; limit?: number; search?: string }) {
+  async findUsersByManager(managerId: string, managerOrgId: string, params?: { page?: number; limit?: number; search?: string }) {
     const page = params?.page || 1;
     const limit = params?.limit || 100;
     const skip = (page - 1) * limit;
@@ -118,6 +150,7 @@ export class UsersService {
 
     const query: any = {
       managerId: managerId,
+      orgId: managerOrgId, // Ensure same organization
     };
 
     if (search) {
@@ -130,6 +163,9 @@ export class UsersService {
     const users = await this.userModel
       .find(query)
       .select('-password')
+      .populate('createdBy', 'name email')
+      .populate('managerId', 'name email')
+      .populate('orgId', 'name slug')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
@@ -150,20 +186,23 @@ export class UsersService {
   }
 
   /**
-   * Admin: Get all users in the system
+   * Admin: Get all users in the organization
    */
-  async findAllForAdmin(params?: { page?: number; limit?: number; search?: string }) {
-    return this.findAll(params);
+  async findAllForAdmin(orgId: string, params?: { page?: number; limit?: number; search?: string }) {
+    return this.findAll(orgId, params);
   }
 
-  async findAll(params?: { page?: number; limit?: number; search?: string }) {
+  async findAll(orgId: string, params?: { page?: number; limit?: number; search?: string }) {
     const page = params?.page || 1;
     const limit = params?.limit || 100;
     const skip = (page - 1) * limit;
     const search = params?.search || '';
 
-    // Build query - filter out deleted users if isDeleted field exists
-    const query: any = {};
+    // Build query - scope by organization
+    const query: any = {
+      orgId: orgId, // Filter by organization
+    };
+
     if (search) {
       query.$or = [
         { name: { $regex: search, $options: 'i' } },
@@ -175,6 +214,9 @@ export class UsersService {
     const users = await this.userModel
       .find(query)
       .select('-password')
+      .populate('createdBy', 'name email role')
+      .populate('managerId', 'name email role')
+      .populate('orgId', 'name slug')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
@@ -196,8 +238,19 @@ export class UsersService {
     };
   }
 
-  async findById(id: string) {
-    const user = await this.userModel.findById(id).select('-password').exec();
+  async findById(id: string, orgId?: string) {
+    const query: any = { _id: id };
+    if (orgId) {
+      query.orgId = orgId; // Ensure user is in the same org
+    }
+
+    const user = await this.userModel
+      .findOne(query)
+      .select('-password')
+      .populate('createdBy', 'name email role')
+      .populate('managerId', 'name email role')
+      .populate('orgId', 'name slug')
+      .exec();
     if (!user) {
       throw new NotFoundException('User not found');
     }

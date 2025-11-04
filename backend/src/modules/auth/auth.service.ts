@@ -42,7 +42,12 @@ export class AuthService {
 
   async buildResponseTokens(user: User | any, userAgent?: string, ip?: string) {
     const userId = user._id?.toString() || user._id;
-    const payload = { sub: userId, email: user.email, role: user.role };
+    const payload = { 
+      sub: userId, 
+      email: user.email, 
+      role: user.role,
+      orgId: user.orgId?.toString() || user.orgId, // Include orgId in JWT
+    };
 
     // Use JwtService with the secret configured in JwtModule
     // The module is configured with: process.env.JWT_SECRET || process.env.JWT_ACCESS_SECRET || 'supersecretkey'

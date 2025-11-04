@@ -8,6 +8,8 @@ import { AuthModule } from './modules/auth/auth.module';
 import { TasksModule } from './modules/task/task.module';
 import { TeamsModule } from './modules/team/team.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { OrganizationModule } from './modules/organization/organization.module';
+import { UsersModule } from './modules/user/user.module';
 
 @Module({
   imports: [
@@ -25,6 +27,8 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
     }),
     HealthModule,
     AuthModule,
+    UsersModule,
+    OrganizationModule,
     DashboardModule,
   ],
   controllers: [],

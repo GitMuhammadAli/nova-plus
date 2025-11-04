@@ -2,6 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User, UserRole } from '../entities/user.entity';
+import { Organization } from '../../organization/entities/organization.entity';
 import bcrypt from 'bcrypt';
 
 @Injectable()
@@ -10,6 +11,7 @@ export class DefaultAdminSeed implements OnModuleInit {
 
   constructor(
     @InjectModel(User.name) private userModel: Model<User>,
+    @InjectModel(Organization.name) private orgModel: Model<Organization>,
   ) {}
 
   async onModuleInit() {
@@ -44,6 +46,19 @@ export class DefaultAdminSeed implements OnModuleInit {
         return;
       }
 
+      // Create or get default organization for seed admin
+      let defaultOrg = await this.orgModel.findOne({ slug: 'default-org' }).exec();
+      if (!defaultOrg) {
+        this.logger.log('Creating default organization for seed admin...');
+        defaultOrg = new this.orgModel({
+          name: 'Default Organization',
+          slug: 'default-org',
+          description: 'Default organization for seed admin',
+          isActive: true,
+        });
+        await defaultOrg.save();
+      }
+
       // Hash password
       const hashedPassword = await bcrypt.hash(adminPassword, 10);
 
@@ -53,9 +68,16 @@ export class DefaultAdminSeed implements OnModuleInit {
         password: hashedPassword,
         name: adminName,
         role: UserRole.ADMIN,
+        orgId: defaultOrg._id,
+        isActive: true,
       });
 
       await adminUser.save();
+
+      // Update organization with owner
+      defaultOrg.owner = adminUser._id as any;
+      defaultOrg.members.push(adminUser._id as any);
+      await defaultOrg.save();
 
       this.logger.log('✅ Default admin user created successfully!');
       this.logger.log(`📧 Email: ${adminEmail}`);
