@@ -295,8 +295,10 @@ const DashboardPage = () => {
   useEffect(() => {
     if (user) {
       const role = user.role?.toLowerCase();
-      if (role === 'admin') {
-        router.replace('/dashboard/admin');
+      if (role === 'super_admin' || role === 'superadmin') {
+        router.replace('/dashboard/super-admin');
+      } else if (role === 'company_admin' || role === 'admin') {
+        router.replace('/dashboard/company-admin');
       } else if (role === 'manager') {
         router.replace('/dashboard/manager');
       } else if (role === 'user') {

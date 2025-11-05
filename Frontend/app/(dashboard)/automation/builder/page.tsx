@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { AppLayout } from "@/components/layout/app-layout"
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -37,7 +36,6 @@ export default function AutomationBuilderPage() {
   }
 
   return (
-    <AppLayout title="Create Automation">
       <div className="space-y-8 max-w-4xl">
         {/* Name Input */}
         <AnimatedCard delay={0.1}>
@@ -188,6 +186,5 @@ export default function AutomationBuilderPage() {
           </Button>
         </div>
       </div>
-    </AppLayout>
   )
 }

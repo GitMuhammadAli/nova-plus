@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import { useTheme } from "next-themes"
-import { AppLayout } from "@/components/layout/app-layout"
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { AnimatedCard } from "@/components/motion/animated-card"
@@ -29,7 +28,6 @@ export default function ThemePage() {
   ]
 
   return (
-    <AppLayout title="Theme Settings">
       <div className="space-y-8 max-w-4xl">
         {/* Header */}
         <div>
@@ -141,6 +139,5 @@ export default function ThemePage() {
           </CardContent>
         </AnimatedCard>
       </div>
-    </AppLayout>
   )
 }

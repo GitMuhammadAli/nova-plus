@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { AppLayout } from "@/components/layout/app-layout"
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -74,7 +73,6 @@ export default function CustomFieldsPage() {
   const fieldTypes = ["text", "email", "number", "date", "select", "checkbox"]
 
   return (
-    <AppLayout title="Custom Fields">
       <div className="space-y-8 max-w-4xl">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -219,6 +217,5 @@ export default function CustomFieldsPage() {
           </CardContent>
         </AnimatedCard>
       </div>
-    </AppLayout>
   )
 }

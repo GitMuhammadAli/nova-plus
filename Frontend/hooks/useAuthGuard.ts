@@ -17,7 +17,8 @@ export function useAuthGuard() {
   useEffect(() => {
     // Skip auth check for public routes
     const publicRoutes = ['/login', '/register', '/'];
-    if (publicRoutes.includes(pathname)) {
+    // Allow /invite routes (dynamic)
+    if (publicRoutes.includes(pathname) || pathname.startsWith('/invite/')) {
       return;
     }
 

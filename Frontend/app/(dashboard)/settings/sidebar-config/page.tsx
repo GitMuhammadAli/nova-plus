@@ -3,7 +3,6 @@
 import type React from "react"
 
 import { useState } from "react"
-import { AppLayout } from "@/components/layout/app-layout"
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { AnimatedCard } from "@/components/motion/animated-card"
@@ -57,7 +56,6 @@ export default function SidebarConfigPage() {
   }
 
   return (
-    <AppLayout title="Sidebar Configuration">
       <div className="space-y-8 max-w-4xl">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -160,6 +158,5 @@ export default function SidebarConfigPage() {
           </Button>
         </div>
       </div>
-    </AppLayout>
   )
 }

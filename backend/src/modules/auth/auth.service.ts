@@ -47,6 +47,7 @@ export class AuthService {
       email: user.email, 
       role: user.role,
       orgId: user.orgId?.toString() || user.orgId, // Include orgId in JWT
+      companyId: user.companyId?.toString() || user.companyId, // Include companyId in JWT
     };
 
     // Use JwtService with the secret configured in JwtModule
@@ -113,7 +114,13 @@ export class AuthService {
 
     // Generate new access token with user info
     // Use JwtService with the secret configured in JwtModule (same as used for verification)
-    const payload = { sub: userIdStr, email: user.email, role: user.role };
+    const payload = { 
+      sub: userIdStr, 
+      email: user.email, 
+      role: user.role,
+      orgId: user.orgId?.toString() || user.orgId,
+      companyId: user.companyId?.toString() || user.companyId,
+    };
     const newAccessToken = this.jwtService.sign(payload, { 
       expiresIn: '15m' 
     });
@@ -147,6 +154,8 @@ export class AuthService {
     sub: user._id?.toString(),
     email: user.email,
     role: user.role,  // ✅ include role in token
+    orgId: user.orgId?.toString() || user.orgId,
+    companyId: user.companyId?.toString() || user.companyId,
   };
 
   // Use JwtService with the secret configured in JwtModule (same as buildResponseTokens)

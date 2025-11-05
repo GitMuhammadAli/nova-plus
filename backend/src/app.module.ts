@@ -10,6 +10,8 @@ import { TeamsModule } from './modules/team/team.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { OrganizationModule } from './modules/organization/organization.module';
 import { UsersModule } from './modules/user/user.module';
+import { CompanyModule } from './modules/company/company.module';
+import { InviteModule } from './modules/invite/invite.module';
 
 @Module({
   imports: [
@@ -29,6 +31,8 @@ import { UsersModule } from './modules/user/user.module';
     AuthModule,
     UsersModule,
     OrganizationModule,
+    CompanyModule,
+    InviteModule,
     DashboardModule,
   ],
   controllers: [],

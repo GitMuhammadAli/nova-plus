@@ -49,6 +49,7 @@ export class UserController {
 
   /**
    * Manager: Get all users created by the logged-in manager
+   * GET /user/my-users (alias for backward compatibility)
    */
   @Get('my-users')
   @UseGuards(RolesGuard)
@@ -61,15 +62,68 @@ export class UserController {
   ) {
     const managerId = req.user._id || req.user.id;
     const orgId = req.user.orgId?.toString() || req.user.orgId;
-    if (!orgId) {
-      throw new ForbiddenException('User must belong to an organization');
+    const companyId = req.user.companyId?.toString() || req.user.companyId;
+    if (!orgId && !companyId) {
+      throw new ForbiddenException('User must belong to an organization or company');
     }
     const params = {
       page: page ? parseInt(page, 10) : undefined,
       limit: limit ? parseInt(limit, 10) : undefined,
       search,
     };
-    return this.usersService.findUsersByManager(managerId, orgId, params);
+    return this.usersService.findUsersByManager(managerId, orgId || companyId, params);
+  }
+
+  /**
+   * Manager: Get my team (users under the manager)
+   * GET /user/my-team
+   */
+  @Get('my-team')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.MANAGER)
+  async getMyTeam(
+    @Req() req,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('search') search?: string,
+  ) {
+    const managerId = req.user._id || req.user.id;
+    const orgId = req.user.orgId?.toString() || req.user.orgId;
+    const companyId = req.user.companyId?.toString() || req.user.companyId;
+    if (!orgId && !companyId) {
+      throw new ForbiddenException('User must belong to an organization or company');
+    }
+    const params = {
+      page: page ? parseInt(page, 10) : undefined,
+      limit: limit ? parseInt(limit, 10) : undefined,
+      search,
+    };
+    return this.usersService.findUsersByManager(managerId, orgId || companyId, params);
+  }
+
+  /**
+   * Company Admin: Get all users in the company
+   * GET /user/company
+   */
+  @Get('company')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.COMPANY_ADMIN, UserRole.SUPER_ADMIN)
+  async getCompanyUsers(
+    @Req() req,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('search') search?: string,
+  ) {
+    const companyId = req.user.companyId?.toString() || req.user.companyId;
+    if (!companyId) {
+      throw new ForbiddenException('User must belong to a company');
+    }
+    const params = {
+      page: page ? parseInt(page, 10) : undefined,
+      limit: limit ? parseInt(limit, 10) : undefined,
+      search,
+    };
+    return this.usersService.findAllForCompany(companyId, params);
   }
 
   /**
@@ -134,23 +188,25 @@ export class UserController {
   }
 
   /**
-   * Admin: Create Managers or Users
+   * Company Admin / Manager: Create Managers or Users
    */
   @Post('create-by-admin')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.COMPANY_ADMIN, UserRole.ADMIN, UserRole.MANAGER)
   async createUserByAdmin(@Req() req, @Body() createUserDto: CreateUserByAdminDto) {
     const creatorId = req.user._id || req.user.id;
-    const orgId = req.user.orgId?.toString() || req.user.orgId;
-    if (!orgId) {
-      throw new ForbiddenException('User must belong to an organization');
+    const companyId = req.user.companyId?.toString() || req.user.companyId;
+    const orgId = req.user.orgId?.toString() || req.user.orgId || companyId;
+    if (!orgId && !companyId) {
+      throw new ForbiddenException('User must belong to an organization or company');
     }
-    const savedUser = await this.usersService.createByAdmin(creatorId, orgId, {
+    const savedUser = await this.usersService.createByAdmin(creatorId, companyId || orgId, {
       name: createUserDto.name,
       email: createUserDto.email,
       password: createUserDto.password,
       role: createUserDto.role,
       managerId: createUserDto.managerId,
+      companyId: companyId,
     });
     // Return without password - Mongoose documents have toObject() method
     const userObj = (savedUser as any).toObject ? (savedUser as any).toObject() : savedUser;
@@ -166,16 +222,18 @@ export class UserController {
   @Roles(UserRole.MANAGER)
   async createUserByManager(@Req() req, @Body() createUserDto: CreateUserByManagerDto) {
     const creatorId = req.user._id || req.user.id;
-    const orgId = req.user.orgId?.toString() || req.user.orgId;
-    if (!orgId) {
-      throw new ForbiddenException('User must belong to an organization');
+    const companyId = req.user.companyId?.toString() || req.user.companyId;
+    const orgId = req.user.orgId?.toString() || req.user.orgId || companyId;
+    if (!orgId && !companyId) {
+      throw new ForbiddenException('User must belong to an organization or company');
     }
-    const savedUser = await this.usersService.createByManager(creatorId, orgId, {
+    const savedUser = await this.usersService.createByManager(creatorId, companyId || orgId, {
       name: createUserDto.name,
       email: createUserDto.email,
       password: createUserDto.password,
       department: createUserDto.department,
       location: createUserDto.location,
+      companyId: companyId,
     });
     // Return without password - Mongoose documents have toObject() method
     const userObj = (savedUser as any).toObject ? (savedUser as any).toObject() : savedUser;

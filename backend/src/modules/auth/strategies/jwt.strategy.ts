@@ -59,8 +59,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       delete userObj.password;
     }
     
-    // Ensure orgId is present (from payload or user document)
+    // Ensure orgId and companyId are present (from payload or user document)
     userObj.orgId = user.orgId || payload.orgId;
+    userObj.companyId = user.companyId || payload.companyId;
     
     return userObj;
   }

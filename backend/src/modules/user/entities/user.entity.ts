@@ -4,11 +4,14 @@ import { Document, Types } from 'mongoose';
 export type UserDocument = User & Document ;
 
 export enum UserRole {
-  ADMIN = 'admin',
+  SUPER_ADMIN = 'super_admin',
+  COMPANY_ADMIN = 'company_admin',
   MANAGER = 'manager',
+  USER = 'user',
+  // Legacy roles for backward compatibility
+  ADMIN = 'admin',
   EDITOR = 'editor',
   VIEWER = 'viewer',
-  USER = 'user',
   SUPERADMIN = 'superadmin',
 }
 
@@ -28,8 +31,11 @@ export class User {
   @Prop({ type: String, enum: UserRole, default: UserRole.USER })
   role: UserRole;
 
-  @Prop({ type: Types.ObjectId, ref: 'Organization', required: true })
-  orgId: Types.ObjectId; // Organization this user belongs to
+  @Prop({ type: Types.ObjectId, ref: 'Organization', required: false })
+  orgId?: Types.ObjectId; // Organization this user belongs to (legacy, for backward compatibility)
+
+  @Prop({ type: Types.ObjectId, ref: 'Company', required: false })
+  companyId?: Types.ObjectId; // Company this user belongs to
 
   @Prop({ type: Types.ObjectId, ref: 'User' })
   createdBy?: Types.ObjectId; // Who created this user (Admin or Manager ID)

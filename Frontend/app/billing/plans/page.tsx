@@ -1,6 +1,5 @@
 "use client"
 
-import { AppLayout } from "@/components/layout/app-layout"
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -60,7 +59,6 @@ const plansData = [
 
 export default function PlansPage() {
   return (
-    <AppLayout title="Plans">
       <div className="space-y-8">
         {/* Header */}
         <div className="text-center">
@@ -141,6 +139,5 @@ export default function PlansPage() {
           </CardContent>
         </AnimatedCard>
       </div>
-    </AppLayout>
   )
 }

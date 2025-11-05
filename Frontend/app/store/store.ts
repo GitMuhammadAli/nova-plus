@@ -3,6 +3,7 @@ import { persistReducer, persistStore } from "redux-persist";
 import createWebStorage from "redux-persist/lib/storage/createWebStorage";
 import authReducer from "./authSlice";
 import usersReducer from "./usersSlice";
+import companyReducer from "./companySlice";
 
 const createNoopStorage = () => {
   return {
@@ -25,6 +26,7 @@ const storage = typeof window !== "undefined"
 const rootReducer = combineReducers({
   auth: authReducer,
   users: usersReducer,
+  company: companyReducer,
   // Add more reducers here as needed
 });
 

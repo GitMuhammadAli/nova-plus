@@ -1,6 +1,5 @@
 "use client"
 
-import { AppLayout } from "@/components/layout/app-layout"
 import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -33,7 +32,6 @@ const billingData = {
 
 export default function BillingPage() {
   return (
-    <AppLayout title="Billing">
       <div className="space-y-8">
         {/* Header */}
         <div>
@@ -181,6 +179,5 @@ export default function BillingPage() {
           </CardContent>
         </AnimatedCard>
       </div>
-    </AppLayout>
   )
 }

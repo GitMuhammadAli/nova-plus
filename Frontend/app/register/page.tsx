@@ -2,34 +2,64 @@
 
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import { register, clearError } from "@/app/store/authSlice";
+import { registerCompany } from "@/app/store/companySlice";
+import { setUser } from "@/app/store/authSlice";
 import { AppDispatch, RootState } from "@/app/store/store";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Zap, Mail, Lock, User, Building2, Github, AlertCircle } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Zap, Mail, Lock, User, Building2, AlertCircle, CheckCircle2, Users } from "lucide-react";
 
 export default function Register() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const dispatch = useDispatch<AppDispatch>();
-  const { isLoading, error, isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const { isLoading: authLoading, error: authError, isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const { isLoading: companyLoading, error: companyError } = useSelector((state: RootState) => state.company);
 
-  const [formData, setFormData] = useState({
+  const [activeTab, setActiveTab] = useState<string>("create");
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  // Create Company form data
+  const [createCompanyData, setCreateCompanyData] = useState({
+    companyName: "",
+    domain: "",
+    adminName: "",
+    email: "",
+    password: "",
+  });
+
+  // Join Company form data
+  const [joinCompanyData, setJoinCompanyData] = useState({
+    inviteToken: "",
     name: "",
     email: "",
     password: "",
-    // workspace: "",
   });
 
-  const [validationError, setValidationError] = useState<string | null>(null);
+  const [inviteInfo, setInviteInfo] = useState<any>(null);
+  const [loadingInvite, setLoadingInvite] = useState(false);
+
+  const isLoading = authLoading || companyLoading;
+  const error = validationError || authError || companyError;
 
   useEffect(() => {
     dispatch(clearError());
-  }, [dispatch]);
+    // Check if there's an invite token in URL
+    const token = searchParams.get('token');
+    if (token) {
+      setActiveTab("join");
+      setJoinCompanyData(prev => ({ ...prev, inviteToken: token }));
+      validateInviteToken(token);
+    }
+  }, [dispatch, searchParams]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -37,32 +67,101 @@ export default function Register() {
     }
   }, [isAuthenticated, router]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const validateInviteToken = async (token: string) => {
+    if (!token) return;
+    
+    setLoadingInvite(true);
+    try {
+      const { inviteAPI } = await import("@/app/services");
+      const response = await inviteAPI.getInvite(token);
+      setInviteInfo(response.data.invite);
+      if (response.data.invite?.email) {
+        setJoinCompanyData(prev => ({ ...prev, email: response.data.invite.email }));
+      }
+    } catch (err: any) {
+      setValidationError(err.response?.data?.message || "Invalid or expired invite");
+    } finally {
+      setLoadingInvite(false);
+    }
+  };
+
+  const handleCreateCompany = async (e: React.FormEvent) => {
     e.preventDefault();
     setValidationError(null);
+    setSuccess(false);
 
-    // Validate password length
-    if (formData.password.length < 8) {
-      setValidationError("Password must be at least 8 characters long");
+    if (createCompanyData.password.length < 6) {
+      setValidationError("Password must be at least 6 characters long");
       return;
     }
 
-    const result = await dispatch(register({
-      name: formData.name,
-      email: formData.email,
-      password: formData.password,
+    if (!createCompanyData.companyName.trim()) {
+      setValidationError("Company name is required");
+      return;
+    }
+
+    const result = await dispatch(registerCompany({
+      companyName: createCompanyData.companyName,
+      domain: createCompanyData.domain || undefined,
+      adminName: createCompanyData.adminName,
+      email: createCompanyData.email,
+      password: createCompanyData.password,
     }));
 
-    if (register.fulfilled.match(result)) {
-      router.push("/dashboard");
+    if (registerCompany.fulfilled.match(result)) {
+      setSuccess(true);
+      if (result.payload?.admin) {
+        dispatch(setUser(result.payload.admin));
+      }
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 2000);
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleJoinCompany = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setValidationError(null);
+    setSuccess(false);
+
+    if (!joinCompanyData.inviteToken) {
+      setValidationError("Invite token is required");
+      return;
+    }
+
+    if (joinCompanyData.password.length < 6) {
+      setValidationError("Password must be at least 6 characters long");
+      return;
+    }
+
+    try {
+      const { inviteAPI } = await import("@/app/services");
+      const response = await inviteAPI.acceptInvite(joinCompanyData.inviteToken, {
+        name: joinCompanyData.name,
+        email: joinCompanyData.email,
+        password: joinCompanyData.password,
+      });
+
+      if (response.data?.user) {
+        dispatch(setUser(response.data.user));
+        setSuccess(true);
+        setTimeout(() => {
+          router.push("/dashboard");
+        }, 2000);
+      }
+    } catch (err: any) {
+      setValidationError(err.response?.data?.message || "Failed to accept invite");
+    }
   };
 
-  const displayError = validationError || error;
+  const handleInviteTokenChange = (token: string) => {
+    setJoinCompanyData(prev => ({ ...prev, inviteToken: token }));
+    if (token.length > 20) {
+      validateInviteToken(token);
+    } else {
+      setInviteInfo(null);
+    }
+  };
 
   return (
     <div className="min-h-screen w-full flex">
@@ -81,13 +180,12 @@ export default function Register() {
             <span className="text-2xl font-bold">NovaPulse</span>
           </div>
           <h1 className="text-4xl font-bold mb-4 leading-tight">
-            Start your journey with
+            Get started with
             <br />
             NovaPulse today
           </h1>
           <p className="text-lg text-white/80 mb-8">
-            Join thousands of teams already using NovaPulse to streamline their
-            operations.
+            Create your company workspace or join an existing team. Start managing projects and tasks in minutes.
           </p>
           <div className="space-y-4">
             <div className="flex items-start gap-3">
@@ -95,9 +193,9 @@ export default function Register() {
                 <span className="text-sm">✓</span>
               </div>
               <div>
-                <h3 className="font-semibold mb-1">No credit card required</h3>
+                <h3 className="font-semibold mb-1">Complete workspace isolation</h3>
                 <p className="text-sm text-white/70">
-                  Start with our free tier and upgrade when ready
+                  Your company data is completely separate and secure
                 </p>
               </div>
             </div>
@@ -106,9 +204,9 @@ export default function Register() {
                 <span className="text-sm">✓</span>
               </div>
               <div>
-                <h3 className="font-semibold mb-1">Advanced automation</h3>
+                <h3 className="font-semibold mb-1">Role-based access control</h3>
                 <p className="text-sm text-white/70">
-                  Build powerful workflows with NovaFlow
+                  Manage your team with admin, manager, and user roles
                 </p>
               </div>
             </div>
@@ -117,9 +215,9 @@ export default function Register() {
                 <span className="text-sm">✓</span>
               </div>
               <div>
-                <h3 className="font-semibold mb-1">24/7 support</h3>
+                <h3 className="font-semibold mb-1">Instant setup</h3>
                 <p className="text-sm text-white/70">
-                  Get help whenever you need it
+                  Get started in minutes with your own workspace
                 </p>
               </div>
             </div>
@@ -145,7 +243,7 @@ export default function Register() {
 
           <div>
             <h2 className="text-3xl font-bold text-foreground">
-              Create account
+              Create your account
             </h2>
             <p className="mt-2 text-muted-foreground">
               Already have an account?{" "}
@@ -158,149 +256,291 @@ export default function Register() {
             </p>
           </div>
 
-          {/* Error Alert */}
-          {displayError && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{displayError}</AlertDescription>
+          {/* Success Alert */}
+          {success && (
+            <Alert className="border-green-500 bg-green-50 dark:bg-green-900/20">
+              <CheckCircle2 className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-green-800 dark:text-green-200">
+                {activeTab === "create" 
+                  ? "Company registered successfully! Redirecting..." 
+                  : "Invite accepted! Redirecting to dashboard..."}
+              </AlertDescription>
             </Alert>
           )}
 
-          {/* Social Signup */}
-          <div className="grid grid-cols-2 gap-3">
-            <Button variant="outline" className="w-full" disabled>
-              <svg className="w-5 h-5" viewBox="0 0 24 24">
-                <path
-                  fill="currentColor"
-                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                />
-                <path
-                  fill="currentColor"
-                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                />
-                <path
-                  fill="currentColor"
-                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                />
-                <path
-                  fill="currentColor"
-                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                />
-              </svg>
-              <span className="ml-2">Google</span>
-            </Button>
-            <Button variant="outline" className="w-full" disabled>
-              <Github className="w-5 h-5" />
-              <span className="ml-2">GitHub</span>
-            </Button>
-          </div>
+          {/* Error Alert */}
+          {error && !success && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
 
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-border" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
-                Or continue with email
-              </span>
-            </div>
-          </div>
+          {/* Tabs for Create/Join */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="create">
+                <Building2 className="w-4 h-4 mr-2" />
+                Create Company
+              </TabsTrigger>
+              <TabsTrigger value="join">
+                <Users className="w-4 h-4 mr-2" />
+                Join Company
+              </TabsTrigger>
+            </TabsList>
 
-          {/* Registration Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Full name</Label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  id="name"
-                  name="name"
-                  type="text"
-                  placeholder="John Doe"
-                  className="pl-9"
-                  value={formData.name}
-                  onChange={handleChange}
-                  required
-                  disabled={isLoading}
-                />
-              </div>
-            </div>
+            {/* Create Company Tab */}
+            <TabsContent value="create" className="space-y-4 mt-6">
+              <form onSubmit={handleCreateCompany} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="companyName">Company name</Label>
+                  <div className="relative">
+                    <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="companyName"
+                      name="companyName"
+                      type="text"
+                      placeholder="Acme Corp"
+                      className="pl-9"
+                      value={createCompanyData.companyName}
+                      onChange={(e) => setCreateCompanyData({ ...createCompanyData, companyName: e.target.value })}
+                      required
+                      disabled={isLoading || success}
+                    />
+                  </div>
+                </div>
 
-            {/* <div className="space-y-2">
-              <Label htmlFor="workspace">Workspace name</Label>
-              <div className="relative">
-                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  id="workspace"
-                  name="workspace"
-                  type="text"
-                  placeholder="Acme Inc"
-                  className="pl-9"
-                  value={formData.workspace}
-                  onChange={handleChange}
-                  disabled={isLoading}
-                />
-              </div>
-            </div> */}
+                <div className="space-y-2">
+                  <Label htmlFor="domain">Domain (optional)</Label>
+                  <div className="relative">
+                    <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="domain"
+                      name="domain"
+                      type="text"
+                      placeholder="acme.com"
+                      className="pl-9"
+                      value={createCompanyData.domain}
+                      onChange={(e) => setCreateCompanyData({ ...createCompanyData, domain: e.target.value })}
+                      disabled={isLoading || success}
+                    />
+                  </div>
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="email">Work email</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="you@company.com"
-                  className="pl-9"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                  disabled={isLoading}
-                />
-              </div>
-            </div>
+                <div className="space-y-2">
+                  <Label htmlFor="adminName">Your name</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="adminName"
+                      name="adminName"
+                      type="text"
+                      placeholder="John Doe"
+                      className="pl-9"
+                      value={createCompanyData.adminName}
+                      onChange={(e) => setCreateCompanyData({ ...createCompanyData, adminName: e.target.value })}
+                      required
+                      disabled={isLoading || success}
+                    />
+                  </div>
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  placeholder="••••••••"
-                  className="pl-9"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-                  disabled={isLoading}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Must be at least 8 characters
-              </p>
-            </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email address</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      placeholder="john@acme.com"
+                      className="pl-9"
+                      value={createCompanyData.email}
+                      onChange={(e) => setCreateCompanyData({ ...createCompanyData, email: e.target.value })}
+                      required
+                      disabled={isLoading || success}
+                    />
+                  </div>
+                </div>
 
-            <Button 
-              type="submit" 
-              className="w-full" 
-              size="lg"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Creating account...
-                </>
-              ) : (
-                "Create account"
-              )}
-            </Button>
-          </form>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="password"
+                      name="password"
+                      type="password"
+                      placeholder="••••••••"
+                      className="pl-9"
+                      value={createCompanyData.password}
+                      onChange={(e) => setCreateCompanyData({ ...createCompanyData, password: e.target.value })}
+                      required
+                      disabled={isLoading || success}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Must be at least 6 characters
+                  </p>
+                </div>
+
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  size="lg"
+                  disabled={isLoading || success}
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Creating company...
+                    </>
+                  ) : success ? (
+                    <>
+                      <CheckCircle2 className="w-4 h-4 mr-2" />
+                      Registered!
+                    </>
+                  ) : (
+                    "Create company"
+                  )}
+                </Button>
+              </form>
+            </TabsContent>
+
+            {/* Join Company Tab */}
+            <TabsContent value="join" className="space-y-4 mt-6">
+              <form onSubmit={handleJoinCompany} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="inviteToken">Invite token or link</Label>
+                  <div className="relative">
+                    <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="inviteToken"
+                      name="inviteToken"
+                      type="text"
+                      placeholder="Paste invite link or token"
+                      className="pl-9"
+                      value={joinCompanyData.inviteToken}
+                      onChange={(e) => {
+                        const token = e.target.value.includes('/invite/') 
+                          ? e.target.value.split('/invite/')[1] 
+                          : e.target.value;
+                        handleInviteTokenChange(token);
+                      }}
+                      required
+                      disabled={isLoading || success || loadingInvite}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Enter the invite token or paste the full invite link
+                  </p>
+                </div>
+
+                {loadingInvite && (
+                  <div className="text-sm text-muted-foreground">Validating invite...</div>
+                )}
+
+                {inviteInfo && (
+                  <Alert>
+                    <CheckCircle2 className="h-4 w-4" />
+                    <AlertDescription>
+                      <div className="font-semibold">Invite to {inviteInfo.company?.name || 'company'}</div>
+                      <div className="text-sm text-muted-foreground mt-1">
+                        Role: {inviteInfo.role}
+                        {inviteInfo.email && ` • Email: ${inviteInfo.email}`}
+                      </div>
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                <div className="space-y-2">
+                  <Label htmlFor="joinName">Your name</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="joinName"
+                      name="joinName"
+                      type="text"
+                      placeholder="John Doe"
+                      className="pl-9"
+                      value={joinCompanyData.name}
+                      onChange={(e) => setJoinCompanyData({ ...joinCompanyData, name: e.target.value })}
+                      required
+                      disabled={isLoading || success}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="joinEmail">Email address</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="joinEmail"
+                      name="joinEmail"
+                      type="email"
+                      placeholder="john@example.com"
+                      className="pl-9"
+                      value={joinCompanyData.email}
+                      onChange={(e) => setJoinCompanyData({ ...joinCompanyData, email: e.target.value })}
+                      required
+                      disabled={isLoading || success || (inviteInfo?.email !== undefined)}
+                    />
+                  </div>
+                  {inviteInfo?.email && (
+                    <p className="text-xs text-muted-foreground">
+                      This invite is for: {inviteInfo.email}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="joinPassword">Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      id="joinPassword"
+                      name="joinPassword"
+                      type="password"
+                      placeholder="••••••••"
+                      className="pl-9"
+                      value={joinCompanyData.password}
+                      onChange={(e) => setJoinCompanyData({ ...joinCompanyData, password: e.target.value })}
+                      required
+                      disabled={isLoading || success}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Must be at least 6 characters
+                  </p>
+                </div>
+
+                <Button 
+                  type="submit" 
+                  className="w-full" 
+                  size="lg"
+                  disabled={isLoading || success || !inviteInfo}
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Accepting invite...
+                    </>
+                  ) : success ? (
+                    <>
+                      <CheckCircle2 className="w-4 h-4 mr-2" />
+                      Accepted!
+                    </>
+                  ) : (
+                    "Join company"
+                  )}
+                </Button>
+              </form>
+            </TabsContent>
+          </Tabs>
 
           <p className="text-center text-xs text-muted-foreground">
-            By creating an account, you agree to our{" "}
+            By registering, you agree to our{" "}
             <a href="#" className="text-primary hover:underline">
               Terms of Service
             </a>{" "}

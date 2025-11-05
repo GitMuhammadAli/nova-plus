@@ -20,6 +20,7 @@ export class UsersService {
     name: string;
     role?: UserRole;
     orgId?: string;
+    companyId?: string;
     createdBy?: string;
     managerId?: string;
     isActive?: boolean;
@@ -31,6 +32,7 @@ export class UsersService {
       name: data.name,
       role: data.role || UserRole.USER,
       orgId: data.orgId,
+      companyId: data.companyId,
       createdBy: data.createdBy,
       managerId: data.managerId,
       isActive: data.isActive !== undefined ? data.isActive : true,
@@ -39,8 +41,8 @@ export class UsersService {
   }
 
   /**
-   * Admin creates Managers or Users
-   * Admin can create: 'manager' or 'user' roles
+   * Company Admin / Manager creates Managers or Users
+   * Can create: 'manager' or 'user' roles
    */
   async createByAdmin(
     creatorId: string,
@@ -51,11 +53,12 @@ export class UsersService {
       password: string;
       role: UserRole;
       managerId?: string;
+      companyId?: string;
     }
   ): Promise<User> {
-    // Validate role - Admin can only create 'manager' or 'user', not another 'admin'
-    if (data.role === UserRole.ADMIN || data.role === UserRole.SUPERADMIN) {
-      throw new ForbiddenException('Admins cannot create other admins');
+    // Validate role - Cannot create super_admin or company_admin (only super admin can create company_admin)
+    if (data.role === UserRole.SUPER_ADMIN || data.role === UserRole.COMPANY_ADMIN) {
+      throw new ForbiddenException('Cannot create admin roles through this endpoint');
     }
 
     // Check if email already exists
@@ -64,13 +67,18 @@ export class UsersService {
       throw new BadRequestException('Email already exists');
     }
 
-    // If creating a user and managerId is provided, verify manager exists and is in same org
+    // If creating a user and managerId is provided, verify manager exists and is in same company/org
     if (data.role === UserRole.USER && data.managerId) {
       const manager = await this.userModel.findById(data.managerId).exec();
       if (!manager || manager.role !== UserRole.MANAGER) {
         throw new BadRequestException('Invalid manager ID or manager does not exist');
       }
-      if (manager.orgId?.toString() !== creatorOrgId) {
+      // Check company match if companyId provided, otherwise check orgId
+      if (data.companyId) {
+        if (manager.companyId?.toString() !== data.companyId) {
+          throw new ForbiddenException('Manager must be in the same company');
+        }
+      } else if (manager.orgId?.toString() !== creatorOrgId) {
         throw new ForbiddenException('Manager must be in the same organization');
       }
     }
@@ -82,6 +90,7 @@ export class UsersService {
       password: hashedPassword,
       role: data.role,
       orgId: creatorOrgId,
+      companyId: data.companyId,
       createdBy: creatorId,
       managerId: data.role === UserRole.USER ? data.managerId : undefined,
       isActive: true,
@@ -104,6 +113,7 @@ export class UsersService {
       password: string;
       department?: string;
       location?: string;
+      companyId?: string;
     }
   ): Promise<User> {
     // Verify creator is a manager
@@ -112,8 +122,12 @@ export class UsersService {
       throw new ForbiddenException('Only managers can create users through this endpoint');
     }
 
-    // Ensure manager is in the same org
-    if (creator.orgId?.toString() !== creatorOrgId) {
+    // Ensure manager is in the same org/company
+    if (data.companyId) {
+      if (creator.companyId?.toString() !== data.companyId) {
+        throw new ForbiddenException('Manager must be in the same company');
+      }
+    } else if (creator.orgId?.toString() !== creatorOrgId) {
       throw new ForbiddenException('Manager must be in the same organization');
     }
 
@@ -130,6 +144,7 @@ export class UsersService {
       password: hashedPassword,
       role: UserRole.USER,
       orgId: creatorOrgId,
+      companyId: data.companyId,
       createdBy: creatorId,
       managerId: creatorId, // User's manager is the creator
       isActive: true,
@@ -190,6 +205,63 @@ export class UsersService {
    */
   async findAllForAdmin(orgId: string, params?: { page?: number; limit?: number; search?: string }) {
     return this.findAll(orgId, params);
+  }
+
+  /**
+   * Company Admin: Get all users in the company
+   */
+  async findAllForCompany(companyId: string, params?: { page?: number; limit?: number; search?: string }) {
+    const page = params?.page || 1;
+    const limit = params?.limit || 100;
+    const skip = (page - 1) * limit;
+    const search = params?.search || '';
+
+    // Build query - scope by company
+    const query: any = {
+      $or: [
+        { companyId: companyId }, // Filter by companyId
+        { orgId: companyId }, // Fallback to orgId for backward compatibility
+      ],
+    };
+
+    if (search) {
+      const searchQuery = { $regex: search, $options: 'i' };
+      query.$and = [
+        {
+          $or: [
+            { name: searchQuery },
+            { email: searchQuery },
+          ],
+        },
+      ];
+    }
+
+    // Get users (excluding password)
+    const users = await this.userModel
+      .find(query)
+      .select('-password')
+      .populate('createdBy', 'name email role')
+      .populate('managerId', 'name email role')
+      .populate('companyId', 'name domain')
+      .populate('orgId', 'name slug')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean()
+      .exec();
+
+    // Get total count
+    const total = await this.userModel.countDocuments(query).exec();
+
+    return {
+      data: users || [],
+      pagination: {
+        page,
+        limit,
+        total: total || 0,
+        pages: Math.ceil((total || 0) / limit),
+      },
+    };
   }
 
   async findAll(orgId: string, params?: { page?: number; limit?: number; search?: string }) {

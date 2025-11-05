@@ -6,6 +6,8 @@ interface User {
   email: string;
   name: string;
   role: string;
+  companyId?: string;
+  orgId?: string;
   createdAt?: string;
   updatedAt?: string;
 }

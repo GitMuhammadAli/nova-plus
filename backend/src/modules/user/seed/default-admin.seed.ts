@@ -24,13 +24,13 @@ export class DefaultAdminSeed implements OnModuleInit {
    */
   async createDefaultAdmin(): Promise<void> {
     try {
-      // Check if any admin user already exists
-      const existingAdmin = await this.userModel.findOne({
-        role: { $in: [UserRole.ADMIN, UserRole.SUPERADMIN] }
+      // Check if any super admin user already exists
+      const existingSuperAdmin = await this.userModel.findOne({
+        role: { $in: [UserRole.SUPER_ADMIN, UserRole.SUPERADMIN] }
       }).exec();
 
-      if (existingAdmin) {
-        this.logger.log('✅ Admin user already exists. Skipping default admin creation.');
+      if (existingSuperAdmin) {
+        this.logger.log('✅ Super Admin user already exists. Skipping default admin creation.');
         return;
       }
 
@@ -62,12 +62,12 @@ export class DefaultAdminSeed implements OnModuleInit {
       // Hash password
       const hashedPassword = await bcrypt.hash(adminPassword, 10);
 
-      // Create admin user
+      // Create super admin user (for Phase 2 multi-tenant setup)
       const adminUser = new this.userModel({
         email: adminEmail,
         password: hashedPassword,
         name: adminName,
-        role: UserRole.ADMIN,
+        role: UserRole.SUPER_ADMIN, // Create as SUPER_ADMIN for Phase 2
         orgId: defaultOrg._id,
         isActive: true,
       });
@@ -79,9 +79,10 @@ export class DefaultAdminSeed implements OnModuleInit {
       defaultOrg.members.push(adminUser._id as any);
       await defaultOrg.save();
 
-      this.logger.log('✅ Default admin user created successfully!');
+      this.logger.log('✅ Default Super Admin user created successfully!');
       this.logger.log(`📧 Email: ${adminEmail}`);
       this.logger.log(`🔑 Password: ${adminPassword}`);
+      this.logger.log(`👑 Role: SUPER_ADMIN (can create companies)`);
       this.logger.warn('⚠️  Please change the default password after first login!');
 
     } catch (error) {

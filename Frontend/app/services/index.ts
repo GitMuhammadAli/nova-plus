@@ -164,3 +164,47 @@ export const dashboardAPI = {
 export const activityAPI = {
   getRecent: (limit?: number) => api.get('/api/activity/recent', { params: { limit } }),
 };
+
+// ============================================
+// COMPANY API
+// ============================================
+export const companyAPI = {
+  getAll: () => api.get('/company/all'),
+  getById: (id: string) => api.get(`/company/${id}`),
+  create: (data: {
+    name: string;
+    domain?: string;
+    companyAdminEmail: string;
+    companyAdminName: string;
+    companyAdminPassword: string;
+  }) => api.post('/company/create', data),
+  register: (data: {
+    companyName: string;
+    domain?: string;
+    adminName: string;
+    email: string;
+    password: string;
+  }) => api.post('/company/register', data),
+  update: (id: string, data: { name?: string; domain?: string }) => api.patch(`/company/${id}`, data),
+  getCompanyUsers: (companyId: string, params?: { page?: number; limit?: number; search?: string }) =>
+    api.get(`/company/${companyId}/users`, { params }),
+};
+
+// ============================================
+// INVITE API
+// ============================================
+export const inviteAPI = {
+  createInvite: (companyId: string, data: {
+    email?: string;
+    role: string;
+    expiresInDays?: number;
+  }) => api.post(`/invite/company/${companyId}`, data),
+  getInvite: (token: string) => api.get(`/invite/${token}`),
+  acceptInvite: (token: string, data: {
+    name: string;
+    email: string;
+    password: string;
+  }) => api.post(`/invite/${token}/accept`, data),
+  getCompanyInvites: (companyId: string) => api.get(`/invite/company/${companyId}`),
+  revokeInvite: (inviteId: string, companyId: string) => api.delete(`/invite/${inviteId}/company/${companyId}`),
+};
