@@ -35,6 +35,9 @@ export class AuthController {
     return {
       success: true,
       message: 'User registered successfully',
+      accessToken, // Include token in response for Postman/API clients
+      refreshToken, // Include refresh token
+      token: accessToken, // Alias for backward compatibility
       user: userWithoutPassword,
     };
   }
@@ -64,6 +67,9 @@ export class AuthController {
     const response = {
       success: true,
       message: 'Login successful',
+      accessToken, // Include token in response for Postman/API clients
+      refreshToken, // Include refresh token
+      token: accessToken, // Alias for backward compatibility
       user: userWithoutPassword,
     };
     
@@ -73,6 +79,7 @@ export class AuthController {
         hasUser: !!userWithoutPassword,
         userId: userWithoutPassword._id,
         email: userWithoutPassword.email,
+        hasToken: !!accessToken,
       });
     }
     
@@ -112,7 +119,9 @@ export class AuthController {
     
     return { 
       success: true,
-      accessToken: data.accessToken 
+      accessToken: data.accessToken,
+      token: data.accessToken, // Alias for backward compatibility
+      refreshToken: refreshToken, // Return the same refresh token (it's still valid)
     };
   }
 

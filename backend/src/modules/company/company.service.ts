@@ -57,11 +57,14 @@ export class CompanyService {
 
     // Create company admin user (CEO)
     const hashedPassword = await bcrypt.hash(registerCompanyDto.password, 10);
+    
+    // Use adminName if provided, otherwise use email prefix
+    const adminName = registerCompanyDto.adminName || registerCompanyDto.email.split('@')[0];
 
     const companyAdmin = await this.userModel.create({
       email: registerCompanyDto.email,
       password: hashedPassword,
-      name: registerCompanyDto.adminName,
+      name: adminName,
       role: UserRole.COMPANY_ADMIN,
       companyId: savedCompany._id.toString(),
       orgId: savedCompany._id.toString(), // Keep orgId for backward compatibility

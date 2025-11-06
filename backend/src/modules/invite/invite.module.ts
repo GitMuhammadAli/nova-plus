@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { JwtModule } from '@nestjs/jwt';
 import { Invite, InviteSchema } from './entities/invite.entity';
@@ -7,6 +7,7 @@ import { Company, CompanySchema } from '../company/entities/company.entity';
 import { InviteService } from './invite.service';
 import { InviteController } from './invite.controller';
 import { getJwtSecret } from '../auth/utils/jwt-secret.util';
+import { CompanyModule } from '../company/company.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { getJwtSecret } from '../auth/utils/jwt-secret.util';
       secret: getJwtSecret(),
       signOptions: { expiresIn: '15m' },
     }),
+    forwardRef(() => CompanyModule),
   ],
   providers: [InviteService],
   controllers: [InviteController],

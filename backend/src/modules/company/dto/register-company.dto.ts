@@ -10,8 +10,8 @@ export class RegisterCompanyDto {
   domain?: string;
 
   @IsString()
-  @IsNotEmpty()
-  adminName: string;
+  @IsOptional()
+  adminName?: string; // Optional - will use email prefix if not provided
 
   @IsEmail()
   @IsNotEmpty()

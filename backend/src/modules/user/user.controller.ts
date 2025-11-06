@@ -23,29 +23,6 @@ export class UserController {
     };
   }
 
-  /**
-   * Admin: Get all users in the system
-   */
-  @Get('all')
-  @UseGuards(RolesGuard)
-  @Roles(UserRole.ADMIN)
-  async getAllUsers(
-    @Req() req,
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
-    @Query('search') search?: string,
-  ) {
-    const orgId = req.user.orgId?.toString() || req.user.orgId;
-    if (!orgId) {
-      throw new ForbiddenException('User must belong to an organization');
-    }
-    const params = {
-      page: page ? parseInt(page, 10) : undefined,
-      limit: limit ? parseInt(limit, 10) : undefined,
-      search,
-    };
-    return this.usersService.findAllForAdmin(orgId, params);
-  }
 
   /**
    * Manager: Get all users created by the logged-in manager
@@ -99,6 +76,41 @@ export class UserController {
       search,
     };
     return this.usersService.findUsersByManager(managerId, orgId || companyId, params);
+  }
+
+  /**
+   * Company Admin / Manager: Get all users in the company
+   * GET /users/all (alias for /user/company)
+   */
+  @Get('all')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.COMPANY_ADMIN, UserRole.MANAGER, UserRole.SUPER_ADMIN)
+  async getAllUsers(
+    @Req() req,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('search') search?: string,
+  ) {
+    const companyId = req.user.companyId?.toString() || req.user.companyId;
+    if (!companyId) {
+      throw new ForbiddenException('User must belong to a company');
+    }
+    const params = {
+      page: page ? parseInt(page, 10) : undefined,
+      limit: limit ? parseInt(limit, 10) : undefined,
+      search,
+    };
+    const result = await this.usersService.findAllForCompany(companyId, params);
+    // Format response to match expected format
+    if (Array.isArray(result)) {
+      return result.map((user: any) => ({
+        email: user.email,
+        role: user.role,
+        name: user.name,
+        _id: user._id,
+      }));
+    }
+    return result;
   }
 
   /**
@@ -186,6 +198,7 @@ export class UserController {
     // If user is authenticated, scope by orgId for security
     return this.usersService.findById(id, orgId);
   }
+
 
   /**
    * Company Admin / Manager: Create Managers or Users

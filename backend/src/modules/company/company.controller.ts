@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Param, Body, UseGuards, Req, ForbiddenException, Res } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Body, UseGuards, Req, ForbiddenException, Res, Inject, forwardRef } from '@nestjs/common';
 import { CompanyService } from './company.service';
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { RegisterCompanyDto } from './dto/register-company.dto';
@@ -6,11 +6,20 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { UserRole } from 'src/modules/user/entities/user.entity';
+import { InviteService } from '../invite/invite.service';
+import { JwtService } from '@nestjs/jwt';
+import { CreateInviteDto } from '../invite/dto/create-invite.dto';
+import { AcceptInviteDto } from '../invite/dto/accept-invite.dto';
 import type { Response } from 'express';
 
 @Controller('company')
 export class CompanyController {
-  constructor(private readonly companyService: CompanyService) {}
+  constructor(
+    private readonly companyService: CompanyService,
+    @Inject(forwardRef(() => InviteService))
+    private readonly inviteService: InviteService,
+    private readonly jwtService: JwtService,
+  ) {}
 
   /**
    * Public company registration - creates company + admin user (CEO)
@@ -41,9 +50,19 @@ export class CompanyController {
     }
     return {
       success: true,
-      message: 'Company registered successfully',
-      company: result.company,
-      admin: result.admin,
+      message: 'Company and Admin created successfully',
+      token: result.tokens?.accessToken,
+      data: {
+        company: {
+          _id: result.company._id,
+          name: result.company.name,
+        },
+        user: {
+          _id: result.admin._id,
+          email: result.admin.email,
+          role: result.admin.role,
+        },
+      },
     };
   }
 
@@ -68,6 +87,81 @@ export class CompanyController {
   @Roles(UserRole.SUPER_ADMIN)
   async getAllCompanies() {
     return this.companyService.findAll();
+  }
+
+  /**
+   * Create invite for a company (Company Admin or Manager)
+   * POST /company/invite
+   * NOTE: Must come before /company/:id routes to avoid route conflicts
+   */
+  @Post('invite')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.COMPANY_ADMIN, UserRole.MANAGER)
+  async createInvite(@Body() createInviteDto: CreateInviteDto, @Req() req) {
+    const companyId = req.user.companyId?.toString() || req.user.companyId;
+    if (!companyId) {
+      throw new ForbiddenException('User must belong to a company');
+    }
+    const creatorId = req.user._id || req.user.id;
+    const creatorRole = req.user.role;
+    
+    const result = await this.inviteService.createInvite(companyId, creatorId, creatorRole, createInviteDto);
+    return {
+      inviteToken: result.invite.token,
+    };
+  }
+
+  /**
+   * Join company via invite token (Public)
+   * POST /company/join
+   * NOTE: Must come before /company/:id routes to avoid route conflicts
+   */
+  @Post('join')
+  async joinCompany(@Body() joinDto: { email: string; password: string; name?: string; inviteToken: string }, @Res({ passthrough: true }) res: Response) {
+    const acceptInviteDto: AcceptInviteDto = {
+      email: joinDto.email,
+      name: joinDto.name || joinDto.email.split('@')[0],
+      password: joinDto.password,
+    };
+    
+    const result = await this.inviteService.acceptInvite(joinDto.inviteToken, acceptInviteDto);
+
+    // Generate JWT tokens
+    const userId = result.user._id?.toString() || result.user._id;
+    const payload = {
+      sub: userId,
+      email: result.user.email,
+      role: result.user.role,
+      companyId: result.user.companyId,
+      orgId: result.user.companyId,
+    };
+
+    const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
+    const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
+
+    // Set auth cookies
+    res.cookie('access_token', accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 15 * 60 * 1000,
+    });
+    res.cookie('refresh_token', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    return {
+      message: 'User joined company successfully',
+      data: {
+        companyId: result.user.companyId,
+        role: result.user.role,
+      },
+    };
   }
 
   /**
@@ -113,4 +207,3 @@ export class CompanyController {
     return this.companyService.update(id, updateData, requestUserId, requestUserRole);
   }
 }
-
