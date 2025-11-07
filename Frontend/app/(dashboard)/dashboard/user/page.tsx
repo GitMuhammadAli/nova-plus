@@ -4,11 +4,12 @@ import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/app/store/store';
 import { motion } from 'framer-motion';
-import { FileText, CheckCircle, Clock, AlertCircle, User } from 'lucide-react';
+import { FileText, CheckCircle, Clock, AlertCircle, User, FolderKanban } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { RoleGuard } from '@/components/guards/RoleGuard';
 import { useRouter } from 'next/navigation';
+import { taskAPI, projectAPI } from '@/app/services';
 
 const UserDashboard = () => {
   const router = useRouter();
@@ -18,18 +19,49 @@ const UserDashboard = () => {
     inProgress: 0,
     completed: 0,
     pending: 0,
+    assignedProjects: 0,
   });
+  const [loading, setLoading] = useState(true);
+  const [recentTasks, setRecentTasks] = useState<any[]>([]);
 
-  // Stats will be populated in Phase 4 when tasks are implemented
   useEffect(() => {
-    // Placeholder - will be replaced with actual API call in Phase 4
-    setStats({
-      assignedTasks: 0,
-      inProgress: 0,
-      completed: 0,
-      pending: 0,
-    });
-  }, []);
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch user's tasks (only tasks assigned to them)
+        const tasksRes = await taskAPI.getMyTasks();
+        const tasks = Array.isArray(tasksRes.data) ? tasksRes.data : [];
+        
+        // Fetch user's projects (only projects assigned to them)
+        const projectsRes = await projectAPI.getMyProjects();
+        const projects = Array.isArray(projectsRes.data) ? projectsRes.data : [];
+
+        const inProgress = tasks.filter((t: any) => t.status === 'in_progress').length;
+        const completed = tasks.filter((t: any) => t.status === 'done').length;
+        const pending = tasks.filter((t: any) => t.status === 'pending').length;
+
+        setStats({
+          assignedTasks: tasks.length,
+          inProgress,
+          completed,
+          pending,
+          assignedProjects: projects.length,
+        });
+
+        // Get recent tasks (last 5)
+        setRecentTasks(tasks.slice(0, 5));
+      } catch (error) {
+        console.error('Failed to fetch dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user) {
+      fetchData();
+    }
+  }, [user]);
 
   return (
     <RoleGuard allowedRoles={['user']}>
@@ -119,32 +151,76 @@ const UserDashboard = () => {
           </motion.div>
         </div>
 
+        {/* Recent Tasks */}
+        {loading ? (
+          <Card className="p-6">
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">Loading tasks...</p>
+            </div>
+          </Card>
+        ) : recentTasks.length > 0 ? (
+          <Card className="p-6">
+            <h2 className="text-xl font-semibold text-foreground mb-4">Recent Tasks</h2>
+            <div className="space-y-3">
+              {recentTasks.map((task: any, index: number) => (
+                <motion.div
+                  key={task._id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.1 }}
+                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                  onClick={() => router.push(`/dashboard/tasks/${task._id}`)}
+                >
+                  <div className="flex-1">
+                    <p className="font-medium text-foreground">{task.title}</p>
+                    {task.description && (
+                      <p className="text-sm text-muted-foreground mt-1 line-clamp-1">{task.description}</p>
+                    )}
+                    {task.projectId && (
+                      <p className="text-xs text-muted-foreground mt-1">Project: {task.projectId?.name || 'N/A'}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs px-2 py-1 rounded ${
+                      task.status === 'done' ? 'bg-green-500/10 text-green-500' :
+                      task.status === 'in_progress' ? 'bg-blue-500/10 text-blue-500' :
+                      'bg-yellow-500/10 text-yellow-500'
+                    }`}>
+                      {task.status}
+                    </span>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </Card>
+        ) : null}
+
         {/* Quick Actions */}
         <Card className="p-6">
           <h2 className="text-xl font-semibold text-foreground mb-4">Quick Actions</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <Button
-              onClick={() => router.push('/tasks')}
+              onClick={() => router.push('/dashboard/tasks')}
               className="w-full h-auto flex flex-col items-center justify-center py-6 gap-2"
             >
               <FileText className="w-6 h-6" />
               <span>My Tasks</span>
             </Button>
             <Button
-              onClick={() => router.push('/profile')}
+              onClick={() => router.push('/dashboard/projects')}
+              variant="outline"
+              className="w-full h-auto flex flex-col items-center justify-center py-6 gap-2"
+            >
+              <FolderKanban className="w-6 h-6" />
+              <span>My Projects</span>
+            </Button>
+            <Button
+              onClick={() => router.push('/dashboard/settings')}
               variant="outline"
               className="w-full h-auto flex flex-col items-center justify-center py-6 gap-2"
             >
               <User className="w-6 h-6" />
-              <span>My Profile</span>
-            </Button>
-            <Button
-              onClick={() => router.push('/reports')}
-              variant="outline"
-              className="w-full h-auto flex flex-col items-center justify-center py-6 gap-2"
-            >
-              <FileText className="w-6 h-6" />
-              <span>My Reports</span>
+              <span>Settings</span>
             </Button>
           </div>
         </Card>

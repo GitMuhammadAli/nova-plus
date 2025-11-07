@@ -20,9 +20,17 @@ import { getJwtSecret } from './utils/jwt-secret.util';
       { name: User.name, schema: UserSchema },
       { name: Session.name, schema: SessionSchema },
     ]),
-    JwtModule.register({
-      secret: getJwtSecret(),
-      signOptions: { expiresIn: '15m' },
+    JwtModule.registerAsync({
+      useFactory: () => {
+        const secret = getJwtSecret();
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔐 JwtModule initialized with secret:', secret);
+        }
+        return {
+          secret: secret,
+          signOptions: { expiresIn: '15m' },
+        };
+      },
     }),
   ],
   providers: [AuthService, JwtStrategy],

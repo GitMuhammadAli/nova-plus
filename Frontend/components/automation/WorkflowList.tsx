@@ -1,3 +1,5 @@
+"use client"
+
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Play, Pause, Edit, Trash2, Plus, Copy } from "lucide-react";

@@ -16,6 +16,7 @@ interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isInitializing: boolean; // Separate state for initial auth check
   error: string | null;
 }
 
@@ -23,63 +24,59 @@ const initialState: AuthState = {
   user: null,
   isAuthenticated: false,
   isLoading: false,
+  isInitializing: false,
   error: null,
 };
 
-// Async thunks
+// Login
 export const login = createAsyncThunk(
   'auth/login',
   async (credentials: { email: string; password: string }, { rejectWithValue }) => {
     try {
       const response = await authAPI.login(credentials);
-      
-      // Handle both response formats (with or without transform interceptor)
-      // Direct format: { success: true, message: '...', user: {...} }
-      // Wrapped format: { success: true, data: { success: true, message: '...', user: {...} } }
-      const user = response.data?.user || response.data?.data?.user;
+      const user = response.data?.user;
       
       if (!user) {
-        console.error('Login response structure:', response.data);
         throw new Error('User data not found in response');
       }
       
+      // Wait a bit to ensure cookies are set by the browser
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
       return user;
     } catch (error: any) {
-      const message = error.response?.data?.message || error.response?.data?.data?.message || error.message || 'Login failed';
+      const message = error.response?.data?.message || error.message || 'Login failed';
       return rejectWithValue(message);
     }
   }
 );
 
+// Register
 export const register = createAsyncThunk(
   'auth/register',
   async (data: { email: string; password: string; name: string; role?: string }, { rejectWithValue }) => {
     try {
       const response = await authAPI.register(data);
-      
-      // Handle both response formats (with or without transform interceptor)
-      const user = response.data?.user || response.data?.data?.user;
+      const user = response.data?.user;
       
       if (!user) {
-        console.error('Register response structure:', response.data);
         throw new Error('User data not found in response');
       }
       
       return user;
     } catch (error: any) {
-      const message = error.response?.data?.message || error.response?.data?.data?.message || error.message || 'Registration failed';
+      const message = error.response?.data?.message || error.message || 'Registration failed';
       return rejectWithValue(message);
     }
   }
 );
 
+// Fetch current user (for auth check)
 export const fetchMe = createAsyncThunk(
   'auth/fetchMe',
   async (_, { rejectWithValue }) => {
     try {
       const response = await authAPI.getCurrentUser();
-      
-      // Backend returns user directly from req.user
       const user = response.data;
       
       if (!user) {
@@ -88,27 +85,24 @@ export const fetchMe = createAsyncThunk(
       
       return user;
     } catch (error: any) {
-      // 401 means not authenticated - this is expected when not logged in
       if (error.response?.status === 401) {
         return rejectWithValue('Not authenticated');
       }
-      
       const message = error.response?.data?.message || 'Failed to fetch user';
       return rejectWithValue(message);
     }
   }
 );
 
+// Logout
 export const logout = createAsyncThunk(
   'auth/logout',
   async (_, { rejectWithValue }) => {
     try {
       await authAPI.logout();
-      // Cookies are cleared by backend
       return;
     } catch (error: any) {
-      // Even if API fails, clear local state
-      // Don't show error message - just logout locally
+      // Clear state even if API fails
       return;
     }
   }
@@ -124,10 +118,17 @@ const authSlice = createSlice({
     setUser: (state, action: PayloadAction<User>) => {
       state.user = action.payload;
       state.isAuthenticated = true;
+      state.isLoading = false;
+      state.error = null;
     },
     clearUser: (state) => {
       state.user = null;
       state.isAuthenticated = false;
+      state.isLoading = false;
+      state.error = null;
+    },
+    resetLoading: (state) => {
+      state.isLoading = false;
     },
   },
   extraReducers: (builder) => {
@@ -147,6 +148,7 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload as string;
         state.isAuthenticated = false;
+        state.user = null;
       });
 
     // Register
@@ -165,24 +167,25 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload as string;
         state.isAuthenticated = false;
+        state.user = null;
       });
 
-    // Fetch Me
+    // Fetch Me (for auth check - uses isInitializing)
     builder
       .addCase(fetchMe.pending, (state) => {
-        state.isLoading = true;
+        state.isInitializing = true;
       })
       .addCase(fetchMe.fulfilled, (state, action) => {
-        state.isLoading = false;
+        state.isInitializing = false;
         state.user = action.payload;
         state.isAuthenticated = true;
         state.error = null;
       })
-      .addCase(fetchMe.rejected, (state, action) => {
-        state.isLoading = false;
-        // Don't set error for fetchMe - it's normal to fail when not logged in
+      .addCase(fetchMe.rejected, (state) => {
+        state.isInitializing = false;
         state.isAuthenticated = false;
         state.user = null;
+        // Don't set error for fetchMe - it's normal when not logged in
       });
 
     // Logout
@@ -191,6 +194,7 @@ const authSlice = createSlice({
         state.user = null;
         state.isAuthenticated = false;
         state.isLoading = false;
+        state.isInitializing = false;
         state.error = null;
       })
       .addCase(logout.rejected, (state) => {
@@ -198,9 +202,10 @@ const authSlice = createSlice({
         state.user = null;
         state.isAuthenticated = false;
         state.isLoading = false;
+        state.isInitializing = false;
       });
   },
 });
 
-export const { clearError, setUser, clearUser } = authSlice.actions;
+export const { clearError, setUser, clearUser, resetLoading } = authSlice.actions;
 export default authSlice.reducer;

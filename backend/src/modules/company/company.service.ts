@@ -20,7 +20,6 @@ export class CompanyService {
 
   /**
    * Public company registration - creates company + admin user (CEO)
-   * This is the public endpoint for companies to register themselves
    */
   async register(registerCompanyDto: RegisterCompanyDto) {
     // Check if company name already exists
@@ -43,11 +42,11 @@ export class CompanyService {
       throw new BadRequestException('Email already registered');
     }
 
-    // Create company (no createdBy since it's public registration)
+    // Create company
     const company = new this.companyModel({
       name: registerCompanyDto.companyName,
       domain: registerCompanyDto.domain,
-      createdBy: null, // Public registration - no super admin created it
+      createdBy: null,
       managers: [],
       users: [],
       isActive: true,
@@ -55,10 +54,8 @@ export class CompanyService {
 
     const savedCompany = await company.save();
 
-    // Create company admin user (CEO)
+    // Create company admin user
     const hashedPassword = await bcrypt.hash(registerCompanyDto.password, 10);
-    
-    // Use adminName if provided, otherwise use email prefix
     const adminName = registerCompanyDto.adminName || registerCompanyDto.email.split('@')[0];
 
     const companyAdmin = await this.userModel.create({
@@ -67,17 +64,17 @@ export class CompanyService {
       name: adminName,
       role: UserRole.COMPANY_ADMIN,
       companyId: savedCompany._id.toString(),
-      orgId: savedCompany._id.toString(), // Keep orgId for backward compatibility
-      createdBy: null, // Self-registered
+      orgId: savedCompany._id.toString(),
+      createdBy: null,
       isActive: true,
     });
 
-    // Update company with company admin
+    // Update company with admin
     savedCompany.managers.push(companyAdmin._id as any);
     savedCompany.users.push(companyAdmin._id as any);
     await savedCompany.save();
 
-    // Generate JWT tokens for the new admin
+    // Generate JWT tokens
     const userId = companyAdmin._id?.toString() || companyAdmin._id;
     const payload = {
       sub: userId,
@@ -136,17 +133,17 @@ export class CompanyService {
       }
     }
 
-    // Check if company admin email already exists
+    // Check if admin email already exists
     const existingUser = await this.userModel.findOne({ email: createCompanyDto.companyAdminEmail }).exec();
     if (existingUser) {
-      throw new BadRequestException('Company admin email already exists');
+      throw new BadRequestException('Email already registered');
     }
 
     // Create company
     const company = new this.companyModel({
       name: createCompanyDto.name,
       domain: createCompanyDto.domain,
-      createdBy: createdBy,
+      createdBy,
       managers: [],
       users: [],
       isActive: true,
@@ -156,141 +153,178 @@ export class CompanyService {
 
     // Create company admin user
     const hashedPassword = await bcrypt.hash(createCompanyDto.companyAdminPassword, 10);
-
     const companyAdmin = await this.userModel.create({
       email: createCompanyDto.companyAdminEmail,
       password: hashedPassword,
       name: createCompanyDto.companyAdminName,
       role: UserRole.COMPANY_ADMIN,
       companyId: savedCompany._id.toString(),
-      orgId: savedCompany._id.toString(), // Keep orgId for backward compatibility
-      createdBy: createdBy,
+      orgId: savedCompany._id.toString(),
+      createdBy,
       isActive: true,
     });
 
-    // Update company with company admin
+    // Update company
     savedCompany.managers.push(companyAdmin._id as any);
     savedCompany.users.push(companyAdmin._id as any);
     await savedCompany.save();
 
     const companyObj: any = savedCompany.toObject();
+    const adminObj: any = companyAdmin.toObject();
+    delete adminObj.password;
+
     return {
-      company: {
-        _id: companyObj._id,
-        name: companyObj.name,
-        domain: companyObj.domain,
-        createdBy: companyObj.createdBy,
-        isActive: companyObj.isActive,
-        createdAt: companyObj.createdAt,
-        updatedAt: companyObj.updatedAt,
-      },
-      companyAdmin: {
-        _id: companyAdmin._id,
-        email: companyAdmin.email,
-        name: companyAdmin.name,
-        role: companyAdmin.role,
-      },
+      company: companyObj,
+      admin: adminObj,
     };
   }
 
   /**
-   * Get all companies (Super Admin only)
+   * Find all companies (Super Admin only)
    */
   async findAll() {
-    return this.companyModel
-      .find()
-      .populate('createdBy', 'name email')
-      .populate('managers', 'name email role')
-      .exec();
+    return this.companyModel.find({ isActive: true }).exec();
   }
 
   /**
-   * Get company by ID
+   * Find company by ID with authorization check
    */
-  async findById(id: string, requestUserId?: string, requestUserRole?: UserRole) {
-    const company = await this.companyModel
-      .findById(id)
-      .populate('createdBy', 'name email')
-      .populate('managers', 'name email role')
-      .populate('users', 'name email role')
-      .exec();
+  async findById(companyId: string, requestUserId: string, requestUserRole: string) {
+    // Debug logging in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔵 Company Service - findById:', {
+        companyId,
+        requestUserId,
+        requestUserRole,
+      });
+    }
 
+    const company = await this.companyModel.findById(companyId).exec();
+    
     if (!company) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('❌ Company not found:', companyId);
+      }
       throw new NotFoundException('Company not found');
     }
 
-    // Check access: Super Admin can access any, Company Admin can only access their own
-    if (requestUserRole === UserRole.COMPANY_ADMIN) {
-      const user = await this.userModel.findById(requestUserId).exec();
-      if (user && user.companyId?.toString() !== id) {
-        throw new ForbiddenException('You can only access your own company');
+    // Super Admin can access any company
+    if (requestUserRole === UserRole.SUPER_ADMIN) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('✅ Super Admin access granted');
       }
+      return company;
+    }
+
+    // Get requesting user to check company membership
+    const requestingUser = await this.userModel.findById(requestUserId).exec();
+    if (!requestingUser) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('❌ Requesting user not found:', requestUserId);
+      }
+      throw new ForbiddenException('User not found');
+    }
+
+    // Convert companyId to string for comparison
+    const userCompanyId = requestingUser.companyId?.toString();
+    const targetCompanyId = company._id?.toString();
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔵 Company access check:', {
+        userCompanyId,
+        targetCompanyId,
+        match: userCompanyId === targetCompanyId,
+      });
+    }
+
+    // User must belong to the company they're trying to access
+    if (userCompanyId !== targetCompanyId) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('❌ Company access denied:', {
+          userCompanyId,
+          targetCompanyId,
+        });
+      }
+      throw new ForbiddenException('You can only access your own company');
+    }
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('✅ Company access granted');
     }
 
     return company;
-  }
-
-  /**
-   * Get all users in a company (Company Admin only)
-   */
-  async getCompanyUsers(companyId: string, requestUserId: string, requestUserRole: UserRole) {
-    // Verify the user is a company admin of this company
-    if (requestUserRole !== UserRole.COMPANY_ADMIN && requestUserRole !== UserRole.SUPER_ADMIN) {
-      throw new ForbiddenException('Only company admins can view company users');
-    }
-
-    const user = await this.userModel.findById(requestUserId).exec();
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-    if (requestUserRole === UserRole.COMPANY_ADMIN && user.companyId?.toString() !== companyId) {
-      throw new ForbiddenException('You can only view users from your own company');
-    }
-
-    // Get all users in the company
-    const users = await this.userModel
-      .find({ companyId: companyId })
-      .select('-password')
-      .populate('createdBy', 'name email')
-      .populate('managerId', 'name email')
-      .exec();
-
-    return users;
   }
 
   /**
    * Update company
    */
-  async update(id: string, data: Partial<CreateCompanyDto>, requestUserId: string, requestUserRole: UserRole) {
-    if (requestUserRole !== UserRole.SUPER_ADMIN && requestUserRole !== UserRole.COMPANY_ADMIN) {
-      throw new ForbiddenException('Only super admins and company admins can update companies');
-    }
-
-    // If company admin, verify they own this company
-    if (requestUserRole === UserRole.COMPANY_ADMIN) {
-      const user = await this.userModel.findById(requestUserId).exec();
-      if (!user || user.companyId?.toString() !== id) {
-        throw new ForbiddenException('You can only update your own company');
+  async update(companyId: string, updateData: Partial<CreateCompanyDto>, requestUserId: string, requestUserRole: string) {
+    const company = await this.findById(companyId, requestUserId, requestUserRole);
+    
+    if (updateData.name) {
+      const existing = await this.companyModel.findOne({ 
+        name: updateData.name, 
+        _id: { $ne: companyId } 
+      }).exec();
+      if (existing) {
+        throw new BadRequestException('Company name already exists');
       }
     }
 
-    // Prepare update data (only allow certain fields)
-    const updateData: any = {};
-    if (data.name) updateData.name = data.name;
-    if (data.domain !== undefined) updateData.domain = data.domain;
-
-    const company = await this.companyModel
-      .findByIdAndUpdate(id, updateData, { new: true })
-      .populate('createdBy', 'name email')
-      .populate('managers', 'name email role')
-      .exec();
-
-    if (!company) {
-      throw new NotFoundException('Company not found');
+    if (updateData.domain) {
+      const existing = await this.companyModel.findOne({ 
+        domain: updateData.domain, 
+        _id: { $ne: companyId } 
+      }).exec();
+      if (existing) {
+        throw new BadRequestException('Company domain already exists');
+      }
     }
 
-    return company;
+    Object.assign(company, updateData);
+    return company.save();
+  }
+
+  /**
+   * Get company users
+   */
+  async getCompanyUsers(companyId: string, requestUserId: string, requestUserRole: string, params?: { page?: number; limit?: number; search?: string }) {
+    // Verify user has access to this company
+    await this.findById(companyId, requestUserId, requestUserRole);
+
+    const page = params?.page || 1;
+    const limit = params?.limit || 10;
+    const skip = (page - 1) * limit;
+
+    const query: any = { 
+      companyId: companyId,
+      isActive: true 
+    };
+
+    if (params?.search) {
+      query.$or = [
+        { name: { $regex: params.search, $options: 'i' } },
+        { email: { $regex: params.search, $options: 'i' } },
+      ];
+    }
+
+    const [users, total] = await Promise.all([
+      this.userModel.find(query).skip(skip).limit(limit).exec(),
+      this.userModel.countDocuments(query).exec(),
+    ]);
+
+    return {
+      data: users.map(user => {
+        const userObj: any = user.toObject();
+        delete userObj.password;
+        return userObj;
+      }),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 }
-

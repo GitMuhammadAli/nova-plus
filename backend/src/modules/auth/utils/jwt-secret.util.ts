@@ -8,7 +8,7 @@ export function getJwtSecret(): string {
   return (
     process.env.JWT_SECRET || 
     process.env.JWT_ACCESS_SECRET || 
-    'supersecretkey'
+    'haha'
   );
 }
 
@@ -19,7 +19,7 @@ export function getJwtRefreshSecret(): string {
     process.env.JWT_REFRESH_SECRET || 
     process.env.JWT_ACCESS_SECRET ||
     process.env.JWT_SECRET ||
-    'supersecretkey'
+    'haha'
   );
 }
 

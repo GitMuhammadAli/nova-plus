@@ -6,6 +6,7 @@ import { User, UserRole } from '../user/entities/user.entity';
 import { Company } from '../company/entities/company.entity';
 import { CreateInviteDto } from './dto/create-invite.dto';
 import { AcceptInviteDto } from './dto/accept-invite.dto';
+import { EmailService } from '../email/email.service';
 import * as crypto from 'crypto';
 import * as bcrypt from 'bcrypt';
 
@@ -15,6 +16,7 @@ export class InviteService {
     @InjectModel(Invite.name) private inviteModel: Model<InviteDocument>,
     @InjectModel(User.name) private userModel: Model<User>,
     @InjectModel(Company.name) private companyModel: Model<Company>,
+    private emailService: EmailService,
   ) {}
 
   /**
@@ -108,6 +110,28 @@ export class InviteService {
 
     const savedInvite = await invite.save();
 
+    const inviteLink = `${process.env.FRONTEND_URL || 'http://localhost:3100'}/register?token=${savedInvite.token}`;
+
+    // Send email if email is provided
+    if (createInviteDto.email) {
+      const company = await this.companyModel.findById(companyId).exec();
+      const inviter = await this.userModel.findById(creatorId).exec();
+      
+      try {
+        await this.emailService.sendInviteEmail({
+          to: createInviteDto.email,
+          inviteLink,
+          companyName: company?.name || 'Unknown Company',
+          inviterName: inviter?.name || 'Admin',
+          role: createInviteDto.role,
+          expiresAt: savedInvite.expiresAt,
+        });
+      } catch (error) {
+        // Log error but don't fail the invite creation
+        console.error('Failed to send invite email:', error);
+      }
+    }
+
     return {
       invite: {
         _id: savedInvite._id,
@@ -115,7 +139,7 @@ export class InviteService {
         email: savedInvite.email,
         role: savedInvite.role,
         expiresAt: savedInvite.expiresAt,
-        inviteLink: `${process.env.FRONTEND_URL || 'http://localhost:3100'}/invite/${savedInvite.token}`,
+        inviteLink,
       },
     };
   }

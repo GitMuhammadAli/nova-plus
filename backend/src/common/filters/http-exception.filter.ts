@@ -24,6 +24,18 @@ export class AllExceptionsFilter implements ExceptionFilter {
       stack: (exception as any)?.stack,
     });
 
+    // For 401 errors, include helpful message
+    if (status === 401) {
+      res.status(status).json({
+        statusCode: status,
+        timestamp: new Date().toISOString(),
+        path: req?.url,
+        message: message || 'Authentication required',
+        error: 'Unauthorized',
+      });
+      return;
+    }
+
     res.status(status).json({
       statusCode: status,
       timestamp: new Date().toISOString(),

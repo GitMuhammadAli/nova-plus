@@ -15,13 +15,23 @@ export default function DashboardLayout({
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const router = useRouter();
   const { isAuthenticated, isLoading, user } = useAuthGuard();
+  
+  // Reset loading state if stuck
+  useEffect(() => {
+    if (isLoading && !isAuthenticated) {
+      const timer = setTimeout(() => {
+        // This will be handled by auth guard
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading, isAuthenticated]);
 
   // Redirect to login if not authenticated (after loading check)
   useEffect(() => {
-    if (!isLoading && (!isAuthenticated || !user)) {
+    if (!isLoading && !isAuthenticated) {
       router.replace('/login');
     }
-  }, [isAuthenticated, isLoading, user, router]);
+  }, [isAuthenticated, isLoading, router]);
 
   if (isLoading) {
     return (

@@ -1,62 +1,55 @@
 "use client"
 
 import { useEffect, useRef } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchMe } from '@/app/store/authSlice';
 import { AppDispatch, RootState } from '@/app/store/store';
+
+const PUBLIC_ROUTES = ['/login', '/register', '/'];
 
 export function useAuthGuard() {
   const router = useRouter();
   const pathname = usePathname();
   const dispatch = useDispatch<AppDispatch>();
-  const { isAuthenticated, isLoading, user } = useSelector((state: RootState) => state.auth);
+  const { isAuthenticated, isInitializing, user } = useSelector((state: RootState) => state.auth);
   const hasFetched = useRef(false);
-  const isRedirecting = useRef(false);
 
   useEffect(() => {
-    // Skip auth check for public routes
-    const publicRoutes = ['/login', '/register', '/'];
-    // Allow /invite routes (dynamic)
-    if (publicRoutes.includes(pathname) || pathname.startsWith('/invite/')) {
+    // Skip auth check for public routes - completely ignore these pages
+    if (PUBLIC_ROUTES.includes(pathname) || pathname.startsWith('/invite/')) {
+      hasFetched.current = false;
       return;
     }
 
-    // If already authenticated with user data, allow access
+    // If already authenticated with user, allow access
     if (isAuthenticated && user) {
       return;
     }
 
-    // Wait for loading to complete
-    if (isLoading) {
+    // Wait for initial check to complete
+    if (isInitializing) {
       return;
     }
 
-    // If already fetched and we're not authenticated, redirect once
-    if (hasFetched.current && !isAuthenticated && !user && !isRedirecting.current) {
-      isRedirecting.current = true;
-      router.replace('/login');
-      return;
-    }
-
-    // Don't fetch again if already fetched
-    if (hasFetched.current) {
-      return;
-    }
-
-    // Mark as fetched and fetch user
-    hasFetched.current = true;
-    
-    dispatch(fetchMe())
-      .unwrap()
-      .then(() => {
-        isRedirecting.current = false;
-      })
-      .catch(() => {
-        // Failed to authenticate - will be handled by the check above
-        isRedirecting.current = false;
+    // Fetch user if not already fetched
+    if (!hasFetched.current) {
+      hasFetched.current = true;
+      dispatch(fetchMe()).catch(() => {
+        // Silent fail - will redirect below if not authenticated
       });
-  }, [isAuthenticated, isLoading, user, pathname, dispatch, router]);
+      return;
+    }
 
-  return { isAuthenticated, isLoading, user };
+    // If not authenticated after fetch, redirect to login
+    if (!isAuthenticated && !isInitializing) {
+      router.replace('/login');
+    }
+  }, [isAuthenticated, isInitializing, user, pathname, dispatch, router]);
+
+  return { 
+    isAuthenticated, 
+    isLoading: isInitializing, 
+    user 
+  };
 }

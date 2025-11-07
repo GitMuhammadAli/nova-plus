@@ -8,6 +8,7 @@ import { InviteService } from './invite.service';
 import { InviteController } from './invite.controller';
 import { getJwtSecret } from '../auth/utils/jwt-secret.util';
 import { CompanyModule } from '../company/company.module';
+import { EmailModule } from '../email/email.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { CompanyModule } from '../company/company.module';
       signOptions: { expiresIn: '15m' },
     }),
     forwardRef(() => CompanyModule),
+    EmailModule,
   ],
   providers: [InviteService],
   controllers: [InviteController],

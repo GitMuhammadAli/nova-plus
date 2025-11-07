@@ -8,7 +8,7 @@ import { Users, UserPlus, FolderKanban, FileText, TrendingUp } from 'lucide-reac
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { RoleGuard } from '@/components/guards/RoleGuard';
-import { usersAPI } from '@/app/services';
+import { usersAPI, projectAPI, taskAPI } from '@/app/services';
 import { useRouter } from 'next/navigation';
 
 const ManagerDashboard = () => {
@@ -25,14 +25,28 @@ const ManagerDashboard = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await usersAPI.getMyUsers({ limit: 1000 });
-        const teamUsers = response.data?.data || [];
+        setLoading(true);
+        
+        // Fetch team users
+        const usersRes = await usersAPI.getMyUsers({ limit: 1000 });
+        const teamUsers = usersRes.data?.data || [];
+        
+        // Fetch projects
+        const projectsRes = await projectAPI.findAll();
+        const projects = Array.isArray(projectsRes.data) ? projectsRes.data : [];
+        const activeProjects = projects.filter((p: any) => p.status === 'active').length;
+        
+        // Fetch tasks
+        const tasksRes = await taskAPI.getAll();
+        const tasks = Array.isArray(tasksRes.data) ? tasksRes.data : [];
+        const pendingTasks = tasks.filter((t: any) => t.status === 'pending').length;
+        const completedTasks = tasks.filter((t: any) => t.status === 'done').length;
         
         setStats({
           teamSize: teamUsers.length,
-          activeProjects: 0, // Will be populated in Phase 3
-          pendingTasks: 0, // Will be populated in Phase 4
-          completedTasks: 0, // Will be populated in Phase 4
+          activeProjects,
+          pendingTasks,
+          completedTasks,
         });
       } catch (error) {
         console.error('Failed to fetch stats:', error);
@@ -41,8 +55,10 @@ const ManagerDashboard = () => {
       }
     };
 
-    fetchStats();
-  }, []);
+    if (user) {
+      fetchStats();
+    }
+  }, [user]);
 
   return (
     <RoleGuard allowedRoles={['manager']}>

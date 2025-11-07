@@ -44,9 +44,14 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const { user } = useSelector((state: RootState) => state.auth);
   const userRole = user?.role?.toLowerCase() || '';
 
+  // Normalize role for matching (company_admin -> admin, super_admin -> admin)
+  const normalizedRole = userRole === 'company_admin' || userRole === 'super_admin' 
+    ? 'admin' 
+    : userRole;
+
   // Filter nav items based on user role
   const navItems = allNavItems.filter(item => 
-    item.roles.includes(userRole)
+    item.roles.includes(normalizedRole)
   );
 
   return (

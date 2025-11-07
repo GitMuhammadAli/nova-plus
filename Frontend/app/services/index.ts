@@ -96,15 +96,38 @@ export const settingsAPI = {
 // TASK API
 // ============================================
 export const taskAPI = {
-  getAll: (params?: any) => api.get('/task', { params }),
+  getAll: (params?: any) => api.get('/tasks', { params }),
   
-  getById: (id: string) => api.get(`/task/${id}`),
+  getById: (id: string) => api.get(`/tasks/${id}`),
   
-  create: (data: any) => api.post('/task', data),
+  create: (data: any) => api.post('/tasks', data),
   
-  update: (id: string, data: any) => api.patch(`/task/${id}`, data),
+  update: (id: string, data: any) => api.patch(`/tasks/${id}`, data),
   
-  delete: (id: string) => api.delete(`/task/${id}`),
+  updateStatus: (id: string, status: string) => api.patch(`/tasks/${id}/status`, { status }),
+  
+  addComment: (id: string, comment: string) => api.post(`/tasks/${id}/comments`, { comment }),
+  
+  delete: (id: string) => api.delete(`/tasks/${id}`),
+  
+  getMyTasks: () => api.get('/tasks/me'),
+};
+
+// ============================================
+// PROJECT API
+// ============================================
+export const projectAPI = {
+  findAll: (params?: { status?: string; assignedTo?: string }) => api.get('/projects', { params }),
+  
+  getById: (id: string) => api.get(`/projects/${id}`),
+  
+  create: (data: any) => api.post('/projects', data),
+  
+  update: (id: string, data: any) => api.patch(`/projects/${id}`, data),
+  
+  delete: (id: string) => api.delete(`/projects/${id}`),
+  
+  getMyProjects: () => api.get('/projects/me'),
 };
 
 // ============================================

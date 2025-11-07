@@ -12,6 +12,8 @@ import { OrganizationModule } from './modules/organization/organization.module';
 import { UsersModule } from './modules/user/user.module';
 import { CompanyModule } from './modules/company/company.module';
 import { InviteModule } from './modules/invite/invite.module';
+import { ProjectModule } from './modules/project/project.module';
+import { EmailModule } from './modules/email/email.module';
 
 @Module({
   imports: [
@@ -34,6 +36,9 @@ import { InviteModule } from './modules/invite/invite.module';
     CompanyModule,
     InviteModule,
     DashboardModule,
+    ProjectModule,
+    TasksModule,
+    EmailModule,
   ],
   controllers: [],
   providers: [],

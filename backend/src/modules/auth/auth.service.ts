@@ -50,8 +50,8 @@ export class AuthService {
       companyId: user.companyId?.toString() || user.companyId, // Include companyId in JWT
     };
 
-    // Use JwtService with the secret configured in JwtModule
-    // The module is configured with: process.env.JWT_SECRET || process.env.JWT_ACCESS_SECRET || 'supersecretkey'
+    // JwtService uses the secret from JwtModule configuration
+    // Ensure JwtModule is configured with getJwtSecret() in auth.module.ts
     const accessToken = this.jwtService.sign(payload, {
       expiresIn: '15m',
     });
@@ -59,6 +59,19 @@ export class AuthService {
     const refreshToken = this.jwtService.sign(payload, {
       expiresIn: '7d',
     });
+
+    // Debug logging in development
+    if (process.env.NODE_ENV === 'development') {
+      const { getJwtSecret } = require('./utils/jwt-secret.util');
+      const currentSecret = getJwtSecret();
+      console.log('✅ Tokens generated:', {
+        userId,
+        email: user.email,
+        secretUsed: currentSecret,
+        accessTokenLength: accessToken.length,
+        refreshTokenLength: refreshToken.length,
+      });
+    }
 
     const refreshHash = await bcrypt.hash(refreshToken, 10);
     await this.sessionModel.create({
@@ -113,7 +126,7 @@ export class AuthService {
     }
 
     // Generate new access token with user info
-    // Use JwtService with the secret configured in JwtModule (same as used for verification)
+    // JwtService uses the secret from JwtModule configuration
     const payload = { 
       sub: userIdStr, 
       email: user.email, 

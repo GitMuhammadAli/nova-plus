@@ -7,7 +7,7 @@ export type InviteDocument = Invite & Document;
 export class Invite {
   readonly _id?: string;
 
-  @Prop({ required: true, unique: true, index: true })
+  @Prop({ required: true, unique: true })
   token: string; // Unique invite token
 
   @Prop({ type: Types.ObjectId, ref: 'Company', required: true })

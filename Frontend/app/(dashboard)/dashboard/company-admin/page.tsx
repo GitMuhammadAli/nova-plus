@@ -15,6 +15,7 @@ import { useRouter } from 'next/navigation';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { clearUser, fetchMe } from '@/app/store/authSlice';
 
 const CompanyAdminDashboard = () => {
   const router = useRouter();
@@ -40,14 +41,40 @@ const CompanyAdminDashboard = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      try {
-        if (user?.companyId) {
-          // Fetch company details
-          const companyRes = await companyAPI.getById(user.companyId);
-          setCompany(companyRes.data);
+      // Wait for user to be available
+      if (!user) {
+        setLoading(false);
+        return;
+      }
 
-          // Fetch company users
-          const usersRes = await companyAPI.getCompanyUsers(user.companyId, { limit: 1000 });
+      // Ensure companyId is a string
+      const companyId = user.companyId?.toString() || user.companyId;
+      if (!companyId) {
+        console.error('User does not have a companyId:', user);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        
+        // Fetch company details - interceptor will handle token refresh
+        try {
+          const companyRes = await companyAPI.getById(companyId);
+          setCompany(companyRes.data);
+        } catch (error: any) {
+          console.error('Failed to fetch company:', error);
+          // If 401, the interceptor will handle refresh and redirect
+          if (error.response?.status === 401) {
+            // Don't continue with other requests if auth fails
+            setLoading(false);
+            return;
+          }
+        }
+
+        // Fetch company users
+        try {
+          const usersRes = await companyAPI.getCompanyUsers(companyId, { limit: 1000 });
           const users = Array.isArray(usersRes.data) ? usersRes.data : [];
 
           const managers = users.filter((u: any) => u.role === 'manager');
@@ -64,14 +91,18 @@ const CompanyAdminDashboard = () => {
               return created > weekAgo;
             }).length,
           });
+        } catch (error: any) {
+          console.error('Failed to fetch users:', error);
+          // Non-critical, continue
+        }
 
-          // Fetch invites
-          try {
-            const invitesRes = await inviteAPI.getCompanyInvites(user.companyId);
-            setInvites(Array.isArray(invitesRes.data) ? invitesRes.data : []);
-          } catch (err) {
-            console.error('Failed to fetch invites:', err);
-          }
+        // Fetch invites
+        try {
+          const invitesRes = await inviteAPI.getCompanyInvites(companyId);
+          setInvites(Array.isArray(invitesRes.data) ? invitesRes.data : []);
+        } catch (err) {
+          console.error('Failed to fetch invites:', err);
+          // Non-critical, continue
         }
       } catch (error) {
         console.error('Failed to fetch dashboard data:', error);
@@ -80,24 +111,32 @@ const CompanyAdminDashboard = () => {
       }
     };
 
-    fetchData();
-  }, [user]);
+    // Only fetch if user exists and has companyId
+    if (user?.companyId) {
+      fetchData();
+    } else {
+      setLoading(false);
+    }
+  }, [user, dispatch]);
 
   const handleCreateInvite = async () => {
     if (!user?.companyId) return;
+
+    const companyId = user.companyId?.toString() || user.companyId;
+    if (!companyId) return;
 
     setInviteSubmitting(true);
     setInviteError(null);
 
     try {
-      const response = await inviteAPI.createInvite(user.companyId, {
+      const response = await inviteAPI.createInvite(companyId, {
         email: inviteForm.email || undefined,
         role: inviteForm.role,
         expiresInDays: inviteForm.expiresInDays,
       });
 
       // Refresh invites
-      const invitesRes = await inviteAPI.getCompanyInvites(user.companyId);
+      const invitesRes = await inviteAPI.getCompanyInvites(companyId);
       setInvites(Array.isArray(invitesRes.data) ? invitesRes.data : []);
 
       // Reset form and close dialog
@@ -113,12 +152,15 @@ const CompanyAdminDashboard = () => {
   const handleRevokeInvite = async (inviteId: string) => {
     if (!user?.companyId) return;
 
+    const companyId = user.companyId?.toString() || user.companyId;
+    if (!companyId) return;
+
     if (!confirm('Are you sure you want to revoke this invite?')) return;
 
     try {
-      await inviteAPI.revokeInvite(inviteId, user.companyId);
+      await inviteAPI.revokeInvite(inviteId, companyId);
       // Refresh invites
-      const invitesRes = await inviteAPI.getCompanyInvites(user.companyId);
+      const invitesRes = await inviteAPI.getCompanyInvites(companyId);
       setInvites(Array.isArray(invitesRes.data) ? invitesRes.data : []);
     } catch (err) {
       console.error('Failed to revoke invite:', err);

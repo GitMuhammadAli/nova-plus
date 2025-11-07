@@ -1,3 +1,5 @@
+"use client"
+
 import { useState, useCallback } from "react";
 import { ZoomIn, ZoomOut, Maximize, Save, X, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";

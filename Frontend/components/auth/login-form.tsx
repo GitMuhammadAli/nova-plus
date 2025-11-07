@@ -15,7 +15,7 @@ import Link from "next/link";
 export function LoginForm() {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
-  const { isLoading, error } = useSelector((state: RootState) => state.auth);  // Removed isAuthenticated
+  const { isLoading, error, isAuthenticated, user } = useSelector((state: RootState) => state.auth);
   
   const [formData, setFormData] = useState({
     email: "",
@@ -23,32 +23,37 @@ export function LoginForm() {
   });
 
   useEffect(() => {
-    // Clear any previous errors when component mounts
     dispatch(clearError());
   }, [dispatch]);
 
-  // ✅ REMOVED the blocking redirect useEffect
-  // Only redirect happens in handleSubmit after successful login
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      router.replace("/dashboard");
+    }
+  }, [isAuthenticated, user, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     
-    console.log('🔵 Login form submitted with:', formData.email);
+    // Don't submit if already loading
+    if (isLoading) {
+      return;
+    }
     
-    const result = await dispatch(login(formData));
-    
-    console.log('🟢 Login result:', result);
-    console.log('🟢 Login result type:', result.type);
-    console.log('🟢 Login payload:', result.payload);
-    
-    if (login.fulfilled.match(result)) {
-      console.log('✅ Login successful!');
-      console.log('✅ User data:', result.payload);
-      console.log('✅ Redirecting to dashboard...');
+    try {
+      const result = await dispatch(login(formData));
       
-      router.push("/dashboard");
-    } else {
-      console.log('❌ Login failed:', result.payload);
+      if (login.fulfilled.match(result)) {
+        // Small delay to ensure state is updated
+        setTimeout(() => {
+          router.replace("/dashboard");
+        }, 100);
+      }
+    } catch (error) {
+      // Error is handled by Redux
+      console.error('Login error:', error);
     }
   };
 
@@ -102,15 +107,6 @@ export function LoginForm() {
             required
             disabled={isLoading}
           />
-        </div>
-
-        <div className="flex items-center justify-between">
-          <Link 
-            href="/forgot-password" 
-            className="text-sm text-primary hover:underline"
-          >
-            Forgot password?
-          </Link>
         </div>
         
         <Button type="submit" className="w-full" disabled={isLoading}>

@@ -183,8 +183,18 @@ export class CompanyController {
    * GET /company/:id
    */
   @Get(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard)
   async getCompany(@Param('id') id: string, @Req() req) {
+    // Debug logging in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔵 Company Controller - getCompany:', {
+        companyId: id,
+        userId: req.user?._id || req.user?.id,
+        userRole: req.user?.role,
+        hasUser: !!req.user,
+      });
+    }
+    
     const requestUserId = req.user._id || req.user.id;
     const requestUserRole = req.user.role;
     return this.companyService.findById(id, requestUserId, requestUserRole);
