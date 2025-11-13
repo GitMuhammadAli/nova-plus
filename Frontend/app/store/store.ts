@@ -4,6 +4,7 @@ import createWebStorage from "redux-persist/lib/storage/createWebStorage";
 import authReducer from "./authSlice";
 import usersReducer from "./usersSlice";
 import companyReducer from "./companySlice";
+import invitesReducer from "./invitesSlice";
 
 const createNoopStorage = () => {
   return {
@@ -27,6 +28,7 @@ const rootReducer = combineReducers({
   auth: authReducer,
   users: usersReducer,
   company: companyReducer,
+  invites: invitesReducer,
   // Add more reducers here as needed
 });
 

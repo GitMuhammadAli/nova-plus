@@ -13,6 +13,7 @@ import {
   ChevronLeft,
   ChevronRight,
   FolderKanban,
+  Mail,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -29,6 +30,7 @@ interface SidebarProps {
 const allNavItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard", roles: ['admin', 'manager', 'user'] },
   { icon: Users, label: "Users", path: "/users", roles: ['admin', 'manager'] },
+  { icon: Mail, label: "Invites", path: "/invites", roles: ['admin'] },
   { icon: FolderKanban, label: "Projects", path: "/projects", roles: ['manager'] },
   { icon: FileText, label: "My Tasks", path: "/tasks", roles: ['user'] },
   { icon: BarChart3, label: "Analytics", path: "/analytics", roles: ['admin', 'manager'] },

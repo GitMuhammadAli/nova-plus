@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useDispatch } from "react-redux";
-import { setUser } from "@/app/store/authSlice";
+import { setUser, fetchMe } from "@/app/store/authSlice";
 import { AppDispatch } from "@/app/store/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,7 +47,8 @@ export default function AcceptInvitePage() {
         setFormData(prev => ({ ...prev, email: response.data.invite.email }));
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || "Invalid or expired invite");
+      const errorMessage = err.response?.data?.message || "Invalid or expired invite";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -72,15 +73,38 @@ export default function AcceptInvitePage() {
       });
 
       if (response.data?.user) {
-        dispatch(setUser(response.data.user));
-        setSuccess(true);
-        setTimeout(() => {
-          router.push("/dashboard");
-        }, 2000);
+        // Wait a bit to ensure cookies are set by the browser
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        // Fetch the current user to verify authentication and get full user data
+        try {
+          const userResponse = await dispatch(fetchMe());
+          if (fetchMe.fulfilled.match(userResponse)) {
+            setSuccess(true);
+            // Redirect immediately after successful authentication
+            setTimeout(() => {
+              router.replace("/dashboard");
+            }, 500);
+          } else {
+            // If fetchMe fails, still set the user from response and redirect
+            dispatch(setUser(response.data.user));
+            setSuccess(true);
+            setTimeout(() => {
+              router.replace("/dashboard");
+            }, 500);
+          }
+        } catch (fetchError) {
+          // If fetchMe fails, still set the user from response and redirect
+          dispatch(setUser(response.data.user));
+          setSuccess(true);
+          setTimeout(() => {
+            router.replace("/dashboard");
+          }, 500);
+        }
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || "Failed to accept invite");
-    } finally {
+      const errorMessage = err.response?.data?.message || "Failed to accept invite";
+      setError(errorMessage);
       setSubmitting(false);
     }
   };

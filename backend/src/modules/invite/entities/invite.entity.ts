@@ -40,8 +40,8 @@ export class Invite {
 
 export const InviteSchema = SchemaFactory.createForClass(Invite);
 
-// Index for faster lookups
-InviteSchema.index({ token: 1 });
+// Indexes for faster lookups
+// Note: token index is automatically created by unique: true, so we don't need to add it manually
 InviteSchema.index({ companyId: 1 });
 InviteSchema.index({ email: 1 });
 InviteSchema.index({ expiresAt: 1 });

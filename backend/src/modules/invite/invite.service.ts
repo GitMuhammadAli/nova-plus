@@ -54,18 +54,16 @@ export class InviteService {
       throw new ForbiddenException('Managers can only invite users');
     }
 
-    if (createInviteDto.role === UserRole.COMPANY_ADMIN || createInviteDto.role === UserRole.SUPER_ADMIN) {
-      throw new ForbiddenException('Cannot invite users as admins');
-    }
+    // Note: Admin roles are already rejected by DTO validation, so no need to check here
 
     // If email is provided, check if user already exists
     if (createInviteDto.email) {
       const existingUser = await this.userModel.findOne({ email: createInviteDto.email }).exec();
       if (existingUser) {
-        throw new BadRequestException('User with this email already exists');
+        throw new BadRequestException('A user with this email already exists. They can log in directly without an invite.');
       }
 
-      // Check if there's already an active invite for this email
+      // Check if there's already an active (unused) invite for this email in this company
       const existingInvite = await this.inviteModel.findOne({
         email: createInviteDto.email,
         companyId: companyId,
@@ -75,7 +73,7 @@ export class InviteService {
       }).exec();
 
       if (existingInvite) {
-        throw new BadRequestException('An active invite already exists for this email');
+        throw new BadRequestException('An active invite already exists for this email. Please wait for it to be used or expired before creating a new one.');
       }
     }
 
@@ -141,6 +139,9 @@ export class InviteService {
         expiresAt: savedInvite.expiresAt,
         inviteLink,
       },
+      // Always return token and link for manual sharing (even without email)
+      token: savedInvite.token,
+      inviteLink,
     };
   }
 
@@ -148,19 +149,25 @@ export class InviteService {
    * Get invite details by token (for validation)
    */
   async getInviteByToken(token: string) {
+    // First check if invite exists (including used ones)
     const invite = await this.inviteModel
-      .findOne({ token, isActive: true, isUsed: false })
+      .findOne({ token, isActive: true })
       .populate('companyId', 'name domain')
       .populate('createdBy', 'name email')
       .exec();
 
     if (!invite) {
-      throw new NotFoundException('Invite not found or has expired');
+      throw new NotFoundException('Invite not found or has been revoked');
+    }
+
+    // Check if already used
+    if (invite.isUsed) {
+      throw new BadRequestException('This invite has already been used. Please contact your administrator for a new invite.');
     }
 
     // Check if expired
     if (new Date() > invite.expiresAt) {
-      throw new BadRequestException('Invite has expired');
+      throw new BadRequestException('This invite has expired. Please contact your administrator for a new invite.');
     }
 
     return invite;
@@ -170,16 +177,21 @@ export class InviteService {
    * Accept an invite and create user account
    */
   async acceptInvite(token: string, acceptInviteDto: AcceptInviteDto) {
-    // Get invite
-    const invite = await this.inviteModel.findOne({ token, isActive: true, isUsed: false }).exec();
+    // Get invite (check all invites first to provide better error messages)
+    const invite = await this.inviteModel.findOne({ token, isActive: true }).exec();
 
     if (!invite) {
-      throw new NotFoundException('Invite not found or has already been used');
+      throw new NotFoundException('Invite not found or has been revoked');
+    }
+
+    // Check if already used
+    if (invite.isUsed) {
+      throw new BadRequestException('This invite has already been used. Please contact your administrator for a new invite.');
     }
 
     // Check if expired
     if (new Date() > invite.expiresAt) {
-      throw new BadRequestException('Invite has expired');
+      throw new BadRequestException('This invite has expired. Please contact your administrator for a new invite.');
     }
 
     // If invite has specific email, verify it matches
@@ -254,7 +266,7 @@ export class InviteService {
     }
 
     const invites = await this.inviteModel
-      .find({ companyId, isActive: true })
+      .find({ companyId }) // Get all invites, not just active ones
       .populate('createdBy', 'name email')
       .populate('usedBy', 'name email')
       .sort({ createdAt: -1 })
@@ -266,7 +278,7 @@ export class InviteService {
       const inviteObj = invite.toObject ? invite.toObject() : invite;
       return {
         ...inviteObj,
-        inviteLink: `${frontendUrl}/invite/${inviteObj.token}`,
+        inviteLink: `${frontendUrl}/register?token=${inviteObj.token}`,
       };
     });
 
@@ -292,10 +304,8 @@ export class InviteService {
       throw new NotFoundException('Invite not found');
     }
 
-    if (invite.isUsed) {
-      throw new BadRequestException('Cannot revoke an invite that has already been used');
-    }
-
+    // Allow deleting used invites (just mark as inactive for history)
+    // The user who used it will remain, but the invite will be marked as inactive
     invite.isActive = false;
     await invite.save();
 

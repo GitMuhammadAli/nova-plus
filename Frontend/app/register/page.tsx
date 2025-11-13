@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
-import { clearError, fetchMe, resetLoading } from "@/app/store/authSlice";
+import { clearError, fetchMe, resetLoading, setUser } from "@/app/store/authSlice";
 import { registerCompany } from "@/app/store/companySlice";
 import { AppDispatch, RootState } from "@/app/store/store";
 import Link from "next/link";
@@ -80,7 +80,8 @@ export default function Register() {
         setJoinCompanyData(prev => ({ ...prev, email: response.data.invite.email }));
       }
     } catch (err: any) {
-      setValidationError(err.response?.data?.message || "Invalid or expired invite");
+      const errorMessage = err.response?.data?.message || "Invalid or expired invite";
+      setValidationError(errorMessage);
     } finally {
       setLoadingInvite(false);
     }
@@ -170,18 +171,33 @@ export default function Register() {
       });
 
       if (response.data?.user) {
+        // Wait a bit to ensure cookies are set by the browser
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        // Fetch the current user to verify authentication and get full user data
         try {
-          await dispatch(fetchMe()).unwrap();
+          const userResponse = await dispatch(fetchMe());
+          if (fetchMe.fulfilled.match(userResponse)) {
+            setSuccess(true);
+            // Redirect immediately after successful authentication
+            setTimeout(() => {
+              router.replace("/dashboard");
+            }, 500);
+          } else {
+            // If fetchMe fails, still set the user from response and redirect
+            dispatch(setUser(response.data.user));
+            setSuccess(true);
+            setTimeout(() => {
+              router.replace("/dashboard");
+            }, 500);
+          }
+        } catch (fetchError) {
+          // If fetchMe fails, still set the user from response and redirect
+          dispatch(setUser(response.data.user));
           setSuccess(true);
           setTimeout(() => {
             router.replace("/dashboard");
           }, 500);
-        } catch (error) {
-          console.error('Failed to fetch user after invite acceptance:', error);
-          setSuccess(true);
-          setTimeout(() => {
-            router.replace("/dashboard");
-          }, 1000);
         }
       }
     } catch (err: any) {

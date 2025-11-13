@@ -217,11 +217,11 @@ export const companyAPI = {
 // INVITE API
 // ============================================
 export const inviteAPI = {
-  createInvite: (companyId: string, data: {
+  createInvite: (data: {
     email?: string;
     role: string;
     expiresInDays?: number;
-  }) => api.post(`/invite/company/${companyId}`, data),
+  }) => api.post(`/company/invite`, data),
   getInvite: (token: string) => api.get(`/invite/${token}`),
   acceptInvite: (token: string, data: {
     name: string;

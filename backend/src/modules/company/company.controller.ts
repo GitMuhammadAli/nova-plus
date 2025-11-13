@@ -107,7 +107,15 @@ export class CompanyController {
     
     const result = await this.inviteService.createInvite(companyId, creatorId, creatorRole, createInviteDto);
     return {
-      inviteToken: result.invite.token,
+      success: true,
+      inviteToken: result.token || result.invite.token,
+      inviteLink: result.inviteLink || result.invite.inviteLink,
+      invite: {
+        _id: result.invite._id,
+        email: result.invite.email,
+        role: result.invite.role,
+        expiresAt: result.invite.expiresAt,
+      },
     };
   }
 

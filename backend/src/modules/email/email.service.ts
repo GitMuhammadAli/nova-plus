@@ -1,15 +1,47 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
+  private transporter: nodemailer.Transporter | null = null;
 
-  constructor(private configService: ConfigService) {}
+  constructor(private configService: ConfigService) {
+    this.initializeTransporter();
+  }
 
   /**
-   * Send invite email
-   * In production, integrate with email service (SendGrid, AWS SES, etc.)
+   * Initialize email transporter (Mailtrap or SMTP)
+   */
+  private initializeTransporter() {
+    const mailtrapHost = this.configService.get<string>('MAILTRAP_HOST');
+    const mailtrapPort = this.configService.get<number>('MAILTRAP_PORT');
+    const mailtrapUser = this.configService.get<string>('MAILTRAP_USER');
+    const mailtrapPass = this.configService.get<string>('MAILTRAP_PASS');
+    const emailFrom = this.configService.get<string>('EMAIL_FROM') || 'noreply@novapulse.com';
+    const emailFromName = this.configService.get<string>('EMAIL_FROM_NAME') || 'NovaPulse';
+
+    // Use Mailtrap if configured, otherwise use SMTP settings
+    if (mailtrapHost && mailtrapUser && mailtrapPass) {
+      this.transporter = nodemailer.createTransport({
+        host: mailtrapHost,
+        port: mailtrapPort || 2525,
+        auth: {
+          user: mailtrapUser,
+          pass: mailtrapPass,
+        },
+      });
+      this.logger.log('✅ Email service initialized with Mailtrap');
+    } else {
+      // Fallback: Log only mode (development)
+      this.logger.warn('⚠️ Mailtrap not configured. Emails will be logged only.');
+      this.logger.warn('   Set MAILTRAP_HOST, MAILTRAP_USER, MAILTRAP_PASS in .env');
+    }
+  }
+
+  /**
+   * Send invite email via Mailtrap
    */
   async sendInviteEmail(data: {
     to: string;
@@ -20,16 +52,8 @@ export class EmailService {
     expiresAt: Date;
   }) {
     const { to, inviteLink, companyName, inviterName, role, expiresAt } = data;
-
-    // In production, replace this with actual email service
-    // Example: await this.sendGridService.send({ ... })
-    
-    this.logger.log(`📧 Invite email would be sent to: ${to}`);
-    this.logger.log(`   Company: ${companyName}`);
-    this.logger.log(`   Inviter: ${inviterName}`);
-    this.logger.log(`   Role: ${role}`);
-    this.logger.log(`   Link: ${inviteLink}`);
-    this.logger.log(`   Expires: ${expiresAt}`);
+    const emailFrom = this.configService.get<string>('EMAIL_FROM') || 'noreply@novapulse.com';
+    const emailFromName = this.configService.get<string>('EMAIL_FROM_NAME') || 'NovaPulse';
 
     // Email template
     const emailHtml = this.getInviteEmailTemplate({
@@ -40,13 +64,51 @@ export class EmailService {
       expiresAt,
     });
 
-    // TODO: Integrate with actual email service
-    // For now, just log the email content
-    if (process.env.NODE_ENV === 'development') {
-      this.logger.debug('Email HTML:', emailHtml);
-    }
+    const emailText = `
+You've been invited to join ${companyName} on NovaPulse!
 
-    return { success: true, message: 'Invite email sent (logged in development)' };
+${inviterName} has invited you to join ${companyName} as a ${role}.
+
+Accept your invitation: ${inviteLink}
+
+This invitation expires on ${new Date(expiresAt).toLocaleDateString()}.
+
+If you didn't expect this invitation, you can safely ignore this email.
+    `.trim();
+
+    // Send email if transporter is configured
+    if (this.transporter) {
+      try {
+        const info = await this.transporter.sendMail({
+          from: `"${emailFromName}" <${emailFrom}>`,
+          to,
+          subject: `You've been invited to join ${companyName} on NovaPulse`,
+          text: emailText,
+          html: emailHtml,
+        });
+
+        this.logger.log(`✅ Invite email sent to: ${to}`);
+        this.logger.debug(`   Message ID: ${info.messageId}`);
+        return { success: true, message: 'Invite email sent successfully', messageId: info.messageId };
+      } catch (error) {
+        this.logger.error(`❌ Failed to send invite email to ${to}:`, error);
+        throw error;
+      }
+    } else {
+      // Log mode (development without Mailtrap)
+      this.logger.log(`📧 Invite email would be sent to: ${to}`);
+      this.logger.log(`   Company: ${companyName}`);
+      this.logger.log(`   Inviter: ${inviterName}`);
+      this.logger.log(`   Role: ${role}`);
+      this.logger.log(`   Link: ${inviteLink}`);
+      this.logger.log(`   Expires: ${expiresAt}`);
+      
+      if (process.env.NODE_ENV === 'development') {
+        this.logger.debug('Email HTML:', emailHtml);
+      }
+
+      return { success: true, message: 'Invite email logged (Mailtrap not configured)' };
+    }
   }
 
   /**

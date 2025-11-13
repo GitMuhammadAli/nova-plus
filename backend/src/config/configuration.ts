@@ -10,4 +10,13 @@ export default () => ({
     refreshExpire: process.env.REFRESH_TOKEN_EXPIRE,
   },
   logLevel: process.env.LOG_LEVEL ?? 'info',
+  email: {
+    mailtrapHost: process.env.MAILTRAP_HOST,
+    mailtrapPort: parseInt(process.env.MAILTRAP_PORT ?? '2525', 10),
+    mailtrapUser: process.env.MAILTRAP_USER,
+    mailtrapPass: process.env.MAILTRAP_PASS,
+    from: process.env.EMAIL_FROM || 'noreply@novapulse.com',
+    fromName: process.env.EMAIL_FROM_NAME || 'NovaPulse',
+  },
+  frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3100',
 });
