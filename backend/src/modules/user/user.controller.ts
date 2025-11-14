@@ -6,6 +6,8 @@ import { UserRole } from "src/modules/user/entities/user.entity";
 import { UsersService } from './user.service';
 import { CreateUserByAdminDto } from './dto/create-user-by-admin.dto';
 import { CreateUserByManagerDto } from './dto/create-user-by-manager.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { Types } from 'mongoose';
 
 @Controller('user')
 @UseGuards(JwtAuthGuard)
@@ -158,6 +160,15 @@ export class UserController {
       search,
     };
 
+    // Company admin sees all users in their company
+    if (currentUser.role === UserRole.COMPANY_ADMIN) {
+      const companyId = currentUser.companyId?.toString() || currentUser.companyId;
+      if (!companyId) {
+        throw new ForbiddenException('Company admin must belong to a company');
+      }
+      return this.usersService.findAllForCompany(companyId, params);
+    }
+
     // Admin sees all users in their org
     if (currentUser.role === UserRole.ADMIN || currentUser.role === UserRole.SUPERADMIN) {
       const orgId = currentUser.orgId?.toString() || currentUser.orgId;
@@ -220,6 +231,8 @@ export class UserController {
       role: createUserDto.role,
       managerId: createUserDto.managerId,
       companyId: companyId,
+      department: createUserDto.department,
+      location: createUserDto.location,
     });
     // Return without password - Mongoose documents have toObject() method
     const userObj = (savedUser as any).toObject ? (savedUser as any).toObject() : savedUser;
@@ -286,10 +299,48 @@ export class UserController {
    */
   @Patch(':id')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.MANAGER)
-  async updateUser(@Req() req, @Param('id') id: string, @Body() updateUserDto: any) {
+  @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.COMPANY_ADMIN)
+  async updateUser(@Req() req, @Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     const currentUser = req.user;
     const orgId = currentUser.orgId?.toString() || currentUser.orgId;
+    const companyId = currentUser.companyId?.toString() || currentUser.companyId;
+    const currentUserId = currentUser._id || currentUser.id;
+
+    // Company admin path
+    if (currentUser.role === UserRole.COMPANY_ADMIN) {
+      if (!companyId) {
+        throw new ForbiddenException('Company admin must belong to a company');
+      }
+
+      const userToUpdate = await this.usersService.findById(id);
+      const targetCompanyId =
+        userToUpdate.companyId?.toString() || userToUpdate.orgId?.toString();
+
+      if (targetCompanyId !== companyId) {
+        throw new ForbiddenException('You can only update users in your company');
+      }
+
+      if (
+        userToUpdate.role === UserRole.COMPANY_ADMIN ||
+        userToUpdate.role === UserRole.SUPER_ADMIN
+      ) {
+        throw new ForbiddenException('You cannot modify other administrators');
+      }
+
+      if (
+        updateUserDto.role &&
+        ![UserRole.MANAGER, UserRole.USER].includes(updateUserDto.role as UserRole)
+      ) {
+        throw new ForbiddenException('Invalid role assignment');
+      }
+
+      const sanitizedUpdate: any = { ...updateUserDto };
+      if (sanitizedUpdate.managerId) {
+        sanitizedUpdate.managerId = new Types.ObjectId(sanitizedUpdate.managerId);
+      }
+      return this.usersService.update(id, sanitizedUpdate);
+    }
+
     if (!orgId) {
       throw new ForbiddenException('User must belong to an organization');
     }
@@ -299,25 +350,63 @@ export class UserController {
 
     // Manager can only update users they created
     if (currentUser.role === UserRole.MANAGER) {
-      if (userToUpdate.createdBy?.toString() !== (currentUser._id || currentUser.id)?.toString()) {
+      if (userToUpdate.createdBy?.toString() !== currentUserId?.toString()) {
         throw new ForbiddenException('You can only update users you created');
       }
+      // Managers cannot change roles
+      updateUserDto.role = undefined;
     }
 
-    return this.usersService.update(id, updateUserDto);
+    const sanitizedUpdate: any = { ...updateUserDto };
+    if (sanitizedUpdate.managerId) {
+      sanitizedUpdate.managerId = new Types.ObjectId(sanitizedUpdate.managerId);
+    }
+
+    return this.usersService.update(id, sanitizedUpdate);
   }
 
   /**
    * Delete user
    * Admin can delete any user
    * Manager can delete users they created
+   * Company Admin can delete users within their company
    */
   @Delete(':id')
   @UseGuards(RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.MANAGER)
+  @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.COMPANY_ADMIN)
   async deleteUser(@Req() req, @Param('id') id: string) {
     const currentUser = req.user;
     const orgId = currentUser.orgId?.toString() || currentUser.orgId;
+    const companyId = currentUser.companyId?.toString() || currentUser.companyId;
+
+    if ((currentUser._id || currentUser.id)?.toString() === id) {
+      throw new ForbiddenException('You cannot delete your own account');
+    }
+
+    // Company Admin path
+    if (currentUser.role === UserRole.COMPANY_ADMIN) {
+      if (!companyId) {
+        throw new ForbiddenException('Company admin must belong to a company');
+      }
+
+      const userToDelete = await this.usersService.findById(id);
+      const targetCompanyId =
+        userToDelete.companyId?.toString() || userToDelete.orgId?.toString();
+
+      if (targetCompanyId !== companyId) {
+        throw new ForbiddenException('You can only delete users in your company');
+      }
+
+      if (
+        userToDelete.role === UserRole.COMPANY_ADMIN ||
+        userToDelete.role === UserRole.SUPER_ADMIN
+      ) {
+        throw new ForbiddenException('You cannot delete other administrators');
+      }
+
+      return this.usersService.delete(id);
+    }
+
     if (!orgId) {
       throw new ForbiddenException('User must belong to an organization');
     }

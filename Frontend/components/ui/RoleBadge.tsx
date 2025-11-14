@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Shield, UserCog, Edit3, User, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type UserRole = "ADMIN" | "MANAGER" | "EDITOR" | "USER" | "VIEWER";
+type UserRole = "ADMIN" | "MANAGER" | "EDITOR" | "USER" | "VIEWER" | "COMPANY_ADMIN" | "SUPER_ADMIN" | "SUPERADMIN";
 
 interface RoleBadgeProps {
   role: UserRole | string;
@@ -44,6 +44,24 @@ const roleConfig: Record<
     variant: "outline",
     icon: Eye,
     colorClass: "bg-gray-500/10 text-gray-600 border-gray-500/20",
+  },
+  COMPANY_ADMIN: {
+    label: "Company Admin",
+    variant: "destructive",
+    icon: Shield,
+    colorClass: "bg-purple-500/10 text-purple-600 border-purple-500/20",
+  },
+  SUPER_ADMIN: {
+    label: "Super Admin",
+    variant: "destructive",
+    icon: Shield,
+    colorClass: "bg-pink-500/10 text-pink-600 border-pink-500/20",
+  },
+  SUPERADMIN: {
+    label: "Super Admin",
+    variant: "destructive",
+    icon: Shield,
+    colorClass: "bg-pink-500/10 text-pink-600 border-pink-500/20",
   },
 };
 

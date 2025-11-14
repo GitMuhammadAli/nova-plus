@@ -13,6 +13,12 @@ export class Company {
   @Prop({ required: false })
   domain?: string;
 
+  @Prop({ required: false })
+  description?: string;
+
+  @Prop({ required: false })
+  logoUrl?: string;
+
   @Prop({ type: Types.ObjectId, ref: 'User', required: false })
   createdBy?: Types.ObjectId; // Super Admin who created the company (null for self-registration)
 

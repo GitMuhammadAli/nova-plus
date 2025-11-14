@@ -2,11 +2,18 @@
 
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchUsers, fetchMyUsers, createUser, createUserByAdmin, createUserByManager, updateUser, deleteUser } from "@/app/store/usersSlice";
+import { fetchUsers, fetchMyUsers, fetchCompanyUsers, createUser, createUserByAdmin, createUserByManager, updateUser, deleteUser } from "@/app/store/usersSlice";
 import { AppDispatch, RootState } from "@/app/store/store";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Table,
   TableBody,
@@ -29,15 +36,19 @@ import { UserDetailSheet } from "@/components/ui/UserDetailSheet";
 import { UserFormDialog } from "@/components/ui/UserFormDialog";
 import { DeleteUserDialog } from "@/components/ui/DeleteUserDialog";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Plus, Filter, Users, UserCheck, ShieldCheck, Clock } from "lucide-react";
+import { Search, Plus, Filter, Users, UserCheck, ShieldCheck, Clock, MoreHorizontal } from "lucide-react";
 
-type UserRole = "ADMIN" | "MANAGER" | "EDITOR" | "USER" | "VIEWER" | "all";
+type UserRoleFilter = "ADMIN" | "MANAGER" | "EDITOR" | "USER" | "VIEWER" | "COMPANY_ADMIN" | "SUPER_ADMIN" | "SUPERADMIN" | "all";
 
 interface User {
   _id: string;
-  name: string;
+  name?: string;
   email: string;
-  role: "ADMIN" | "MANAGER" | "EDITOR" | "USER" | "VIEWER" | string;
+  role: string;
+  isActive?: boolean;
+  managerId?: any;
+  department?: string;
+  location?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -49,7 +60,7 @@ export default function UsersPage() {
   const { toast } = useToast();
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [roleFilter, setRoleFilter] = useState<UserRole>("all");
+  const [roleFilter, setRoleFilter] = useState<UserRoleFilter>("all");
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [formDialogOpen, setFormDialogOpen] = useState(false);
@@ -57,25 +68,46 @@ export default function UsersPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
-  // Get current user role
   const currentUserRole = currentUser?.role?.toLowerCase() || '';
+  const normalizedRole = currentUserRole === 'company_admin' ? 'admin' : currentUserRole;
+  const isAdmin = normalizedRole === 'admin' || normalizedRole === 'superadmin';
+  const isManagerRole = normalizedRole === 'manager';
 
   useEffect(() => {
-    // Fetch users based on role
-    if (currentUserRole === 'admin' || currentUserRole === 'superadmin') {
-      dispatch(fetchUsers({})); // Admin gets all users
-    } else if (currentUserRole === 'manager') {
-      dispatch(fetchMyUsers({})); // Manager gets only their users
+    if (currentUserRole === 'company_admin') {
+      dispatch(fetchCompanyUsers({}));
+    } else if (normalizedRole === 'admin') {
+      dispatch(fetchUsers({}));
+    } else if (normalizedRole === 'manager') {
+      dispatch(fetchMyUsers({}));
     } else {
-      dispatch(fetchUsers({})); // Fallback to regular fetch
+      dispatch(fetchUsers({}));
     }
-  }, [dispatch, currentUserRole]);
+  }, [dispatch, currentUserRole, normalizedRole]);
+
+  const normalizeRole = (role?: string) => (role || "").toLowerCase();
+
+  const managersList = users.filter((user) => normalizeRole(user.role) === "manager");
+  const totalActiveUsers = users.filter((user) => user.isActive !== false).length;
+  const adminCountUsers = users.filter((user) => {
+    const r = normalizeRole(user.role);
+    return r === "admin" || r === "company_admin" || r === "super_admin" || r === "superadmin";
+  }).length;
+  const recentUsersCount = users.filter((user) => {
+    if (!user.createdAt) return false;
+    const daysDiff = (Date.now() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60 * 24);
+    return daysDiff <= 7;
+  }).length;
 
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
-      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (user.name || "")
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase()) ||
       user.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesRole = roleFilter === "all" || (user.role as string) === roleFilter;
+    const matchesRole =
+      roleFilter === "all" ||
+      normalizeRole(user.role) === roleFilter.toLowerCase();
     return matchesSearch && matchesRole;
   });
 
@@ -108,46 +140,139 @@ export default function UsersPage() {
     }
   };
 
+  const handlePromoteDemote = async (user: User, targetRole: "MANAGER" | "USER") => {
+    if (!user?._id || !isAdmin) return;
+    if (normalizeRole(user.role) === targetRole.toLowerCase()) return;
+    try {
+      await dispatch(updateUser({ id: user._id, data: { role: targetRole } })).unwrap();
+      toast({
+        title: "Success",
+        description: `${user.name || user.email} is now ${targetRole === "MANAGER" ? "a manager" : "a user"}.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to update user role",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleToggleActive = async (user: User) => {
+    if (!user?._id || !isAdmin) return;
+    try {
+      await dispatch(updateUser({ id: user._id, data: { isActive: user.isActive === false } })).unwrap();
+      toast({
+        title: "Success",
+        description: `${user.name || user.email} has been ${user.isActive === false ? "activated" : "deactivated"}.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to update user status",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleExportUsers = () => {
+    if (!users.length) {
+      toast({
+        title: "No users",
+        description: "There are no users to export yet.",
+      });
+      return;
+    }
+    const headers = ["Name", "Email", "Role", "Status", "Manager", "Created"];
+    const rows = users.map((user) => {
+      const manager =
+        typeof user.managerId === "object"
+          ? user.managerId?.name || user.managerId?.email || ""
+          : "";
+      return [
+        `"${user.name || ""}"`,
+        `"${user.email}"`,
+        `"${user.role}"`,
+        `"${user.isActive === false ? "Inactive" : "Active"}"`,
+        `"${manager}"`,
+        `"${user.createdAt || ""}"`,
+      ].join(",");
+    });
+    const csvContent = [headers.join(","), ...rows].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `company-users-${new Date().toISOString()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const refreshUsersList = () => {
+    if (currentUserRole === 'company_admin') {
+      dispatch(fetchCompanyUsers({}));
+    } else if (normalizedRole === 'admin') {
+      dispatch(fetchUsers({}));
+    } else if (normalizedRole === 'manager') {
+      dispatch(fetchMyUsers({}));
+    } else {
+      dispatch(fetchUsers({}));
+    }
+  };
+
   const handleSaveUser = async (data: any) => {
     try {
+      const basePayload = {
+        name: data.name,
+        email: data.email,
+        role: data.role,
+        managerId: data.managerId || undefined,
+        department: data.department || undefined,
+        location: data.location || undefined,
+        isActive: data.status ? data.status === 'active' : undefined,
+      };
+
       if (data._id) {
-        // Update existing user
-        await dispatch(updateUser({ id: data._id, data })).unwrap();
+        const updatePayload: any = { ...basePayload };
+        if (data.password) {
+          updatePayload.password = data.password;
+        }
+        await dispatch(updateUser({ id: data._id, data: updatePayload })).unwrap();
         toast({
           title: "User updated",
           description: `${data.name} has been updated successfully.`,
         });
       } else {
-        // Create new user based on current user's role
-        if (currentUserRole === 'admin' || currentUserRole === 'superadmin') {
-          // Admin can create managers or users
+        if (isAdmin) {
           await dispatch(createUserByAdmin({
-            name: data.name,
-            email: data.email,
+            name: basePayload.name,
+            email: basePayload.email,
             password: data.password,
-            role: data.role || 'USER',
-            managerId: data.managerId,
+            role: basePayload.role || 'USER',
+            managerId: basePayload.managerId,
+            department: basePayload.department,
+            location: basePayload.location,
           })).unwrap();
           toast({
             title: "User created",
             description: `${data.name} has been added successfully.`,
           });
-        } else if (currentUserRole === 'manager') {
-          // Manager can only create users
+        } else if (isManagerRole) {
           await dispatch(createUserByManager({
-            name: data.name,
-            email: data.email,
+            name: basePayload.name,
+            email: basePayload.email,
             password: data.password,
-            department: data.department,
-            location: data.location,
+            department: basePayload.department,
+            location: basePayload.location,
           })).unwrap();
           toast({
             title: "User created",
             description: `${data.name} has been added to your team.`,
           });
         } else {
-          // Fallback to regular create (shouldn't happen for non-admin/manager)
-          await dispatch(createUser(data)).unwrap();
+          await dispatch(createUser({ ...basePayload, password: data.password })).unwrap();
           toast({
             title: "User created",
             description: `${data.name} has been added successfully.`,
@@ -156,14 +281,7 @@ export default function UsersPage() {
       }
       setFormDialogOpen(false);
       setEditingUser(null);
-      // Refresh users list based on role
-      if (currentUserRole === 'admin' || currentUserRole === 'superadmin') {
-        dispatch(fetchUsers({}));
-      } else if (currentUserRole === 'manager') {
-        dispatch(fetchMyUsers({}));
-      } else {
-        dispatch(fetchUsers({}));
-      }
+      refreshUsersList();
     } catch (error: any) {
       // Check if it's an authentication error (401 Unauthorized)
       const isAuthError = error?.response?.status === 401 || 
@@ -200,14 +318,7 @@ export default function UsersPage() {
         });
         setUserToDelete(null);
         setDeleteDialogOpen(false);
-        // Refresh users list based on role
-        if (currentUserRole === 'admin' || currentUserRole === 'superadmin') {
-          dispatch(fetchUsers({}));
-        } else if (currentUserRole === 'manager') {
-          dispatch(fetchMyUsers({}));
-        } else {
-          dispatch(fetchUsers({}));
-        }
+        refreshUsersList();
       } catch (error: any) {
         toast({
           title: "Error",
@@ -218,7 +329,8 @@ export default function UsersPage() {
     }
   };
 
-  const getInitials = (name: string) => {
+  const getInitials = (name?: string) => {
+    if (!name) return "NP";
     return name
       .split(' ')
       .map(n => n[0])
@@ -236,9 +348,15 @@ export default function UsersPage() {
     });
   };
 
-  const getRoleCount = (role: string) => {
-    return users.filter(u => u.role === role).length;
+  const getRoleCount = (roles: string[]) => {
+    const normalizedTargets = roles.map((r) => r.toLowerCase());
+    return users.filter((u) =>
+      normalizedTargets.includes(normalizeRole(u.role))
+    ).length;
   };
+
+  const totalActive = totalActiveUsers;
+  const adminCount = adminCountUsers;
 
   if (isLoading) {
     return (
@@ -257,17 +375,24 @@ export default function UsersPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Users</h1>
           <p className="text-muted-foreground mt-1">
             Manage team members and their permissions
           </p>
         </div>
-        <Button className="gap-2" onClick={handleAddUser}>
-          <Plus className="w-4 h-4" />
-          Add User
-        </Button>
+        <div className="flex items-center gap-2">
+          {(isAdmin || isManagerRole) && (
+            <Button className="gap-2" onClick={handleAddUser}>
+              <Plus className="w-4 h-4" />
+              Add User
+            </Button>
+          )}
+          <Button variant="outline" onClick={handleExportUsers}>
+            Export CSV
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -303,7 +428,7 @@ export default function UsersPage() {
               <div>
                 <p className="text-sm text-muted-foreground">Active</p>
                 <p className="text-2xl font-bold mt-1 text-green-600">
-                  {users.length}
+                  {totalActive}
                 </p>
               </div>
             </div>
@@ -323,7 +448,7 @@ export default function UsersPage() {
               <div>
                 <p className="text-sm text-muted-foreground">Admins</p>
                 <p className="text-2xl font-bold mt-1">
-                  {getRoleCount('ADMIN')}
+                  {adminCount}
                 </p>
               </div>
             </div>
@@ -343,11 +468,7 @@ export default function UsersPage() {
               <div>
                 <p className="text-sm text-muted-foreground">Recent</p>
                 <p className="text-2xl font-bold mt-1">
-                  {users.filter(u => {
-                    if (!u.createdAt) return false;
-                    const daysDiff = (Date.now() - new Date(u.createdAt).getTime()) / (1000 * 60 * 60 * 24);
-                    return daysDiff <= 7;
-                  }).length}
+                  {recentUsersCount}
                 </p>
               </div>
             </div>
@@ -369,7 +490,7 @@ export default function UsersPage() {
           </div>
           <Select 
             value={roleFilter} 
-            onValueChange={(v) => setRoleFilter(v as UserRole)}
+            onValueChange={(v) => setRoleFilter(v as UserRoleFilter)}
           >
             <SelectTrigger className="w-full md:w-[180px]">
               <Filter className="w-4 h-4 mr-2" />
@@ -378,6 +499,7 @@ export default function UsersPage() {
             <SelectContent>
               <SelectItem value="all">All Roles</SelectItem>
               <SelectItem value="ADMIN">Admin</SelectItem>
+              <SelectItem value="COMPANY_ADMIN">Company Admin</SelectItem>
               <SelectItem value="MANAGER">Manager</SelectItem>
               <SelectItem value="EDITOR">Editor</SelectItem>
               <SelectItem value="USER">User</SelectItem>
@@ -395,8 +517,10 @@ export default function UsersPage() {
               <TableHead>User</TableHead>
               <TableHead>Role</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Manager</TableHead>
               <TableHead>Joined</TableHead>
               <TableHead>Last Updated</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -430,40 +554,123 @@ export default function UsersPage() {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredUsers.map((user, index) => (
-                <motion.tr
-                  key={user._id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.2, delay: index * 0.05 }}
-                  className="cursor-pointer hover:bg-muted/50 transition-colors"
-                  onClick={() => handleUserClick(user)}
-                >
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white text-sm font-semibold">
-                        {getInitials(user.name)}
+              filteredUsers.map((user, index) => {
+                const managerLabel =
+                  typeof user.managerId === "object"
+                    ? user.managerId?.name || user.managerId?.email
+                    : "";
+                return (
+                  <motion.tr
+                    key={user._id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2, delay: index * 0.05 }}
+                    className="cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => handleUserClick(user)}
+                  >
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white text-sm font-semibold">
+                          {getInitials(user.name)}
+                        </div>
+                        <div>
+                          <p className="font-medium">{user.name || "Unnamed User"}</p>
+                          <p className="text-sm text-muted-foreground">{user.email}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium">{user.name}</p>
-                        <p className="text-sm text-muted-foreground">{user.email}</p>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <RoleBadge role={user.role as "ADMIN" | "MANAGER" | "EDITOR" | "USER" | "VIEWER"} />
-                  </TableCell>
-                  <TableCell>
-                    <StatusBadge isActive={true} />
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {formatDate(user.createdAt)}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {formatDate(user.updatedAt)}
-                  </TableCell>
-                </motion.tr>
-              ))
+                    </TableCell>
+                    <TableCell>
+                      <RoleBadge role={(user.role || "").toUpperCase()} />
+                    </TableCell>
+                    <TableCell>
+                      <StatusBadge isActive={user.isActive !== false} />
+                    </TableCell>
+                    <TableCell>
+                      {managerLabel ? (
+                        <span className="text-sm text-foreground">{managerLabel}</span>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {formatDate(user.createdAt)}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {formatDate(user.updatedAt)}
+                    </TableCell>
+                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                      {isAdmin ? (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleEditUser(user);
+                              }}
+                            >
+                              Edit User
+                            </DropdownMenuItem>
+                            {normalizeRole(user.role) !== "manager" && (
+                              <DropdownMenuItem
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  handlePromoteDemote(user, "MANAGER");
+                                }}
+                              >
+                                Promote to Manager
+                              </DropdownMenuItem>
+                            )}
+                            {normalizeRole(user.role) === "manager" && (
+                              <DropdownMenuItem
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  handlePromoteDemote(user, "USER");
+                                }}
+                              >
+                                Demote to User
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleToggleActive(user);
+                              }}
+                            >
+                              {user.isActive === false ? "Activate User" : "Deactivate User"}
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="text-destructive"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleDeleteUser(user._id);
+                              }}
+                            >
+                              Remove User
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleUserClick(user);
+                          }}
+                        >
+                          View
+                        </Button>
+                      )}
+                    </TableCell>
+                  </motion.tr>
+                );
+              })
             )}
           </TableBody>
         </Table>
@@ -485,6 +692,8 @@ export default function UsersPage() {
         user={editingUser}
         onSave={handleSaveUser}
         currentUserRole={currentUserRole}
+        managers={managersList}
+        defaultRole={(editingUser?.role?.toUpperCase() as string) || "USER"}
       />
 
       {/* Delete Confirmation Dialog */}

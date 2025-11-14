@@ -27,6 +27,10 @@ interface User {
   name: string;
   email: string;
   role: "ADMIN" | "MANAGER" | "EDITOR" | "USER" | "VIEWER" | string;
+  managerId?: any;
+  isActive?: boolean;
+  department?: string;
+  location?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -66,7 +70,8 @@ export function UserDetailSheet({
     </div>
   );
 
-  const getInitials = (name: string) => {
+  const getInitials = (name?: string) => {
+    if (!name) return "NA";
     return name
       .split(" ")
       .map((n) => n[0])
@@ -99,6 +104,13 @@ export function UserDetailSheet({
     return formatDate(dateString);
   };
 
+  const managerName =
+    typeof user.managerId === "object"
+      ? user.managerId?.name || user.managerId?.email
+      : undefined;
+
+  const isActive = user.isActive !== false;
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="sm:max-w-md overflow-y-auto">
@@ -127,7 +139,7 @@ export function UserDetailSheet({
           {/* Badges */}
           <div className="flex items-center gap-2">
             <RoleBadge role={user.role} />
-            <StatusBadge isActive={true} />
+            <StatusBadge isActive={isActive} />
           </div>
 
           <Separator />
@@ -146,6 +158,9 @@ export function UserDetailSheet({
               value={getRelativeTime(user.updatedAt)}
             />
             <InfoRow icon={Shield} label="Role" value={user.role} />
+            {managerName && (
+              <InfoRow icon={UserIcon} label="Manager" value={managerName} />
+            )}
           </div>
 
           <Separator />
@@ -161,9 +176,15 @@ export function UserDetailSheet({
                 </p>
               </div>
               <div className="p-3 rounded-lg bg-muted/50">
-                <p className="text-sm font-medium">Created</p>
+                <p className="text-sm font-medium">Department</p>
                 <p className="text-xs text-muted-foreground">
-                  {formatDate(user.createdAt)}
+                  {user.department || "Not set"}
+                </p>
+              </div>
+              <div className="p-3 rounded-lg bg-muted/50">
+                <p className="text-sm font-medium">Location</p>
+                <p className="text-xs text-muted-foreground">
+                  {user.location || "Not set"}
                 </p>
               </div>
             </div>

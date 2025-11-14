@@ -4,10 +4,15 @@ import { usersAPI } from '../services';
 interface User {
   _id: string;
   email: string;
-  name: string;
+  name?: string;
   role: string;
-  createdBy?: string; // Who created this user (Admin or Manager ID)
-  managerId?: string; // For users: their manager reference
+  companyId?: string;
+  orgId?: string;
+  createdBy?: string;
+  managerId?: any;
+  department?: string;
+  location?: string;
+  isActive?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -48,6 +53,18 @@ export const fetchUsers = createAsyncThunk(
   }
 );
 
+export const fetchCompanyUsers = createAsyncThunk(
+  'users/fetchCompanyUsers',
+  async (params: { page?: number; limit?: number; search?: string } = {}, { rejectWithValue }) => {
+    try {
+      const response = await usersAPI.getCompanyUsers(params || {});
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch company users');
+    }
+  }
+);
+
 export const fetchUserById = createAsyncThunk(
   'users/fetchById',
   async (id: string, { rejectWithValue }) => {
@@ -74,7 +91,10 @@ export const createUser = createAsyncThunk(
 
 export const createUserByAdmin = createAsyncThunk(
   'users/createByAdmin',
-  async (data: { name: string; email: string; password: string; role: string; managerId?: string }, { rejectWithValue }) => {
+  async (
+    data: { name: string; email: string; password: string; role: string; managerId?: string; department?: string; location?: string },
+    { rejectWithValue }
+  ) => {
     try {
       const response = await usersAPI.createByAdmin(data);
       return response.data;
@@ -149,19 +169,15 @@ const usersSlice = createSlice({
       })
       .addCase(fetchUsers.fulfilled, (state, action) => {
         state.isLoading = false;
-        // Handle both response formats and ensure it's always an array
-        const users = action.payload?.data || action.payload || [];
-        state.users = Array.isArray(users) ? users : [];
-        if (action.payload?.pagination) {
-          state.pagination = action.payload.pagination;
-        } else {
-          // Reset pagination if not provided
-          state.pagination = {
-            page: 1,
-            limit: state.users.length || 10,
-            total: state.users.length,
-          };
-        }
+        const payload = action.payload?.data || action.payload || [];
+        state.users = Array.isArray(payload) ? payload : [];
+        state.pagination = action.payload?.pagination
+          ? action.payload.pagination
+          : {
+              page: 1,
+              limit: state.users.length || 10,
+              total: state.users.length,
+            };
       })
       .addCase(fetchUsers.rejected, (state, action) => {
         state.isLoading = false;
@@ -169,6 +185,29 @@ const usersSlice = createSlice({
         // This ensures the UI always renders with all cards visible
         state.users = [];
         state.error = null; // Never show errors - always use empty state
+      });
+
+    builder
+      .addCase(fetchCompanyUsers.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchCompanyUsers.fulfilled, (state, action) => {
+        state.isLoading = false;
+        const payload = action.payload?.data || action.payload || [];
+        state.users = Array.isArray(payload) ? payload : [];
+        state.pagination = action.payload?.pagination
+          ? action.payload.pagination
+          : {
+              page: 1,
+              limit: state.users.length || 10,
+              total: state.users.length,
+            };
+      })
+      .addCase(fetchCompanyUsers.rejected, (state) => {
+        state.isLoading = false;
+        state.users = [];
+        state.error = null;
       });
 
     // Fetch User by ID
@@ -224,6 +263,8 @@ const usersSlice = createSlice({
         const index = state.users.findIndex((u) => u._id === action.payload._id);
         if (index !== -1) {
           state.users[index] = action.payload;
+        } else {
+          state.users.unshift(action.payload);
         }
       });
 

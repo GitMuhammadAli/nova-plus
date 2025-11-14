@@ -1,4 +1,4 @@
-import { IsString, IsEmail, IsOptional, IsNotEmpty } from 'class-validator';
+import { IsString, IsEmail, IsOptional, IsNotEmpty, IsUrl } from 'class-validator';
 
 export class CreateCompanyDto {
   @IsString()
@@ -8,6 +8,15 @@ export class CreateCompanyDto {
   @IsString()
   @IsOptional()
   domain?: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @IsString()
+  @IsOptional()
+  @IsUrl({}, { message: 'logoUrl must be a valid URL' })
+  logoUrl?: string;
 
   @IsString()
   @IsEmail()

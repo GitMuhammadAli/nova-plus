@@ -6,7 +6,6 @@ import { Company, CompanySchema } from '../company/entities/company.entity';
 import { UsersService } from './user.service';
 import { UserController } from './user.controller';
 import { UsersController } from './users.controller';
-import { DefaultAdminSeed } from './seed/default-admin.seed';
 import { TestDataSeed } from './seed/test-data.seed';
 
 @Module({
@@ -17,7 +16,7 @@ import { TestDataSeed } from './seed/test-data.seed';
       { name: Company.name, schema: CompanySchema },
     ]),
   ],
-  providers: [UsersService, DefaultAdminSeed, TestDataSeed],
+  providers: [UsersService, TestDataSeed],
   controllers: [UserController, UsersController],
   exports: [UsersService],
 })

@@ -19,5 +19,13 @@ export class CreateUserByAdminDto {
   @IsOptional()
   @IsString()
   managerId?: string; // Optional: assign user to a manager
+
+  @IsOptional()
+  @IsString()
+  department?: string;
+
+  @IsOptional()
+  @IsString()
+  location?: string;
 }
 

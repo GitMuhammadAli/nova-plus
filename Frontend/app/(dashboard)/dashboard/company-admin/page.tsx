@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '@/app/store/store';
 import { motion } from 'framer-motion';
@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { RoleGuard } from '@/components/guards/RoleGuard';
 import { usersAPI, companyAPI, inviteAPI } from '@/app/services';
 import { useRouter } from 'next/navigation';
@@ -16,6 +17,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { clearUser, fetchMe } from '@/app/store/authSlice';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 const CompanyAdminDashboard = () => {
   const router = useRouter();
@@ -38,6 +47,56 @@ const CompanyAdminDashboard = () => {
   });
   const [inviteSubmitting, setInviteSubmitting] = useState(false);
   const [inviteError, setInviteError] = useState<string | null>(null);
+  const [companyUsers, setCompanyUsers] = useState<any[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [userSearch, setUserSearch] = useState('');
+  const [userActionId, setUserActionId] = useState<string | null>(null);
+  const [userError, setUserError] = useState<string | null>(null);
+
+  const computeStatsFromUsers = useCallback((usersList: any[]) => {
+    const safeList = Array.isArray(usersList) ? usersList : [];
+    const managers = safeList.filter((u) => u.role === 'manager').length;
+    const regularUsers = safeList.filter((u) => u.role === 'user').length;
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    const recentUsers = safeList.filter((u) => {
+      if (!u.createdAt) return false;
+      const createdDate = new Date(u.createdAt);
+      return createdDate > weekAgo;
+    }).length;
+
+    setStats({
+      totalUsers: safeList.length,
+      totalManagers: managers,
+      totalRegularUsers: regularUsers,
+      recentUsers,
+    });
+  }, []);
+
+  const loadCompanyUsers = useCallback(
+    async (companyId: string) => {
+      setUsersLoading(true);
+      setUserError(null);
+      try {
+        const usersRes = await companyAPI.getCompanyUsers(companyId, { limit: 1000 });
+        const payload = Array.isArray(usersRes.data?.data)
+          ? usersRes.data.data
+          : Array.isArray(usersRes.data)
+          ? usersRes.data
+          : [];
+        setCompanyUsers(payload);
+        computeStatsFromUsers(payload);
+      } catch (error) {
+        console.error('Failed to fetch users:', error);
+        setCompanyUsers([]);
+        computeStatsFromUsers([]);
+        setUserError('Failed to load company users');
+      } finally {
+        setUsersLoading(false);
+      }
+    },
+    [computeStatsFromUsers]
+  );
 
   useEffect(() => {
     const fetchData = async () => {
@@ -72,29 +131,7 @@ const CompanyAdminDashboard = () => {
           }
         }
 
-        // Fetch company users
-        try {
-          const usersRes = await companyAPI.getCompanyUsers(companyId, { limit: 1000 });
-          const users = Array.isArray(usersRes.data) ? usersRes.data : [];
-
-          const managers = users.filter((u: any) => u.role === 'manager');
-          const regularUsers = users.filter((u: any) => u.role === 'user');
-
-          setStats({
-            totalUsers: users.length,
-            totalManagers: managers.length,
-            totalRegularUsers: regularUsers.length,
-            recentUsers: users.filter((u: any) => {
-              const created = new Date(u.createdAt);
-              const weekAgo = new Date();
-              weekAgo.setDate(weekAgo.getDate() - 7);
-              return created > weekAgo;
-            }).length,
-          });
-        } catch (error: any) {
-          console.error('Failed to fetch users:', error);
-          // Non-critical, continue
-        }
+        await loadCompanyUsers(companyId);
 
         // Fetch invites
         try {
@@ -117,7 +154,7 @@ const CompanyAdminDashboard = () => {
     } else {
       setLoading(false);
     }
-  }, [user, dispatch]);
+  }, [user, dispatch, loadCompanyUsers]);
 
   const handleCreateInvite = async () => {
     if (!user?.companyId) return;
@@ -129,7 +166,7 @@ const CompanyAdminDashboard = () => {
     setInviteError(null);
 
     try {
-      const response = await inviteAPI.createInvite(companyId, {
+      await inviteAPI.createInvite({
         email: inviteForm.email || undefined,
         role: inviteForm.role,
         expiresInDays: inviteForm.expiresInDays,
@@ -148,6 +185,43 @@ const CompanyAdminDashboard = () => {
       setInviteSubmitting(false);
     }
   };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (!userId) return;
+    if (user?._id && userId === (user._id || user.id)) {
+      setUserError('You cannot delete yourself.');
+      return;
+    }
+
+    if (!confirm('Are you sure you want to remove this user from your company?')) {
+      return;
+    }
+
+    setUserActionId(userId);
+    setUserError(null);
+
+    try {
+      await usersAPI.delete(userId);
+      const updatedUsers = companyUsers.filter((u) => u._id !== userId);
+      setCompanyUsers(updatedUsers);
+      computeStatsFromUsers(updatedUsers);
+    } catch (error: any) {
+      console.error('Failed to delete user:', error);
+      setUserError(error.response?.data?.message || 'Failed to delete user');
+    } finally {
+      setUserActionId(null);
+    }
+  };
+
+  const normalizedSearch = userSearch.trim().toLowerCase();
+  const filteredUsers = companyUsers.filter((companyUser) => {
+    if (!normalizedSearch) return true;
+    return (
+      companyUser.name?.toLowerCase().includes(normalizedSearch) ||
+      companyUser.email?.toLowerCase().includes(normalizedSearch) ||
+      companyUser.role?.toLowerCase().includes(normalizedSearch)
+    );
+  });
 
   const handleRevokeInvite = async (inviteId: string) => {
     if (!user?.companyId) return;
@@ -366,6 +440,83 @@ const CompanyAdminDashboard = () => {
               <span>View Analytics</span>
             </Button>
           </div>
+        </Card>
+
+        {/* Company Users */}
+        <Card className="p-6 space-y-4">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="text-xl font-semibold text-foreground">Company Users</h2>
+              <p className="text-sm text-muted-foreground">
+                View everyone in your company and remove access when needed.
+              </p>
+            </div>
+            <Input
+              value={userSearch}
+              onChange={(e) => setUserSearch(e.target.value)}
+              placeholder="Search by name, email, or role..."
+              className="md:w-72"
+            />
+          </div>
+          {userError && (
+            <Alert variant="destructive">
+              <AlertDescription>{userError}</AlertDescription>
+            </Alert>
+          )}
+          {usersLoading ? (
+            <p className="text-muted-foreground text-sm">Loading users...</p>
+          ) : filteredUsers.length === 0 ? (
+            <p className="text-muted-foreground text-sm">No users found.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredUsers.map((companyUser) => {
+                    const createdDate = companyUser.createdAt
+                      ? new Date(companyUser.createdAt).toLocaleDateString()
+                      : '—';
+                    const isSelf = (companyUser._id || companyUser.id) === (user?._id || user?.id);
+                    const isDeleting = userActionId === (companyUser._id || companyUser.id);
+                    return (
+                      <TableRow key={companyUser._id || companyUser.id}>
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span className="font-medium text-foreground">{companyUser.name || '—'}</span>
+                            <span className="text-xs text-muted-foreground">{companyUser.email}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="capitalize">
+                            {companyUser.role}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{createdDate}</TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-destructive hover:text-destructive"
+                            disabled={isSelf || isDeleting}
+                            onClick={() => handleDeleteUser(companyUser._id || companyUser.id)}
+                          >
+                            {isDeleting ? 'Removing...' : <Trash2 className="w-4 h-4" />}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </Card>
 
         {/* Invites Section */}

@@ -44,7 +44,8 @@ api.interceptors.response.use(
 
     // Handle 401 errors
     if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
-      const errorMessage = error.response?.data?.message || '';
+      const errorMessage =
+        (error.response?.data as { message?: string } | undefined)?.message || '';
       
       // If invalid signature, don't try to refresh - just clear and redirect
       if (errorMessage.includes('invalid signature') || errorMessage.includes('Token signature invalid')) {

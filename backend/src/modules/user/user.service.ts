@@ -24,6 +24,8 @@ export class UsersService {
     createdBy?: string;
     managerId?: string;
     isActive?: boolean;
+    department?: string;
+    location?: string;
   }): Promise<User> {
     const hashed = await bcrypt.hash(data.password, 10);
     const user = new this.userModel({
@@ -36,6 +38,8 @@ export class UsersService {
       createdBy: data.createdBy,
       managerId: data.managerId,
       isActive: data.isActive !== undefined ? data.isActive : true,
+      department: data.department,
+      location: data.location,
     });
     return user.save();
   }
@@ -54,6 +58,8 @@ export class UsersService {
       role: UserRole;
       managerId?: string;
       companyId?: string;
+      department?: string;
+      location?: string;
     }
   ): Promise<User> {
     // Validate role - Cannot create super_admin or company_admin (only super admin can create company_admin)
@@ -93,11 +99,15 @@ export class UsersService {
       companyId: data.companyId,
       createdBy: creatorId,
       managerId: data.role === UserRole.USER ? data.managerId : undefined,
+      department: data.department,
+      location: data.location,
       isActive: true,
     });
 
     const savedUser = await user.save();
-    return savedUser;
+    const userObj: any = savedUser.toObject ? savedUser.toObject() : savedUser;
+    delete userObj.password;
+    return userObj;
   }
 
   /**
@@ -147,11 +157,15 @@ export class UsersService {
       companyId: data.companyId,
       createdBy: creatorId,
       managerId: creatorId, // User's manager is the creator
+      department: data.department,
+      location: data.location,
       isActive: true,
     });
 
     const savedUser = await user.save();
-    return savedUser;
+    const userObj: any = savedUser.toObject ? savedUser.toObject() : savedUser;
+    delete userObj.password;
+    return userObj;
   }
 
   /**
@@ -330,8 +344,22 @@ export class UsersService {
   }
 
   async update(id: string, data: Partial<User>) {
+    const updateData: any = { ...data };
+
+    if (data.password) {
+      updateData.password = await bcrypt.hash(data.password, 10);
+    }
+
+    if (data.managerId) {
+      const manager = await this.userModel.findById(data.managerId).exec();
+      if (!manager || manager.role !== UserRole.MANAGER) {
+        throw new BadRequestException('Invalid manager selected');
+      }
+      updateData.managerId = manager._id;
+    }
+
     const user = await this.userModel
-      .findByIdAndUpdate(id, data, { new: true })
+      .findByIdAndUpdate(id, updateData, { new: true })
       .select('-password')
       .exec();
     if (!user) {

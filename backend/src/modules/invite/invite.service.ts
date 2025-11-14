@@ -266,7 +266,10 @@ export class InviteService {
     }
 
     const invites = await this.inviteModel
-      .find({ companyId }) // Get all invites, not just active ones
+      .find({
+        companyId,
+        isActive: true,
+      }) // Only return active invites (revoked invites are hidden)
       .populate('createdBy', 'name email')
       .populate('usedBy', 'name email')
       .sort({ createdAt: -1 })
@@ -304,12 +307,9 @@ export class InviteService {
       throw new NotFoundException('Invite not found');
     }
 
-    // Allow deleting used invites (just mark as inactive for history)
-    // The user who used it will remain, but the invite will be marked as inactive
-    invite.isActive = false;
-    await invite.save();
+    await this.inviteModel.deleteOne({ _id: inviteId }).exec();
 
-    return { message: 'Invite revoked successfully' };
+    return { message: 'Invite deleted successfully' };
   }
 }
 

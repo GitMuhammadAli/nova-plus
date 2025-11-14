@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
-import { clearError, fetchMe, resetLoading, setUser } from "@/app/store/authSlice";
+import { clearError, fetchMe, resetLoading } from "@/app/store/authSlice";
 import { registerCompany } from "@/app/store/companySlice";
 import { AppDispatch, RootState } from "@/app/store/store";
 import Link from "next/link";
@@ -25,6 +25,7 @@ export default function Register() {
   const [activeTab, setActiveTab] = useState<string>("create");
   const [validationError, setValidationError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("Registration successful! Redirecting...");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Create Company form data
@@ -120,6 +121,7 @@ export default function Register() {
 
       if (registerCompany.fulfilled.match(result)) {
         setSuccess(true);
+        setSuccessMessage("Company created successfully! Redirecting to your dashboard...");
         // Fetch the complete user data from backend (cookies are set by backend)
         try {
           await dispatch(fetchMe()).unwrap();
@@ -171,34 +173,18 @@ export default function Register() {
       });
 
       if (response.data?.user) {
-        // Wait a bit to ensure cookies are set by the browser
-        await new Promise(resolve => setTimeout(resolve, 300));
-        
-        // Fetch the current user to verify authentication and get full user data
-        try {
-          const userResponse = await dispatch(fetchMe());
-          if (fetchMe.fulfilled.match(userResponse)) {
-            setSuccess(true);
-            // Redirect immediately after successful authentication
-            setTimeout(() => {
-              router.replace("/dashboard");
-            }, 500);
-          } else {
-            // If fetchMe fails, still set the user from response and redirect
-            dispatch(setUser(response.data.user));
-            setSuccess(true);
-            setTimeout(() => {
-              router.replace("/dashboard");
-            }, 500);
-          }
-        } catch (fetchError) {
-          // If fetchMe fails, still set the user from response and redirect
-          dispatch(setUser(response.data.user));
-          setSuccess(true);
-          setTimeout(() => {
-            router.replace("/dashboard");
-          }, 500);
+        setSuccess(true);
+        setSuccessMessage("Account created! Redirecting you to the login page...");
+
+        const params = new URLSearchParams();
+        params.set("joined", "1");
+        if (joinCompanyData.email) {
+          params.set("email", joinCompanyData.email);
         }
+
+            setTimeout(() => {
+          router.replace(`/login?${params.toString()}`);
+        }, 1200);
       }
     } catch (err: any) {
       setValidationError(err.response?.data?.message || "Failed to accept invite");
@@ -272,7 +258,7 @@ export default function Register() {
             <Alert className="bg-green-50 border-green-200">
               <CheckCircle2 className="h-4 w-4 text-green-600" />
               <AlertDescription className="text-green-800">
-                Registration successful! Redirecting...
+                {successMessage}
               </AlertDescription>
             </Alert>
           )}

@@ -45,6 +45,12 @@ export class User {
 
   @Prop({ default: true })
   isActive: boolean;
+
+  @Prop()
+  department?: string;
+
+  @Prop()
+  location?: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

@@ -33,10 +33,19 @@ import {
 const userFormSchema = z.object({
   name: z.string().min(2, "Full name must be at least 2 characters"),
   email: z.string().email("Invalid email address"),
-  role: z.enum(["ADMIN", "MANAGER", "EDITOR", "USER", "VIEWER"]),
+  role: z.enum(["ADMIN", "MANAGER", "EDITOR", "USER", "VIEWER", "COMPANY_ADMIN", "SUPER_ADMIN"]).default("USER"),
   status: z.enum(["active", "inactive", "pending"]).optional(),
   department: z.string().min(2, "Department must be at least 2 characters").optional(),
   location: z.string().min(2, "Location must be at least 2 characters").optional(),
+  managerId: z.string().optional(),
+  password: z
+    .string()
+    .optional()
+    .refine((val) => !val || val.length >= 6, { message: "Password must be at least 6 characters" }),
+  confirmPassword: z
+    .string()
+    .optional()
+    .refine((val) => !val || val.length >= 6, { message: "Confirm password must be at least 6 characters" }),
 });
 
 type UserFormValues = z.infer<typeof userFormSchema>;
@@ -50,16 +59,24 @@ interface User {
   updatedAt?: string;
 }
 
+interface ManagerOption {
+  _id: string;
+  name?: string;
+  email?: string;
+}
+
 interface UserFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   user: User | null;
   onSave: (data: UserFormValues & { _id?: string; managerId?: string }) => void;
-  currentUserRole?: string; // Current logged-in user's role
+  currentUserRole?: string;
+  managers?: ManagerOption[];
+  defaultRole?: "ADMIN" | "MANAGER" | "EDITOR" | "USER" | "VIEWER" | string;
 }
 
-export function UserFormDialog({ open, onOpenChange, user, onSave, currentUserRole }: UserFormDialogProps) {
-  const isAdmin = currentUserRole === 'admin' || currentUserRole === 'superadmin';
+export function UserFormDialog({ open, onOpenChange, user, onSave, currentUserRole, managers = [], defaultRole = "USER" }: UserFormDialogProps) {
+  const isAdmin = currentUserRole === 'admin' || currentUserRole === 'superadmin' || currentUserRole === 'company_admin';
   const isManager = currentUserRole === 'manager';
   
   const form = useForm<UserFormValues>({
@@ -67,10 +84,13 @@ export function UserFormDialog({ open, onOpenChange, user, onSave, currentUserRo
     defaultValues: {
       name: "",
       email: "",
-      role: isManager ? "USER" : "USER", // Managers can only create users
+      role: isManager ? "USER" : (defaultRole as any) ?? "USER",
       status: "active",
       department: "",
       location: "",
+      managerId: "",
+      password: "",
+      confirmPassword: "",
     },
   });
 
@@ -79,26 +99,50 @@ export function UserFormDialog({ open, onOpenChange, user, onSave, currentUserRo
       form.reset({
         name: user.name,
         email: user.email,
-        role: (user.role as "ADMIN" | "MANAGER" | "EDITOR" | "USER" | "VIEWER") || "USER",
-        status: "active",
-        department: "",
-        location: "",
+        role: (user.role as any) || "USER",
+        status: user.isActive === false ? "inactive" : "active",
+        department: user.department || "",
+        location: user.location || "",
+        managerId: typeof user.managerId === 'object' ? user.managerId?._id || user.managerId?.id || "" : (user.managerId as string) || "",
+        password: "",
+        confirmPassword: "",
       });
     } else {
       form.reset({
         name: "",
         email: "",
-        role: "USER",
+        role: (defaultRole as any) || "USER",
         status: "active",
         department: "",
         location: "",
+        managerId: "",
+        password: "",
+        confirmPassword: "",
       });
     }
-  }, [user, open, form]);
+  }, [user, open, form, defaultRole]);
+
+  const selectedRole = form.watch('role');
 
   const onSubmit = async (values: UserFormValues) => {
+    if (!user) {
+      if (!values.password || !values.confirmPassword) {
+        form.setError('password', { message: 'Password is required for new users' });
+        form.setError('confirmPassword', { message: 'Confirm password is required' });
+        return;
+      }
+      if (values.password !== values.confirmPassword) {
+        form.setError('confirmPassword', { message: 'Passwords do not match' });
+        return;
+      }
+    }
+
     try {
-      await onSave({ ...values, _id: user?._id });
+      await onSave({
+        ...values,
+        _id: user?._id,
+        managerId: values.managerId || undefined,
+      });
       form.reset();
       onOpenChange(false);
     } catch (error) {
@@ -176,10 +220,10 @@ export function UserFormDialog({ open, onOpenChange, user, onSave, currentUserRo
                   name="role"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Role</FormLabel>
-                      <FormControl>
-                        <Input value="User" disabled className="bg-muted" />
-                      </FormControl>
+                  <FormLabel>Role</FormLabel>
+                  <FormControl>
+                    <Input value="User" disabled className="bg-muted" />
+                  </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -208,6 +252,34 @@ export function UserFormDialog({ open, onOpenChange, user, onSave, currentUserRo
                 )}
               />
             </div>
+            {selectedRole === 'USER' && (
+              <FormField
+                control={form.control}
+                name="managerId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Assign Manager</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value || ''}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a manager" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="">Unassigned</SelectItem>
+                        {managers.map((manager) => (
+                          <SelectItem key={manager._id} value={manager._id}>
+                            {manager.name || manager.email}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
             <FormField
               control={form.control}
               name="department"
@@ -229,6 +301,34 @@ export function UserFormDialog({ open, onOpenChange, user, onSave, currentUserRo
                   <FormLabel>Location</FormLabel>
                   <FormControl>
                     <Input placeholder="San Francisco, CA" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Password {user ? "(leave blank to keep current password)" : ""}</FormLabel>
+                  <FormControl>
+                    <Input type="password" placeholder="••••••" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="confirmPassword"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Confirm Password</FormLabel>
+                  <FormControl>
+                    <Input type="password" placeholder="••••••" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

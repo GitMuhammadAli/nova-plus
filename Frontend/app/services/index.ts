@@ -24,6 +24,9 @@ export const usersAPI = {
   getAll: (params?: { page?: number; limit?: number; search?: string }) =>
     api.get('/user', { params }),
   
+  getCompanyUsers: (params?: { page?: number; limit?: number; search?: string }) =>
+    api.get('/user/company', { params }),
+  
   getAllForAdmin: (params?: { page?: number; limit?: number; search?: string }) =>
     api.get('/user/all', { params }),
   

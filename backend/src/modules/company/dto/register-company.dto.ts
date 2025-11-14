@@ -1,4 +1,4 @@
-import { IsString, IsEmail, IsNotEmpty, IsOptional, MinLength } from 'class-validator';
+import { IsString, IsEmail, IsNotEmpty, IsOptional, MinLength, IsUrl } from 'class-validator';
 
 export class RegisterCompanyDto {
   @IsString()
@@ -21,5 +21,14 @@ export class RegisterCompanyDto {
   @IsNotEmpty()
   @MinLength(6)
   password: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @IsString()
+  @IsOptional()
+  @IsUrl({}, { message: 'logoUrl must be a valid URL' })
+  logoUrl?: string;
 }
 

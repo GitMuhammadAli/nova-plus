@@ -46,6 +46,8 @@ export class CompanyService {
     const company = new this.companyModel({
       name: registerCompanyDto.companyName,
       domain: registerCompanyDto.domain,
+      description: registerCompanyDto.description,
+      logoUrl: registerCompanyDto.logoUrl,
       createdBy: null,
       managers: [],
       users: [],
@@ -96,6 +98,8 @@ export class CompanyService {
         _id: companyObj._id,
         name: companyObj.name,
         domain: companyObj.domain,
+        description: companyObj.description,
+        logoUrl: companyObj.logoUrl,
         createdBy: companyObj.createdBy,
         isActive: companyObj.isActive,
         createdAt: companyObj.createdAt,
@@ -143,6 +147,8 @@ export class CompanyService {
     const company = new this.companyModel({
       name: createCompanyDto.name,
       domain: createCompanyDto.domain,
+      description: createCompanyDto.description,
+      logoUrl: createCompanyDto.logoUrl,
       createdBy,
       managers: [],
       users: [],
@@ -298,7 +304,6 @@ export class CompanyService {
 
     const query: any = { 
       companyId: companyId,
-      isActive: true 
     };
 
     if (params?.search) {

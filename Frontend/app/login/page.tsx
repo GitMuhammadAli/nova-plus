@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import { login, clearError, resetLoading } from "@/app/store/authSlice";
 import { AppDispatch, RootState } from "@/app/store/store";
@@ -11,10 +11,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Zap, Mail, Lock, Github, ArrowRight, AlertCircle } from "lucide-react";
+import { Zap, Mail, Lock, Github, ArrowRight, AlertCircle, CheckCircle2 } from "lucide-react";
 
 const LoginPage = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const dispatch = useDispatch<AppDispatch>();
   const { isLoading, error, isAuthenticated, user } = useSelector((state: RootState) => state.auth);
 
@@ -23,6 +24,7 @@ const LoginPage = () => {
     password: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [inviteSuccessMessage, setInviteSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
     // Clear any errors and reset loading state when component mounts
@@ -36,6 +38,19 @@ const LoginPage = () => {
       router.replace("/dashboard");
     }
   }, [isAuthenticated, user, router]);
+
+  useEffect(() => {
+    const joined = searchParams.get("joined");
+    const inviteEmail = searchParams.get("email");
+
+    if (joined) {
+      setInviteSuccessMessage("Your account is ready. Please sign in to continue.");
+      if (inviteEmail) {
+        setFormData((prev) => ({ ...prev, email: inviteEmail }));
+      }
+      router.replace("/login", { scroll: false });
+    }
+  }, [searchParams, router]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -128,6 +143,15 @@ const LoginPage = () => {
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          {inviteSuccessMessage && (
+            <Alert className="bg-green-50 border-green-200">
+              <CheckCircle2 className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-green-800">
+                {inviteSuccessMessage}
+              </AlertDescription>
             </Alert>
           )}
 
