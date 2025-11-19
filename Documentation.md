@@ -729,7 +729,7 @@ Create an invite for a user to join the company.
 {
   "email": "newuser@example.com",  // Optional
   "role": "user",                   // 'user' or 'manager'
-  "expiresInDays": 7                // Optional, default: 7
+  "expiresInDays": 3                // Optional, default: 3
 }
 ```
 
@@ -911,7 +911,7 @@ Get invite details by token (public endpoint).
 
 #### POST `/invite/:token/accept`
 
-Accept an invite and create a user account.
+Accept an invite and create a user account. **Automatically logs in the user** after successful registration.
 
 **Request Body:**
 ```json
@@ -926,6 +926,7 @@ Accept an invite and create a user account.
 ```json
 {
   "success": true,
+  "message": "Invite accepted successfully",
   "user": {
     "_id": "...",
     "email": "invited@example.com",
@@ -933,17 +934,29 @@ Accept an invite and create a user account.
     "role": "user",
     "companyId": "..."
   },
-  "access_token": "jwt_token",
-  "refresh_token": "refresh_token"
+  "company": {
+    "_id": "...",
+    "name": "Acme Corp"
+  }
 }
 ```
+
+**Cookies Set:**
+- `access_token` (HttpOnly, 15 minutes)
+- `refresh_token` (HttpOnly, 7 days)
 
 **Required:** None (public endpoint)
 
 **Validation:**
 - Token must be valid and not expired
-- Token must not be already used
+- Token must be active (not revoked)
 - Email must match invite email (if specified)
+- User with email must not already exist
+
+**Post-Acceptance:**
+- Invite is **automatically deleted** from database (single-use enforcement)
+- User is automatically logged in via HttpOnly cookies
+- Frontend redirects user to their role-based dashboard
 
 ---
 
@@ -1492,16 +1505,18 @@ async findAll(user: User) {
 
 **Invite Acceptance:**
 1. User clicks invite link or uses token
-2. System validates token (not expired, not used)
-3. User creates account with invite details
+2. System validates token (not expired, active)
+3. User creates account with invite details (name, email, password)
 4. User is assigned to company with specified role
-5. Invite is marked as used
-6. JWT tokens are generated and returned
+5. **Invite is automatically deleted from database** (single-use enforcement)
+6. JWT tokens are generated and set as HttpOnly cookies
+7. User is automatically logged in and redirected to dashboard
 
 **Invite Token Format:**
 - Random UUID or cryptographically secure string
-- Stored in database with expiration date
-- Single-use (marked as `isUsed: true` after acceptance)
+- Stored in database with expiration date (default: 3 days)
+- Single-use (invite is **deleted** from database after successful acceptance)
+- Invites remain valid until expiration or manual deletion by admin/manager
 
 ---
 

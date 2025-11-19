@@ -174,17 +174,24 @@ export default function Register() {
 
       if (response.data?.user) {
         setSuccess(true);
-        setSuccessMessage("Account created! Redirecting you to the login page...");
-
-        const params = new URLSearchParams();
-        params.set("joined", "1");
-        if (joinCompanyData.email) {
-          params.set("email", joinCompanyData.email);
+        setSuccessMessage("Account created successfully! Redirecting to your dashboard...");
+        
+        // Wait a bit to ensure cookies are set by the browser
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        // Fetch the complete user data from backend (cookies are set by backend)
+        try {
+          await dispatch(fetchMe()).unwrap();
+          setTimeout(() => {
+            router.replace("/dashboard");
+          }, 500);
+        } catch (error) {
+          console.error('Failed to fetch user after invite acceptance:', error);
+          // Still redirect even if fetchMe fails (cookies should be set)
+          setTimeout(() => {
+            router.replace("/dashboard");
+          }, 1000);
         }
-
-            setTimeout(() => {
-          router.replace(`/login?${params.toString()}`);
-        }, 1200);
       }
     } catch (err: any) {
       setValidationError(err.response?.data?.message || "Failed to accept invite");

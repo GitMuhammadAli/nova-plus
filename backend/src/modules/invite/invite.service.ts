@@ -89,8 +89,8 @@ export class InviteService {
       throw new BadRequestException('Failed to generate unique token');
     }
 
-    // Set expiration (default 7 days)
-    const expiresInDays = createInviteDto.expiresInDays || 7;
+    // Set expiration (default 3 days)
+    const expiresInDays = createInviteDto.expiresInDays || 3;
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + expiresInDays);
 
@@ -149,7 +149,8 @@ export class InviteService {
    * Get invite details by token (for validation)
    */
   async getInviteByToken(token: string) {
-    // First check if invite exists (including used ones)
+    // Check if invite exists and is active
+    // Note: Used invites are deleted, so if invite exists, it's available
     const invite = await this.inviteModel
       .findOne({ token, isActive: true })
       .populate('companyId', 'name domain')
@@ -158,11 +159,6 @@ export class InviteService {
 
     if (!invite) {
       throw new NotFoundException('Invite not found or has been revoked');
-    }
-
-    // Check if already used
-    if (invite.isUsed) {
-      throw new BadRequestException('This invite has already been used. Please contact your administrator for a new invite.');
     }
 
     // Check if expired
@@ -231,11 +227,8 @@ export class InviteService {
     }
     await company.save();
 
-    // Mark invite as used
-    invite.isUsed = true;
-    invite.usedBy = user._id as any;
-    invite.usedAt = new Date();
-    await invite.save();
+    // Delete the invite after successful registration (invite is single-use)
+    await this.inviteModel.deleteOne({ _id: invite._id }).exec();
 
     // Return user without password
     const userObj: any = user.toObject();

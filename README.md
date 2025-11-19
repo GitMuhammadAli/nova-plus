@@ -217,10 +217,13 @@ npm run test:e2e
 
 **Invite System:**
 - ✅ Company Admin can create invites
+- ✅ Manager can create invites (users only)
 - ✅ Invite tokens are generated correctly
 - ✅ Email sent via Mailtrap (if configured)
 - ✅ Invite link works for registration
-- ✅ Token invalid after use
+- ✅ **Automatic login after invite acceptance** (cookies set)
+- ✅ **Invite automatically deleted after use** (single-use enforcement)
+- ✅ Default expiration: 3 days
 
 **Database Validation:**
 - ✅ All users have `companyId`
