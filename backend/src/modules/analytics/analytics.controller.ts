@@ -1,34 +1,126 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, UseGuards, Req } from '@nestjs/common';
 import { AnalyticsService } from './analytics.service';
-import { CreateAnalyticsDto } from './dto/create-analytics.dto';
-import { UpdateAnalyticsDto } from './dto/update-analytics.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { UserRole } from '../user/entities/user.entity';
 
 @Controller('analytics')
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
 
-  @Post()
-  create(@Body() createAnalyticsDto: CreateAnalyticsDto) {
-    return this.analyticsService.create(createAnalyticsDto);
+  /**
+   * Track a page visit
+   */
+  @Post('track')
+  @Roles(UserRole.COMPANY_ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.SUPER_ADMIN)
+  async trackVisit(
+    @Req() req,
+    @Body() body: {
+      page: string;
+      referrer?: string;
+      userAgent?: string;
+      ipAddress?: string;
+      device?: string;
+      browser?: string;
+      os?: string;
+      duration?: number;
+    },
+  ) {
+    const user = req.user;
+    const companyId = user.companyId?.toString() || user.companyId;
+
+    return this.analyticsService.trackVisit(companyId, {
+      userId: user._id?.toString() || user.id,
+      page: body.page,
+      referrer: body.referrer,
+      userAgent: body.userAgent || req.headers['user-agent'],
+      ipAddress: body.ipAddress || req.ip,
+      device: body.device,
+      browser: body.browser,
+      os: body.os,
+      duration: body.duration,
+    });
   }
 
-  @Get()
-  findAll() {
-    return this.analyticsService.findAll();
+  /**
+   * Get comprehensive analytics stats
+   */
+  @Get('stats')
+  @Roles(UserRole.COMPANY_ADMIN, UserRole.MANAGER, UserRole.SUPER_ADMIN)
+  async getStats(@Req() req, @Query('period') period?: string) {
+    const user = req.user;
+    const companyId = user.companyId?.toString() || user.companyId;
+
+    return this.analyticsService.getAnalyticsStats(companyId, period || '6m');
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.analyticsService.findOne(+id);
+  /**
+   * Get traffic data
+   */
+  @Get('traffic')
+  @Roles(UserRole.COMPANY_ADMIN, UserRole.MANAGER, UserRole.SUPER_ADMIN)
+  async getTraffic(@Req() req, @Query('period') period?: string) {
+    const user = req.user;
+    const companyId = user.companyId?.toString() || user.companyId;
+    const stats = await this.analyticsService.getAnalyticsStats(companyId, period || '6m');
+    
+    return {
+      success: true,
+      data: {
+        trafficData: stats.trafficData,
+        totalVisitors: stats.totalVisitors,
+        growth: stats.growth.visitors,
+      },
+    };
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAnalyticsDto: UpdateAnalyticsDto) {
-    return this.analyticsService.update(+id, updateAnalyticsDto);
+  /**
+   * Get device distribution
+   */
+  @Get('devices')
+  @Roles(UserRole.COMPANY_ADMIN, UserRole.MANAGER, UserRole.SUPER_ADMIN)
+  async getDevices(@Req() req, @Query('period') period?: string) {
+    const user = req.user;
+    const companyId = user.companyId?.toString() || user.companyId;
+    const stats = await this.analyticsService.getAnalyticsStats(companyId, period || '6m');
+    
+    return {
+      success: true,
+      data: stats.deviceData,
+    };
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.analyticsService.remove(+id);
+  /**
+   * Get conversion funnel
+   */
+  @Get('conversion')
+  @Roles(UserRole.COMPANY_ADMIN, UserRole.MANAGER, UserRole.SUPER_ADMIN)
+  async getConversion(@Req() req, @Query('period') period?: string) {
+    const user = req.user;
+    const companyId = user.companyId?.toString() || user.companyId;
+    const stats = await this.analyticsService.getAnalyticsStats(companyId, period || '6m');
+    
+    return {
+      success: true,
+      data: stats.conversionData,
+    };
+  }
+
+  /**
+   * Get top pages
+   */
+  @Get('top-pages')
+  @Roles(UserRole.COMPANY_ADMIN, UserRole.MANAGER, UserRole.SUPER_ADMIN)
+  async getTopPages(@Req() req, @Query('period') period?: string) {
+    const user = req.user;
+    const companyId = user.companyId?.toString() || user.companyId;
+    const stats = await this.analyticsService.getAnalyticsStats(companyId, period || '6m');
+    
+    return {
+      success: true,
+      data: stats.topPages,
+    };
   }
 }

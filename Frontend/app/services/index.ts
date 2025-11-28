@@ -52,17 +52,26 @@ export const usersAPI = {
 // ANALYTICS API
 // ============================================
 export const analyticsAPI = {
-  getAll: (params?: any) => api.get('/analytics', { params }),
+  getStats: (period?: string) => api.get('/analytics/stats', { params: { period } }),
   
-  getById: (id: string) => api.get(`/analytics/${id}`),
+  getTraffic: (period?: string) => api.get('/analytics/traffic', { params: { period } }),
   
-  getDashboardStats: () => api.get('/analytics/dashboard-stats'),
+  getDevices: (period?: string) => api.get('/analytics/devices', { params: { period } }),
   
-  create: (data: any) => api.post('/analytics', data),
+  getConversion: (period?: string) => api.get('/analytics/conversion', { params: { period } }),
   
-  update: (id: string, data: any) => api.patch(`/analytics/${id}`, data),
+  getTopPages: (period?: string) => api.get('/analytics/top-pages', { params: { period } }),
   
-  delete: (id: string) => api.delete(`/analytics/${id}`),
+  trackVisit: (data: {
+    page: string;
+    referrer?: string;
+    userAgent?: string;
+    ipAddress?: string;
+    device?: string;
+    browser?: string;
+    os?: string;
+    duration?: number;
+  }) => api.post('/analytics/track', data),
 };
 
 // ============================================
@@ -180,15 +189,15 @@ export const healthAPI = {
 // DASHBOARD API
 // ============================================
 export const dashboardAPI = {
-  getSummary: () => api.get('/api/dashboard/summary'),
-  getStats: (period?: string) => api.get('/api/dashboard/stats', { params: { period } }),
+  getSummary: () => api.get('/dashboard/summary'),
+  getStats: (period?: string) => api.get('/dashboard/stats', { params: { period } }),
 };
 
 // ============================================
 // ACTIVITY API
 // ============================================
 export const activityAPI = {
-  getRecent: (limit?: number) => api.get('/api/activity/recent', { params: { limit } }),
+  getRecent: (limit?: number) => api.get('/activity/recent', { params: { limit } }),
 };
 
 // ============================================
@@ -214,6 +223,32 @@ export const companyAPI = {
   update: (id: string, data: { name?: string; domain?: string }) => api.patch(`/company/${id}`, data),
   getCompanyUsers: (companyId: string, params?: { page?: number; limit?: number; search?: string }) =>
     api.get(`/company/${companyId}/users`, { params }),
+};
+
+// ============================================
+// WORKFLOW API
+// ============================================
+export const workflowAPI = {
+  getAll: (params?: { status?: string; search?: string }) => 
+    api.get('/workflow', { params }),
+  
+  getById: (id: string) => api.get(`/workflow/${id}`),
+  
+  create: (data: any) => api.post('/workflow', data),
+  
+  update: (id: string, data: any) => api.patch(`/workflow/${id}`, data),
+  
+  delete: (id: string) => api.delete(`/workflow/${id}`),
+  
+  toggleStatus: (id: string) => api.patch(`/workflow/${id}/toggle-status`),
+  
+  duplicate: (id: string) => api.post(`/workflow/${id}/duplicate`),
+  
+  execute: (id: string, triggerData?: any) => 
+    api.post(`/workflow/${id}/execute`, { triggerData }),
+  
+  getExecutions: (id: string, limit?: number) => 
+    api.get(`/workflow/${id}/executions`, { params: { limit } }),
 };
 
 // ============================================

@@ -4,7 +4,8 @@
 
 **Version:** 2.0  
 **Last Updated:** November 2024  
-**Status:** Phase 2 Complete (Multi-Tenancy & Company System)
+**Status:** Phase 2 Complete (Multi-Tenancy & Company System)  
+**Documentation Status:** Complete - Ready for Production
 
 ---
 
@@ -20,10 +21,69 @@
 8. [Phase 2: Multi-Tenancy & Company System](#phase-2-multi-tenancy--company-system)
 9. [Frontend Architecture](#frontend-architecture)
 10. [Email System (Mailtrap Integration)](#email-system-mailtrap-integration)
-11. [Development Workflow](#development-workflow)
-12. [Testing Strategy](#testing-strategy)
-13. [Deployment Guide](#deployment-guide)
-14. [Future Roadmap](#future-roadmap)
+11. [Database Migrations & Schema Management](#database-migrations--schema-management)
+12. [Development Workflow](#development-workflow)
+13. [Testing Strategy](#testing-strategy)
+14. [Deployment Guide](#deployment-guide)
+15. [Troubleshooting](#troubleshooting)
+16. [Future Roadmap](#future-roadmap)
+17. [Support & Resources](#support--resources)
+
+---
+
+## Quick Reference
+
+### Essential Commands
+
+**Backend:**
+
+```bash
+cd backend
+npm install          # Install dependencies
+npm run start:dev   # Start development server
+npm run build       # Build for production
+npm run start:prod  # Start production server
+npm run test        # Run unit tests
+npm run test:e2e    # Run E2E tests
+```
+
+**Frontend:**
+
+```bash
+cd Frontend
+npm install          # Install dependencies
+npm run dev          # Start development server
+npm run build        # Build for production
+npm start            # Start production server
+npm run test         # Run tests
+```
+
+### Key Endpoints
+
+- **Health Check:** `GET /health`
+- **Login:** `POST /auth/login`
+- **Register:** `POST /auth/register`
+- **Company Register:** `POST /company/register`
+- **Get Current User:** `GET /auth/me`
+
+### Default Ports
+
+- **Backend:** `http://localhost:5500`
+- **Frontend:** `http://localhost:3100`
+- **MongoDB:** `mongodb://localhost:27017`
+
+### Environment Variables (Required)
+
+**Backend:**
+
+- `MONGO_URI` - MongoDB connection string
+- `JWT_SECRET` - JWT signing secret
+- `JWT_REFRESH_SECRET` - JWT refresh secret
+- `FRONTEND_URL` - Frontend URL for CORS
+
+**Frontend:**
+
+- `NEXT_PUBLIC_API_URL` - Backend API URL
 
 ---
 
@@ -45,6 +105,7 @@ NovaPulse is a modern, scalable multi-tenant SaaS platform designed for managing
 ### Technology Stack
 
 **Backend:**
+
 - **Framework:** NestJS 10+ (Node.js)
 - **Database:** MongoDB with Mongoose ODM
 - **Authentication:** JWT (Passport.js), bcrypt
@@ -53,6 +114,7 @@ NovaPulse is a modern, scalable multi-tenant SaaS platform designed for managing
 - **Validation:** class-validator, class-transformer
 
 **Frontend:**
+
 - **Framework:** Next.js 15 (App Router)
 - **UI Library:** React 19
 - **State Management:** Redux Toolkit
@@ -100,6 +162,7 @@ NovaPulse is a modern, scalable multi-tenant SaaS platform designed for managing
 ### Module Structure
 
 **Backend Modules:**
+
 ```
 backend/src/
 ├── modules/
@@ -125,6 +188,7 @@ backend/src/
 ```
 
 **Frontend Structure:**
+
 ```
 Frontend/
 ├── app/
@@ -179,11 +243,13 @@ Frontend/
 ```
 
 **Indexes:**
+
 - `email` (unique)
 - `companyId`
 - `orgId` (legacy)
 
 **Relationships:**
+
 - `companyId` → Company (many-to-one)
 - `createdBy` → User (self-reference)
 - `managerId` → User (self-reference, for users only)
@@ -208,10 +274,12 @@ Frontend/
 ```
 
 **Indexes:**
+
 - `name`
 - `domain` (unique, sparse)
 
 **Relationships:**
+
 - `createdBy` → User (one-to-one, optional)
 - `managers[]` → User (many-to-many)
 - `users[]` → User (many-to-many)
@@ -239,12 +307,14 @@ Frontend/
 ```
 
 **Indexes:**
+
 - `token` (unique)
 - `companyId`
 - `email`
 - `expiresAt`
 
 **Relationships:**
+
 - `companyId` → Company (many-to-one)
 - `createdBy` → User (many-to-one)
 - `usedBy` → User (one-to-one, optional)
@@ -264,9 +334,11 @@ Frontend/
 ```
 
 **Indexes:**
+
 - `userId`
 
 **Relationships:**
+
 - `userId` → User (many-to-one)
 
 ### Project Collection
@@ -294,11 +366,13 @@ Frontend/
 ```
 
 **Indexes:**
+
 - `companyId`
 - `createdBy`
 - `status`
 
 **Relationships:**
+
 - `companyId` → Company (many-to-one)
 - `createdBy` → User (many-to-one)
 - `assignedUsers[]` → User (many-to-many)
@@ -338,11 +412,13 @@ Frontend/
 ```
 
 **Indexes:**
+
 - `companyId`
 - `assignedTo`
 - `status`
 
 **Relationships:**
+
 - `projectId` → Project (many-to-one, optional)
 - `companyId` → Company (many-to-one)
 - `assignedTo` → User (many-to-one)
@@ -374,10 +450,12 @@ Frontend/
 ```
 
 **Indexes:**
+
 - `type`
 - `userId`
 
 **Relationships:**
+
 - `userId` → User (many-to-one, optional)
 
 ---
@@ -389,24 +467,33 @@ Frontend/
 - **Development:** `http://localhost:5500`
 - **Production:** `https://api.novapulse.com` (example)
 
+### API Versioning
+
+Currently using unversioned API. All endpoints are under root path (e.g., `/auth/login`). Future versions may use `/api/v1/` prefix.
+
 ### Authentication
 
 All protected endpoints require JWT authentication via:
-- **HttpOnly Cookies:** `access_token` and `refresh_token`
+
+- **HttpOnly Cookies:** `access_token` and `refresh_token` (preferred)
 - **Authorization Header:** `Bearer <token>` (alternative)
+
+**Note:** Cookies are automatically sent by browsers, making them the preferred method for web applications.
 
 ### Response Format
 
 **Success Response:**
+
 ```json
 {
   "success": true,
   "data": { ... },
-  "message": "Operation successful"
+  "message": "Operation successful"  // Optional
 }
 ```
 
 **Error Response:**
+
 ```json
 {
   "success": false,
@@ -417,6 +504,125 @@ All protected endpoints require JWT authentication via:
 }
 ```
 
+**Validation Error Response:**
+
+```json
+{
+  "statusCode": 422,
+  "message": "Validation failed",
+  "errors": [
+    {
+      "field": "email",
+      "message": "email must be an email"
+    }
+  ]
+}
+```
+
+### API Endpoint Summary
+
+**Authentication (Public):**
+
+- `POST /auth/register` - Register new user
+- `POST /auth/login` - Login user
+- `POST /auth/refresh` - Refresh access token
+- `POST /auth/logout` - Logout user
+- `GET /auth/me` - Get current user
+
+**Company (Mixed):**
+
+- `POST /company/register` - Public company registration
+- `POST /company/create` - Create company (Super Admin)
+- `POST /company/invite` - Create invite
+- `GET /company/all` - List all companies (Super Admin)
+- `GET /company/:id` - Get company details
+- `PATCH /company/:id` - Update company
+- `GET /company/:id/users` - Get company users
+
+**Users:**
+
+- `GET /users/all` - List users (company-scoped)
+- `POST /users/create` - Create user (Admin)
+- `GET /user/:id` - Get user details
+- `PATCH /user/:id` - Update user
+- `DELETE /user/:id` - Delete user
+
+**Invites:**
+
+- `GET /invite/:token` - Get invite details (Public)
+- `POST /invite/:token/accept` - Accept invite (Public)
+- `GET /invite/company/:companyId` - List company invites
+- `DELETE /invite/:inviteId/company/:companyId` - Delete invite
+
+**Projects:**
+
+- `POST /projects` - Create project
+- `GET /projects` - List projects
+- `GET /projects/:id` - Get project details
+- `PATCH /projects/:id` - Update project
+- `DELETE /projects/:id` - Delete project
+
+**Tasks:**
+
+- `POST /tasks` - Create task
+- `GET /tasks` - List tasks
+- `GET /tasks/me` - Get my tasks
+- `GET /tasks/:id` - Get task details
+- `PATCH /tasks/:id` - Update task
+- `PATCH /tasks/:id/status` - Update task status
+- `POST /tasks/:id/comments` - Add comment
+- `DELETE /tasks/:id` - Delete task
+
+**Dashboard:**
+
+- `GET /dashboard/summary` - Dashboard summary
+- `GET /dashboard/stats` - Detailed statistics
+- `GET /activity/recent` - Recent activity
+
+**Teams:**
+
+- `POST /teams` - Create team
+- `GET /teams` - List teams
+- `GET /teams/:id` - Get team details
+- `POST /teams/:id/members` - Add member
+- `DELETE /teams/:id/members/:memberId` - Remove member
+- `DELETE /teams/:id` - Delete team
+
+**Settings:**
+
+- `GET /settings` - List settings
+- `POST /settings` - Create setting
+- `GET /settings/:id` - Get setting
+- `PATCH /settings/:id` - Update setting
+- `DELETE /settings/:id` - Delete setting
+
+**Billing:**
+
+- `GET /billing` - Get billing info
+- `POST /billing` - Create billing record
+- `GET /billing/:id` - Get billing record
+- `PATCH /billing/:id` - Update billing
+- `DELETE /billing/:id` - Delete billing
+
+**Analytics:**
+
+- `GET /analytics` - List analytics
+- `POST /analytics` - Create analytics event
+- `GET /analytics/:id` - Get analytics record
+- `PATCH /analytics/:id` - Update analytics
+- `DELETE /analytics/:id` - Delete analytics
+
+**Uploads:**
+
+- `POST /uploads` - Upload file
+- `GET /uploads` - List files
+- `GET /uploads/:id` - Get file details
+- `DELETE /uploads/:id` - Delete file
+
+**Health:**
+
+- `GET /health` - Health check (Public)
+
 ---
 
 ### Authentication Endpoints
@@ -426,16 +632,18 @@ All protected endpoints require JWT authentication via:
 Register a new user (public endpoint).
 
 **Request Body:**
+
 ```json
 {
   "email": "user@example.com",
   "password": "securePassword123",
   "name": "John Doe",
-  "role": "user"  // Optional, defaults to 'user'
+  "role": "user" // Optional, defaults to 'user'
 }
 ```
 
 **Response:** 201 Created
+
 ```json
 {
   "success": true,
@@ -451,6 +659,7 @@ Register a new user (public endpoint).
 ```
 
 **Cookies Set:**
+
 - `access_token` (HttpOnly, 15 minutes)
 - `refresh_token` (HttpOnly, 30 days)
 
@@ -461,6 +670,7 @@ Register a new user (public endpoint).
 Login with email and password.
 
 **Request Body:**
+
 ```json
 {
   "email": "user@example.com",
@@ -469,6 +679,7 @@ Login with email and password.
 ```
 
 **Response:** 200 OK
+
 ```json
 {
   "success": true,
@@ -485,6 +696,7 @@ Login with email and password.
 ```
 
 **Cookies Set:**
+
 - `access_token` (HttpOnly, 15 minutes)
 - `refresh_token` (HttpOnly, 30 days)
 
@@ -497,6 +709,7 @@ Refresh access token using refresh token.
 **Request:** No body required (uses refresh_token cookie)
 
 **Response:** 200 OK
+
 ```json
 {
   "success": true,
@@ -505,6 +718,7 @@ Refresh access token using refresh token.
 ```
 
 **Cookies Updated:**
+
 - `access_token` (new token)
 
 ---
@@ -516,6 +730,7 @@ Logout and invalidate refresh token.
 **Request:** No body required
 
 **Response:** 200 OK
+
 ```json
 {
   "success": true,
@@ -524,6 +739,7 @@ Logout and invalidate refresh token.
 ```
 
 **Cookies Cleared:**
+
 - `access_token`
 - `refresh_token`
 
@@ -536,6 +752,7 @@ Get current authenticated user.
 **Request:** No body required (uses access_token cookie)
 
 **Response:** 200 OK
+
 ```json
 {
   "success": true,
@@ -545,7 +762,7 @@ Get current authenticated user.
     "name": "John Doe",
     "role": "company_admin",
     "companyId": "...",
-    "orgId": "..."  // Legacy
+    "orgId": "..." // Legacy
   }
 }
 ```
@@ -559,10 +776,11 @@ Get current authenticated user.
 Public company registration (creates company + admin user).
 
 **Request Body:**
+
 ```json
 {
   "companyName": "Acme Corp",
-  "domain": "acme.com",  // Optional
+  "domain": "acme.com", // Optional
   "adminName": "John Doe",
   "email": "admin@acme.com",
   "password": "securePassword123"
@@ -570,6 +788,7 @@ Public company registration (creates company + admin user).
 ```
 
 **Response:** 201 Created
+
 ```json
 {
   "success": true,
@@ -600,10 +819,11 @@ Public company registration (creates company + admin user).
 Create a company (Super Admin only).
 
 **Request Body:**
+
 ```json
 {
   "name": "TechVerse Inc",
-  "domain": "techverse.com",  // Optional
+  "domain": "techverse.com", // Optional
   "adminEmail": "admin@techverse.com",
   "adminName": "Jane Smith",
   "adminPassword": "securePassword123"
@@ -611,6 +831,7 @@ Create a company (Super Admin only).
 ```
 
 **Response:** 201 Created
+
 ```json
 {
   "success": true,
@@ -628,6 +849,7 @@ Create a company (Super Admin only).
 List all companies (Super Admin only).
 
 **Response:** 200 OK
+
 ```json
 {
   "success": true,
@@ -653,6 +875,7 @@ List all companies (Super Admin only).
 Get company details.
 
 **Response:** 200 OK
+
 ```json
 {
   "success": true,
@@ -676,15 +899,17 @@ Get company details.
 Update company information.
 
 **Request Body:**
+
 ```json
 {
-  "name": "Acme Corporation",  // Optional
-  "domain": "acme-corp.com",    // Optional
-  "isActive": true              // Optional
+  "name": "Acme Corporation", // Optional
+  "domain": "acme-corp.com", // Optional
+  "isActive": true // Optional
 }
 ```
 
 **Response:** 200 OK
+
 ```json
 {
   "success": true,
@@ -701,6 +926,7 @@ Update company information.
 Get all users in a company.
 
 **Response:** 200 OK
+
 ```json
 {
   "success": true,
@@ -725,15 +951,17 @@ Get all users in a company.
 Create an invite for a user to join the company.
 
 **Request Body:**
+
 ```json
 {
-  "email": "newuser@example.com",  // Optional
-  "role": "user",                   // 'user' or 'manager'
-  "expiresInDays": 3                // Optional, default: 3
+  "email": "newuser@example.com", // Optional
+  "role": "user", // 'user' or 'manager'
+  "expiresInDays": 3 // Optional, default: 3
 }
 ```
 
 **Response:** 201 Created
+
 ```json
 {
   "success": true,
@@ -761,11 +989,13 @@ Create an invite for a user to join the company.
 Get all users in the current user's company.
 
 **Query Parameters:**
+
 - `page` (optional): Page number
 - `limit` (optional): Items per page
 - `search` (optional): Search term
 
 **Response:** 200 OK
+
 ```json
 {
   "success": true,
@@ -787,16 +1017,18 @@ Get all users in the current user's company.
 Create a new user (Company Admin only).
 
 **Request Body:**
+
 ```json
 {
   "email": "newuser@example.com",
   "password": "securePassword123",
   "name": "New User",
-  "role": "user"  // 'user' or 'manager'
+  "role": "user" // 'user' or 'manager'
 }
 ```
 
 **Response:** 201 Created
+
 ```json
 {
   "success": true,
@@ -819,6 +1051,7 @@ Create a new user (Company Admin only).
 Get user details.
 
 **Response:** 200 OK
+
 ```json
 {
   "success": true,
@@ -842,15 +1075,17 @@ Get user details.
 Update user information.
 
 **Request Body:**
+
 ```json
 {
-  "name": "Updated Name",  // Optional
-  "role": "manager",       // Optional
-  "isActive": true         // Optional
+  "name": "Updated Name", // Optional
+  "role": "manager", // Optional
+  "isActive": true // Optional
 }
 ```
 
 **Response:** 200 OK
+
 ```json
 {
   "success": true,
@@ -867,6 +1102,7 @@ Update user information.
 Delete (soft delete) a user.
 
 **Response:** 200 OK
+
 ```json
 {
   "success": true,
@@ -885,6 +1121,7 @@ Delete (soft delete) a user.
 Get invite details by token (public endpoint).
 
 **Response:** 200 OK
+
 ```json
 {
   "success": true,
@@ -914,15 +1151,17 @@ Get invite details by token (public endpoint).
 Accept an invite and create a user account. **Automatically logs in the user** after successful registration.
 
 **Request Body:**
+
 ```json
 {
-  "email": "invited@example.com",  // Must match invite email if specified
+  "email": "invited@example.com", // Must match invite email if specified
   "name": "Invited User",
   "password": "securePassword123"
 }
 ```
 
 **Response:** 201 Created
+
 ```json
 {
   "success": true,
@@ -942,18 +1181,21 @@ Accept an invite and create a user account. **Automatically logs in the user** a
 ```
 
 **Cookies Set:**
+
 - `access_token` (HttpOnly, 15 minutes)
 - `refresh_token` (HttpOnly, 7 days)
 
 **Required:** None (public endpoint)
 
 **Validation:**
+
 - Token must be valid and not expired
 - Token must be active (not revoked)
 - Email must match invite email (if specified)
 - User with email must not already exist
 
 **Post-Acceptance:**
+
 - Invite is **automatically deleted** from database (single-use enforcement)
 - User is automatically logged in via HttpOnly cookies
 - Frontend redirects user to their role-based dashboard
@@ -965,6 +1207,7 @@ Accept an invite and create a user account. **Automatically logs in the user** a
 Get all invites for a company.
 
 **Response:** 200 OK
+
 ```json
 {
   "success": true,
@@ -990,6 +1233,7 @@ Get all invites for a company.
 Delete an invite.
 
 **Response:** 200 OK
+
 ```json
 {
   "success": true,
@@ -1008,16 +1252,18 @@ Delete an invite.
 Create a new project.
 
 **Request Body:**
+
 ```json
 {
   "name": "Project Name",
-  "description": "Project description",  // Optional
-  "startDate": "2024-11-15",            // Optional
-  "endDate": "2024-12-15"               // Optional
+  "description": "Project description", // Optional
+  "startDate": "2024-11-15", // Optional
+  "endDate": "2024-12-15" // Optional
 }
 ```
 
 **Response:** 201 Created
+
 ```json
 {
   "success": true,
@@ -1040,6 +1286,7 @@ Create a new project.
 Get all projects in the current user's company.
 
 **Response:** 200 OK
+
 ```json
 {
   "success": true,
@@ -1056,6 +1303,7 @@ Get all projects in the current user's company.
 Get project details.
 
 **Response:** 200 OK
+
 ```json
 {
   "success": true,
@@ -1072,17 +1320,19 @@ Get project details.
 Update project.
 
 **Request Body:**
+
 ```json
 {
-  "name": "Updated Name",      // Optional
-  "description": "...",        // Optional
-  "status": "completed",       // Optional
-  "startDate": "...",          // Optional
-  "endDate": "..."             // Optional
+  "name": "Updated Name", // Optional
+  "description": "...", // Optional
+  "status": "completed", // Optional
+  "startDate": "...", // Optional
+  "endDate": "..." // Optional
 }
 ```
 
 **Response:** 200 OK
+
 ```json
 {
   "success": true,
@@ -1099,6 +1349,7 @@ Update project.
 Delete a project.
 
 **Response:** 200 OK
+
 ```json
 {
   "success": true,
@@ -1117,18 +1368,20 @@ Delete a project.
 Create a new task.
 
 **Request Body:**
+
 ```json
 {
   "title": "Task Title",
-  "description": "Task description",  // Optional
-  "projectId": "...",                  // Optional
-  "assignedTo": "...",                // User ID
-  "priority": "high",                 // Optional: 'low', 'medium', 'high'
-  "dueDate": "2024-11-20"            // Optional
+  "description": "Task description", // Optional
+  "projectId": "...", // Optional
+  "assignedTo": "...", // User ID
+  "priority": "high", // Optional: 'low', 'medium', 'high'
+  "dueDate": "2024-11-20" // Optional
 }
 ```
 
 **Response:** 201 Created
+
 ```json
 {
   "success": true,
@@ -1152,11 +1405,13 @@ Create a new task.
 Get all tasks in the current user's company.
 
 **Query Parameters:**
+
 - `status` (optional): Filter by status
 - `assignedTo` (optional): Filter by assignee
 - `projectId` (optional): Filter by project
 
 **Response:** 200 OK
+
 ```json
 {
   "success": true,
@@ -1173,6 +1428,7 @@ Get all tasks in the current user's company.
 Get tasks assigned to the current user.
 
 **Response:** 200 OK
+
 ```json
 {
   "success": true,
@@ -1189,6 +1445,7 @@ Get tasks assigned to the current user.
 Get task details.
 
 **Response:** 200 OK
+
 ```json
 {
   "success": true,
@@ -1205,17 +1462,19 @@ Get task details.
 Update task.
 
 **Request Body:**
+
 ```json
 {
-  "title": "Updated Title",     // Optional
-  "description": "...",        // Optional
-  "status": "in_progress",     // Optional
-  "priority": "medium",        // Optional
-  "dueDate": "..."             // Optional
+  "title": "Updated Title", // Optional
+  "description": "...", // Optional
+  "status": "in_progress", // Optional
+  "priority": "medium", // Optional
+  "dueDate": "..." // Optional
 }
 ```
 
 **Response:** 200 OK
+
 ```json
 {
   "success": true,
@@ -1232,13 +1491,15 @@ Update task.
 Update task status only.
 
 **Request Body:**
+
 ```json
 {
-  "status": "done"  // 'pending', 'in_progress', 'done', 'cancelled'
+  "status": "done" // 'pending', 'in_progress', 'done', 'cancelled'
 }
 ```
 
 **Response:** 200 OK
+
 ```json
 {
   "success": true,
@@ -1255,6 +1516,7 @@ Update task status only.
 Add a comment to a task.
 
 **Request Body:**
+
 ```json
 {
   "text": "Comment text"
@@ -1262,6 +1524,7 @@ Add a comment to a task.
 ```
 
 **Response:** 200 OK
+
 ```json
 {
   "success": true,
@@ -1278,6 +1541,7 @@ Add a comment to a task.
 Delete a task.
 
 **Response:** 200 OK
+
 ```json
 {
   "success": true,
@@ -1291,11 +1555,12 @@ Delete a task.
 
 ### Dashboard Endpoints
 
-#### GET `/api/dashboard/summary`
+#### GET `/dashboard/summary`
 
 Get dashboard summary for the current user.
 
 **Response:** 200 OK
+
 ```json
 {
   "success": true,
@@ -1315,11 +1580,12 @@ Get dashboard summary for the current user.
 
 ---
 
-#### GET `/api/dashboard/stats`
+#### GET `/dashboard/stats`
 
 Get detailed statistics.
 
 **Response:** 200 OK
+
 ```json
 {
   "success": true,
@@ -1335,14 +1601,16 @@ Get detailed statistics.
 
 ---
 
-#### GET `/api/activity/recent`
+#### GET `/activity/recent`
 
 Get recent activity logs.
 
 **Query Parameters:**
+
 - `limit` (optional): Number of activities (default: 20)
 
 **Response:** 200 OK
+
 ```json
 {
   "success": true,
@@ -1364,34 +1632,620 @@ Get recent activity logs.
 
 ---
 
+### Health Check Endpoints
+
+#### GET `/health`
+
+Health check endpoint for monitoring and load balancers.
+
+**Response:** 200 OK
+
+```json
+{
+  "ok": true,
+  "uptime": 12345.67,
+  "timestamp": 1700000000000
+}
+```
+
+**Required:** None (public endpoint)
+
+---
+
+### Team Endpoints
+
+#### POST `/teams`
+
+Create a new team.
+
+**Request Body:**
+
+```json
+{
+  "name": "Development Team",
+  "description": "Team description" // Optional
+}
+```
+
+**Response:** 201 Created
+
+```json
+{
+  "success": true,
+  "team": {
+    "_id": "...",
+    "name": "Development Team",
+    "companyId": "...",
+    "members": [...],
+    "createdBy": "..."
+  }
+}
+```
+
+**Required Roles:** `MANAGER`, `COMPANY_ADMIN`, or `SUPER_ADMIN`
+
+---
+
+#### GET `/teams`
+
+List all teams the current user is a member of or manages.
+
+**Response:** 200 OK
+
+```json
+{
+  "success": true,
+  "teams": [
+    {
+      "_id": "...",
+      "name": "Development Team",
+      "members": [...],
+      "companyId": "..."
+    }
+  ]
+}
+```
+
+**Required:** Authenticated user
+
+---
+
+#### GET `/teams/:id`
+
+Get team details.
+
+**Response:** 200 OK
+
+```json
+{
+  "success": true,
+  "team": {
+    "_id": "...",
+    "name": "Development Team",
+    "members": [...],
+    "companyId": "..."
+  }
+}
+```
+
+**Required:** Authenticated user (must be team member or manager)
+
+---
+
+#### POST `/teams/:id/members`
+
+Add a member to a team.
+
+**Request Body:**
+
+```json
+{
+  "userId": "user_id"
+}
+```
+
+**Response:** 200 OK
+
+```json
+{
+  "success": true,
+  "team": { ... }
+}
+```
+
+**Required Roles:** `MANAGER`, `COMPANY_ADMIN`, or `SUPER_ADMIN`
+
+---
+
+#### DELETE `/teams/:id/members/:memberId`
+
+Remove a member from a team.
+
+**Response:** 200 OK
+
+```json
+{
+  "success": true,
+  "message": "Member removed successfully"
+}
+```
+
+**Required Roles:** `MANAGER`, `COMPANY_ADMIN`, or `SUPER_ADMIN`
+
+---
+
+#### DELETE `/teams/:id`
+
+Delete a team.
+
+**Response:** 200 OK
+
+```json
+{
+  "success": true,
+  "message": "Team deleted successfully"
+}
+```
+
+**Required Roles:** `MANAGER`, `COMPANY_ADMIN`, or `SUPER_ADMIN`
+
+---
+
+### Settings Endpoints
+
+#### GET `/settings`
+
+Get all settings for the current company.
+
+**Response:** 200 OK
+
+```json
+{
+  "success": true,
+  "settings": [
+    {
+      "_id": "...",
+      "key": "setting_key",
+      "value": "setting_value",
+      "companyId": "..."
+    }
+  ]
+}
+```
+
+**Required:** Authenticated user (Company Guard)
+
+---
+
+#### POST `/settings`
+
+Create a new setting.
+
+**Request Body:**
+
+```json
+{
+  "key": "setting_key",
+  "value": "setting_value"
+}
+```
+
+**Response:** 201 Created
+
+```json
+{
+  "success": true,
+  "setting": { ... }
+}
+```
+
+**Required Roles:** `COMPANY_ADMIN` or `SUPER_ADMIN`
+
+---
+
+#### GET `/settings/:id`
+
+Get a specific setting.
+
+**Response:** 200 OK
+
+```json
+{
+  "success": true,
+  "setting": { ... }
+}
+```
+
+**Required:** Authenticated user (Company Guard)
+
+---
+
+#### PATCH `/settings/:id`
+
+Update a setting.
+
+**Request Body:**
+
+```json
+{
+  "value": "new_value"
+}
+```
+
+**Response:** 200 OK
+
+```json
+{
+  "success": true,
+  "setting": { ... }
+}
+```
+
+**Required Roles:** `COMPANY_ADMIN` or `SUPER_ADMIN`
+
+---
+
+#### DELETE `/settings/:id`
+
+Delete a setting.
+
+**Response:** 200 OK
+
+```json
+{
+  "success": true,
+  "message": "Setting deleted successfully"
+}
+```
+
+**Required Roles:** `COMPANY_ADMIN` or `SUPER_ADMIN`
+
+---
+
+### Billing Endpoints
+
+#### GET `/billing`
+
+Get billing information for the current company.
+
+**Response:** 200 OK
+
+```json
+{
+  "success": true,
+  "billing": {
+    "_id": "...",
+    "companyId": "...",
+    "plan": "pro",
+    "status": "active",
+    "currentPeriodEnd": "2024-12-31T00:00:00.000Z"
+  }
+}
+```
+
+**Required:** Authenticated user (Company Guard)
+
+---
+
+#### POST `/billing`
+
+Create billing record (typically handled by payment webhook).
+
+**Request Body:**
+
+```json
+{
+  "plan": "pro",
+  "status": "active"
+}
+```
+
+**Response:** 201 Created
+
+```json
+{
+  "success": true,
+  "billing": { ... }
+}
+```
+
+**Required:** Internal/Webhook only
+
+---
+
+#### GET `/billing/:id`
+
+Get specific billing record.
+
+**Response:** 200 OK
+
+```json
+{
+  "success": true,
+  "billing": { ... }
+}
+```
+
+**Required:** Authenticated user (Company Guard)
+
+---
+
+#### PATCH `/billing/:id`
+
+Update billing information.
+
+**Request Body:**
+
+```json
+{
+  "plan": "enterprise",
+  "status": "active"
+}
+```
+
+**Response:** 200 OK
+
+```json
+{
+  "success": true,
+  "billing": { ... }
+}
+```
+
+**Required Roles:** `COMPANY_ADMIN` or `SUPER_ADMIN`
+
+---
+
+#### DELETE `/billing/:id`
+
+Delete billing record.
+
+**Response:** 200 OK
+
+```json
+{
+  "success": true,
+  "message": "Billing record deleted successfully"
+}
+```
+
+**Required Roles:** `SUPER_ADMIN` only
+
+---
+
+### Analytics Endpoints
+
+#### GET `/analytics`
+
+Get analytics data for the current company.
+
+**Response:** 200 OK
+
+```json
+{
+  "success": true,
+  "analytics": [
+    {
+      "_id": "...",
+      "type": "user_activity",
+      "data": { ... },
+      "companyId": "..."
+    }
+  ]
+}
+```
+
+**Required:** Authenticated user (Company Guard)
+
+---
+
+#### POST `/analytics`
+
+Create analytics event.
+
+**Request Body:**
+
+```json
+{
+  "type": "user_activity",
+  "data": { ... }
+}
+```
+
+**Response:** 201 Created
+
+```json
+{
+  "success": true,
+  "analytics": { ... }
+}
+```
+
+**Required:** Authenticated user (Company Guard)
+
+---
+
+#### GET `/analytics/:id`
+
+Get specific analytics record.
+
+**Response:** 200 OK
+
+```json
+{
+  "success": true,
+  "analytics": { ... }
+}
+```
+
+**Required:** Authenticated user (Company Guard)
+
+---
+
+#### PATCH `/analytics/:id`
+
+Update analytics record.
+
+**Request Body:**
+
+```json
+{
+  "data": { ... }
+}
+```
+
+**Response:** 200 OK
+
+```json
+{
+  "success": true,
+  "analytics": { ... }
+}
+```
+
+**Required Roles:** `COMPANY_ADMIN` or `SUPER_ADMIN`
+
+---
+
+#### DELETE `/analytics/:id`
+
+Delete analytics record.
+
+**Response:** 200 OK
+
+```json
+{
+  "success": true,
+  "message": "Analytics record deleted successfully"
+}
+```
+
+**Required Roles:** `COMPANY_ADMIN` or `SUPER_ADMIN`
+
+---
+
+### Upload Endpoints
+
+#### POST `/uploads`
+
+Upload a file.
+
+**Request:** Multipart form data
+
+- `file`: File to upload
+- `type` (optional): File type/category
+
+**Response:** 201 Created
+
+```json
+{
+  "success": true,
+  "file": {
+    "_id": "...",
+    "filename": "document.pdf",
+    "url": "https://...",
+    "size": 1024000,
+    "mimeType": "application/pdf",
+    "companyId": "..."
+  }
+}
+```
+
+**Required:** Authenticated user (Company Guard)
+
+---
+
+#### GET `/uploads`
+
+List uploaded files for the current company.
+
+**Response:** 200 OK
+
+```json
+{
+  "success": true,
+  "files": [
+    {
+      "_id": "...",
+      "filename": "document.pdf",
+      "url": "https://...",
+      "size": 1024000,
+      "mimeType": "application/pdf"
+    }
+  ]
+}
+```
+
+**Required:** Authenticated user (Company Guard)
+
+---
+
+#### GET `/uploads/:id`
+
+Get file details.
+
+**Response:** 200 OK
+
+```json
+{
+  "success": true,
+  "file": { ... }
+}
+```
+
+**Required:** Authenticated user (Company Guard)
+
+---
+
+#### DELETE `/uploads/:id`
+
+Delete an uploaded file.
+
+**Response:** 200 OK
+
+```json
+{
+  "success": true,
+  "message": "File deleted successfully"
+}
+```
+
+**Required:** Authenticated user (Company Guard, must be file owner or admin)
+
+---
+
 ## Authentication & Security
 
 ### JWT Token Structure
 
 **Access Token Payload:**
+
 ```json
 {
   "sub": "user_id",
   "email": "user@example.com",
   "role": "company_admin",
   "companyId": "company_id",
-  "orgId": "org_id",  // Legacy, optional
+  "orgId": "org_id", // Legacy, optional
   "iat": 1234567890,
   "exp": 1234568790
 }
 ```
 
 **Token Expiration:**
+
 - **Access Token:** 15 minutes
 - **Refresh Token:** 30 days
 
 ### Token Storage
 
 **HttpOnly Cookies:**
+
 - `access_token`: JWT access token
 - `refresh_token`: Refresh token (hashed in database)
 
 **Cookie Settings:**
+
 ```typescript
 {
   httpOnly: true,        // Prevents XSS attacks
@@ -1410,6 +2264,7 @@ Get recent activity logs.
 ### Role-Based Access Control (RBAC)
 
 **Role Hierarchy:**
+
 ```
 SUPER_ADMIN (highest)
   └── COMPANY_ADMIN
@@ -1421,28 +2276,31 @@ SUPER_ADMIN (highest)
 
 **Role Permissions:**
 
-| Role | Capabilities |
-|------|-------------|
-| `SUPER_ADMIN` | Manage all companies, create companies, access all data |
+| Role            | Capabilities                                             |
+| --------------- | -------------------------------------------------------- |
+| `SUPER_ADMIN`   | Manage all companies, create companies, access all data  |
 | `COMPANY_ADMIN` | Manage company users, projects, settings, create invites |
-| `MANAGER` | Create projects, assign tasks, manage team, invite users |
-| `USER` | View assigned tasks, update task status |
-| `EDITOR` | Edit content, limited access |
-| `VIEWER` | View-only access |
+| `MANAGER`       | Create projects, assign tasks, manage team, invite users |
+| `USER`          | View assigned tasks, update task status                  |
+| `EDITOR`        | Edit content, limited access                             |
+| `VIEWER`        | View-only access                                         |
 
 ### Guards
 
 **JwtAuthGuard:**
+
 - Validates JWT token
 - Extracts user from token
 - Attaches user to request object
 
 **RolesGuard:**
+
 - Checks user role against required roles
 - Normalizes role names (handles legacy roles)
 - Provides detailed error messages
 
 **Company Guard (implicit):**
+
 - Ensures users can only access their own company's data
 - Validates `companyId` matches resource's company
 - Super Admin bypasses company restrictions
@@ -1459,6 +2317,160 @@ SUPER_ADMIN (highest)
 }
 ```
 
+### Error Handling
+
+**Global Exception Filter:**
+
+- Catches all exceptions and formats consistent error responses
+- Logs errors with Winston logger
+- Provides detailed error messages in development
+- Sanitizes error messages in production
+
+**Error Response Format:**
+
+```json
+{
+  "statusCode": 400,
+  "timestamp": "2024-11-13T12:00:00.000Z",
+  "path": "/api/endpoint",
+  "message": "Error message",
+  "error": "Error type" // Optional
+}
+```
+
+**Common HTTP Status Codes:**
+
+- `200 OK` - Successful request
+- `201 Created` - Resource created successfully
+- `400 Bad Request` - Invalid request data
+- `401 Unauthorized` - Authentication required
+- `403 Forbidden` - Insufficient permissions
+- `404 Not Found` - Resource not found
+- `409 Conflict` - Resource conflict (e.g., duplicate email)
+- `422 Unprocessable Entity` - Validation errors
+- `500 Internal Server Error` - Server error
+
+**Validation Errors:**
+When validation fails, the response includes detailed field errors:
+
+```json
+{
+  "statusCode": 422,
+  "message": "Validation failed",
+  "errors": [
+    {
+      "field": "email",
+      "message": "email must be an email"
+    }
+  ]
+}
+```
+
+**Authentication Errors:**
+
+- `401` - Token missing or invalid
+- `401` - Token expired (with message: "Token expired. Please refresh your session.")
+- `401` - Invalid token format
+- `401` - User account inactive
+
+**Authorization Errors:**
+
+- `403` - Insufficient role permissions
+- `403` - Cross-company access attempt
+- `403` - Resource access denied
+
+### Request Validation
+
+**Validation Pipe Configuration:**
+
+```typescript
+{
+  whitelist: true,      // Strip unknown properties
+  transform: true,     // Transform payloads to DTO instances
+  forbidNonWhitelisted: false
+}
+```
+
+**DTO Validation:**
+
+- Uses `class-validator` decorators
+- Automatic validation on all endpoints
+- Type transformation with `class-transformer`
+- Custom validators for complex rules
+
+**Example DTO:**
+
+```typescript
+export class CreateUserDto {
+  @IsEmail()
+  @IsNotEmpty()
+  email: string;
+
+  @IsString()
+  @MinLength(8)
+  password: string;
+
+  @IsString()
+  @IsOptional()
+  name?: string;
+}
+```
+
+### Logging System
+
+**Winston Logger Configuration:**
+
+- **Log Levels:** error, warn, info, debug
+- **Log Files:** Separate files for application logs, exceptions, and rejections
+- **Log Rotation:** Daily log files with date stamps
+- **Format:** JSON format for structured logging
+
+**Log Files:**
+
+- `logs/application-YYYY-MM-DD.log` - General application logs
+- `logs/exceptions-YYYY-MM-DD.log` - Exception logs
+- `logs/rejections-YYYY-MM-DD.log` - Unhandled promise rejections
+
+**Logging Interceptor:**
+
+- Logs all HTTP requests and responses
+- Includes request method, URL, status code, response time
+- Logs errors with stack traces
+- Excludes sensitive data (passwords, tokens)
+
+**Example Log Entry:**
+
+```json
+{
+  "level": "info",
+  "message": "HTTP Request",
+  "method": "POST",
+  "url": "/api/auth/login",
+  "statusCode": 200,
+  "responseTime": 45,
+  "timestamp": "2024-11-13T12:00:00.000Z"
+}
+```
+
+### Response Transformation
+
+**Transform Interceptor:**
+
+- Wraps all successful responses in standard format
+- Adds `success: true` flag
+- Includes `data` or direct response payload
+- Adds optional `message` field
+
+**Standard Success Response:**
+
+```json
+{
+  "success": true,
+  "data": { ... },
+  "message": "Operation successful"  // Optional
+}
+```
+
 ---
 
 ## Multi-Tenancy Implementation
@@ -1466,16 +2478,18 @@ SUPER_ADMIN (highest)
 ### Company Isolation
 
 **Data Scoping:**
+
 - All queries filter by `companyId`
 - Users can only access data from their company
 - Cross-company access returns 403 Forbidden
 
 **Implementation:**
+
 ```typescript
 // Service method example
 async findAll(user: User) {
-  return this.model.find({ 
-    companyId: user.companyId 
+  return this.model.find({
+    companyId: user.companyId
   });
 }
 ```
@@ -1483,6 +2497,7 @@ async findAll(user: User) {
 ### Company Registration Flow
 
 1. **Public Registration:**
+
    - User submits company registration form
    - System creates Company entity
    - System creates Company Admin user
@@ -1497,6 +2512,7 @@ async findAll(user: User) {
 ### Invite System
 
 **Invite Creation:**
+
 1. Company Admin or Manager creates invite
 2. System generates unique token
 3. Invite is stored in database with expiration
@@ -1504,6 +2520,7 @@ async findAll(user: User) {
 5. Invite link is returned in API response
 
 **Invite Acceptance:**
+
 1. User clicks invite link or uses token
 2. System validates token (not expired, active)
 3. User creates account with invite details (name, email, password)
@@ -1513,6 +2530,7 @@ async findAll(user: User) {
 7. User is automatically logged in and redirected to dashboard
 
 **Invite Token Format:**
+
 - Random UUID or cryptographically secure string
 - Stored in database with expiration date (default: 3 days)
 - Single-use (invite is **deleted** from database after successful acceptance)
@@ -1525,7 +2543,9 @@ async findAll(user: User) {
 ### ✅ Completed Features
 
 #### 1. Authentication System
+
 - **JWT-based Authentication**
+
   - Access tokens (15-minute expiration)
   - Refresh tokens (30-day expiration)
   - HttpOnly cookie-based token storage
@@ -1533,6 +2553,7 @@ async findAll(user: User) {
   - Session management with MongoDB
 
 - **User Registration & Login**
+
   - Email/password registration
   - Login with credentials
   - Password hashing (bcrypt, 10 rounds)
@@ -1547,7 +2568,9 @@ async findAll(user: User) {
   - Session tracking (user agent, IP address)
 
 #### 2. User Management
+
 - **User Entity**
+
   - User schema with Mongoose
   - Role-based user model
   - User profile management
@@ -1555,6 +2578,7 @@ async findAll(user: User) {
   - Soft delete support (`isActive` flag)
 
 - **Basic Roles**
+
   - `SUPER_ADMIN` - Platform administrator
   - `COMPANY_ADMIN` - Company owner/admin
   - `MANAGER` - Team manager
@@ -1570,7 +2594,9 @@ async findAll(user: User) {
   - List users (with pagination)
 
 #### 3. Backend Architecture
+
 - **NestJS Framework Setup**
+
   - Modular architecture
   - Dependency injection
   - Guards and interceptors
@@ -1578,6 +2604,7 @@ async findAll(user: User) {
   - Exception filters
 
 - **Database Integration**
+
   - MongoDB connection
   - Mongoose ODM
   - Schema definitions
@@ -1590,13 +2617,16 @@ async findAll(user: User) {
   - CORS configuration
 
 #### 4. Frontend Foundation
+
 - **Next.js 15 Setup**
+
   - App Router structure
   - TypeScript configuration
   - Tailwind CSS integration
   - shadcn/ui components
 
 - **State Management**
+
   - Redux Toolkit setup
   - Auth slice implementation
   - API client with Axios
@@ -1610,7 +2640,9 @@ async findAll(user: User) {
   - Loading states
 
 #### 5. Development Infrastructure
+
 - **Project Structure**
+
   - Monorepo organization
   - Backend/Frontend separation
   - Shared types and utilities
@@ -1642,6 +2674,7 @@ GET    /users                  # List users (paginated)
 ### Phase 1 Database Schema
 
 **User Collection:**
+
 ```javascript
 {
   _id: ObjectId,
@@ -1657,6 +2690,7 @@ GET    /users                  # List users (paginated)
 ```
 
 **Session Collection:**
+
 ```javascript
 {
   _id: ObjectId,
@@ -1675,13 +2709,16 @@ GET    /users                  # List users (paginated)
 ### ✅ Completed Features
 
 #### 1. Company System
+
 - **Company Entity**
+
   - Company schema with Mongoose
   - Company name and domain
   - Manager and user arrays
   - Active/inactive status
 
 - **Company Registration**
+
   - Public company registration endpoint
   - Super Admin company creation
   - Automatic admin user creation
@@ -1694,7 +2731,9 @@ GET    /users                  # List users (paginated)
   - Company-scoped user listing
 
 #### 2. Multi-Tenancy
+
 - **Data Isolation**
+
   - All queries filter by `companyId`
   - Company guards on protected endpoints
   - Cross-company access prevention
@@ -1707,7 +2746,9 @@ GET    /users                  # List users (paginated)
   - All data queries include company filter
 
 #### 3. Invite System
+
 - **Invite Creation**
+
   - Company Admin can create invites
   - Manager can create invites (users only)
   - Token generation
@@ -1721,7 +2762,9 @@ GET    /users                  # List users (paginated)
   - Single-use token enforcement
 
 #### 4. Enhanced RBAC
+
 - **Company Context**
+
   - JWT includes `companyId`
   - Role checks include company context
   - Company Admin can only manage own company
@@ -1733,7 +2776,9 @@ GET    /users                  # List users (paginated)
   - User: Task viewing and status updates
 
 #### 5. Frontend Enhancements
+
 - **Company Registration UI**
+
   - Company registration form
   - Auto-login after registration
   - Company dashboard
@@ -1765,6 +2810,7 @@ DELETE /invite/:inviteId/company/:id  # Delete invite
 ### Phase 2 Database Schema
 
 **Company Collection:**
+
 ```javascript
 {
   _id: ObjectId,
@@ -1780,6 +2826,7 @@ DELETE /invite/:inviteId/company/:id  # Delete invite
 ```
 
 **Invite Collection:**
+
 ```javascript
 {
   _id: ObjectId,
@@ -1799,6 +2846,7 @@ DELETE /invite/:inviteId/company/:id  # Delete invite
 ```
 
 **Updated User Schema:**
+
 ```javascript
 {
   // ... Phase 1 fields ...
@@ -1817,32 +2865,93 @@ DELETE /invite/:inviteId/company/:id  # Delete invite
 
 ```
 Frontend/app/
-├── layout.tsx              # Root layout
-├── page.tsx               # Home page
+├── layout.tsx              # Root layout with providers
+├── page.tsx               # Home/landing page
+├── providers.tsx          # Redux and theme providers
 ├── (dashboard)/           # Protected dashboard routes
-│   ├── layout.tsx         # Dashboard layout
+│   ├── layout.tsx         # Dashboard layout with sidebar
 │   ├── dashboard/
+│   │   ├── page.tsx       # Main dashboard (redirects by role)
 │   │   ├── super-admin/   # Super Admin dashboard
 │   │   ├── company-admin/ # Company Admin dashboard
 │   │   ├── manager/       # Manager dashboard
 │   │   └── user/          # User dashboard
 │   ├── users/             # User management
+│   │   ├── page.tsx       # Users list
+│   │   └── [id]/          # User details
+│   ├── managers/          # Managers management
 │   ├── projects/          # Project management
-│   └── tasks/             # Task management
+│   ├── tasks/             # Task management
+│   ├── invites/           # Invite management
+│   ├── analytics/         # Analytics dashboard
+│   ├── automation/        # Automation/NovaFlow
+│   │   └── builder/       # Automation builder
+│   ├── reports/           # Reports
+│   ├── settings/          # Settings
+│   │   ├── page.tsx       # Settings home
+│   │   ├── branding/      # Branding settings
+│   │   ├── theme/         # Theme settings
+│   │   ├── team/          # Team settings
+│   │   ├── api/           # API settings
+│   │   ├── webhooks/      # Webhook settings
+│   │   ├── sidebar-config/# Sidebar configuration
+│   │   ├── pages/         # Custom pages
+│   │   └── custom-fields/ # Custom fields
+│   └── customize/         # Customization
 ├── (marketing)/           # Public marketing pages
+│   ├── layout.tsx         # Marketing layout
 │   ├── page.tsx          # Landing page
-│   └── about/            # About page
+│   ├── features/         # Features page
+│   ├── pricing/           # Pricing page
+│   └── blog/              # Blog
+│       ├── page.tsx       # Blog list
+│       └── [id]/          # Blog post
 ├── login/                 # Login page
-├── register/              # Registration page
+├── register/              # User registration
 ├── register-company/      # Company registration
-└── invite/                # Invite acceptance
-    └── [token]/
-        └── page.tsx
+├── invite/                # Invite acceptance
+│   └── [token]/
+│       └── page.tsx       # Invite acceptance page
+├── billing/               # Billing pages
+│   ├── page.tsx          # Billing overview
+│   └── plans/            # Pricing plans
+├── activity/              # Activity feed
+├── integrations/          # Integrations
+├── reports/               # Reports (public)
+├── error.tsx              # Error boundary
+├── not-found.tsx          # 404 page
+├── unauthorized.tsx       # 403 page
+└── maintenance.tsx        # Maintenance mode
 ```
+
+### Frontend Route Protection
+
+**Public Routes:**
+
+- `/` - Landing page
+- `/login` - Login page
+- `/register` - Registration page
+- `/register-company` - Company registration
+- `/invite/[token]` - Invite acceptance
+- `/(marketing)/*` - All marketing pages
+
+**Protected Routes:**
+
+- All routes under `/(dashboard)/*` require authentication
+- Role-based access control enforced client-side and server-side
+- Automatic redirect to role-specific dashboard on login
+
+**Route Guards:**
+
+- `useAuthGuard` hook checks authentication status
+- Redirects to `/login` if not authenticated
+- Fetches user data on protected route access
+- Handles token refresh automatically
 
 ### State Management (Redux Toolkit)
 
 **Auth Slice:**
+
 ```typescript
 interface AuthState {
   user: User | null;
@@ -1853,6 +2962,7 @@ interface AuthState {
 ```
 
 **Actions:**
+
 - `login` - Login user
 - `logout` - Logout user
 - `setUser` - Set current user
@@ -1861,14 +2971,16 @@ interface AuthState {
 ### API Client (Axios)
 
 **Configuration:**
+
 ```typescript
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
-  withCredentials: true,  // Send cookies
+  withCredentials: true, // Send cookies
 });
 ```
 
 **Interceptors:**
+
 - **Request:** Attach access token from cookie
 - **Response:** Handle 401 errors, auto-refresh token
 - **Error:** Queue failed requests, retry after refresh
@@ -1876,34 +2988,36 @@ const api = axios.create({
 ### Route Protection
 
 **Auth Guard:**
+
 ```typescript
 // app/guards/AuthGuard.tsx
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
-  
+
   if (isLoading) return <Loading />;
-  if (!isAuthenticated) redirect('/login');
-  
+  if (!isAuthenticated) redirect("/login");
+
   return <>{children}</>;
 }
 ```
 
 **Role Guard:**
+
 ```typescript
 // app/guards/RoleGuard.tsx
-export function RoleGuard({ 
-  allowedRoles, 
-  children 
-}: { 
+export function RoleGuard({
+  allowedRoles,
+  children,
+}: {
   allowedRoles: string[];
   children: React.ReactNode;
 }) {
   const { user } = useAuth();
-  
+
   if (!allowedRoles.includes(user?.role)) {
-    redirect('/unauthorized');
+    redirect("/unauthorized");
   }
-  
+
   return <>{children}</>;
 }
 ```
@@ -1915,6 +3029,7 @@ export function RoleGuard({
 ### Configuration
 
 **Environment Variables:**
+
 ```env
 MAILTRAP_HOST=sandbox.smtp.mailtrap.io
 MAILTRAP_PORT=2525
@@ -1928,6 +3043,7 @@ FRONTEND_URL=http://localhost:3100
 ### Email Service
 
 **Nodemailer Setup:**
+
 ```typescript
 const transporter = nodemailer.createTransport({
   host: mailtrapHost,
@@ -1942,6 +3058,7 @@ const transporter = nodemailer.createTransport({
 ### Invite Email Template
 
 **HTML Email:**
+
 - Professional design with NovaPulse branding
 - Company name and inviter information
 - Invite link button
@@ -1949,6 +3066,7 @@ const transporter = nodemailer.createTransport({
 - Plain text fallback
 
 **Email Content:**
+
 - Subject: "You've been invited to join {companyName} on NovaPulse"
 - Body: Includes invite link, role, expiration date
 - Footer: Company information and unsubscribe option
@@ -1956,6 +3074,7 @@ const transporter = nodemailer.createTransport({
 ### Fallback Mode
 
 **Without Mailtrap:**
+
 - Emails are logged to console
 - Invite tokens and links are still returned in API response
 - Manual sharing of invite links is supported
@@ -1967,23 +3086,26 @@ const transporter = nodemailer.createTransport({
 ### Local Development Setup
 
 1. **Clone Repository:**
+
    ```bash
    git clone <repository-url>
    cd Novapulsee
    ```
 
 2. **Install Dependencies:**
+
    ```bash
    # Backend
    cd backend
    npm install
-   
+
    # Frontend
    cd ../Frontend
    npm install
    ```
 
 3. **Configure Environment:**
+
    - Copy `.env.example` to `.env` (backend)
    - Copy `.env.local.example` to `.env.local` (frontend)
    - Set MongoDB connection string
@@ -1991,17 +3113,19 @@ const transporter = nodemailer.createTransport({
    - Configure Mailtrap (optional)
 
 4. **Start MongoDB:**
+
    ```bash
    mongod
    # or use MongoDB Atlas
    ```
 
 5. **Start Development Servers:**
+
    ```bash
    # Terminal 1: Backend
    cd backend
    npm run start:dev
-   
+
    # Terminal 2: Frontend
    cd Frontend
    npm run dev
@@ -2014,6 +3138,7 @@ const transporter = nodemailer.createTransport({
 ### Code Structure Guidelines
 
 **Backend:**
+
 - Follow NestJS module structure
 - Use DTOs for all request/response validation
 - Implement guards for authentication and authorization
@@ -2021,6 +3146,7 @@ const transporter = nodemailer.createTransport({
 - Keep controllers thin
 
 **Frontend:**
+
 - Use Next.js App Router conventions
 - Organize components by feature
 - Use Redux for global state
@@ -2038,6 +3164,7 @@ const transporter = nodemailer.createTransport({
 ### Environment Variables
 
 **Backend (.env):**
+
 ```env
 NODE_ENV=development
 PORT=5500
@@ -2059,9 +3186,69 @@ EMAIL_FROM_NAME=NovaPulse
 ```
 
 **Frontend (.env.local):**
+
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:5500
 ```
+
+---
+
+## Database Migrations & Schema Management
+
+### Schema Evolution
+
+**Current Approach:**
+
+- Mongoose schemas define database structure
+- Automatic schema validation on save
+- Indexes defined in schema files
+- Manual migration scripts for data transformations
+
+**Creating Indexes:**
+Indexes are defined in Mongoose schemas and created automatically on first connection. For manual index creation:
+
+```javascript
+// Run in MongoDB shell or migration script
+db.users.createIndex({ email: 1 }, { unique: true });
+db.companies.createIndex({ domain: 1 }, { unique: true, sparse: true });
+```
+
+**Migration Scripts:**
+Create migration scripts in `backend/src/scripts/` for data transformations:
+
+```typescript
+// Example: backend/src/scripts/migrate-user-roles.ts
+import { connect } from "mongoose";
+import { User } from "../modules/user/entities/user.entity";
+
+async function migrate() {
+  await connect(process.env.MONGO_URI);
+
+  // Migration logic
+  await User.updateMany({ role: "admin" }, { $set: { role: "company_admin" } });
+
+  console.log("Migration completed");
+  process.exit(0);
+}
+
+migrate();
+```
+
+**Running Migrations:**
+
+```bash
+cd backend
+ts-node src/scripts/migrate-user-roles.ts
+```
+
+### Schema Versioning
+
+**Best Practices:**
+
+- Add new fields as optional initially
+- Use `default` values for new required fields
+- Deprecate fields before removing (mark as optional, stop using)
+- Document breaking changes in changelog
 
 ---
 
@@ -2070,122 +3257,483 @@ NEXT_PUBLIC_API_URL=http://localhost:5500
 ### Backend Testing
 
 **Unit Tests:**
+
 ```bash
 cd backend
 npm run test
 ```
 
+**Test Structure:**
+
+```
+backend/src/
+├── modules/
+│   └── auth/
+│       ├── auth.service.spec.ts
+│       └── auth.controller.spec.ts
+```
+
 **E2E Tests:**
+
 ```bash
 cd backend
 npm run test:e2e
 ```
 
 **Test Coverage:**
-- Authentication flow
+
+- Authentication flow (login, register, refresh, logout)
 - User CRUD operations
 - Company isolation
 - RBAC validation
 - Invite system
+- Multi-tenancy enforcement
+- Error handling
+
+**Example Test:**
+
+```typescript
+describe("AuthController (e2e)", () => {
+  it("/auth/login (POST)", () => {
+    return request(app.getHttpServer())
+      .post("/auth/login")
+      .send({ email: "test@example.com", password: "password123" })
+      .expect(200)
+      .expect((res) => {
+        expect(res.body).toHaveProperty("access_token");
+      });
+  });
+});
+```
 
 ### Frontend Testing
 
 **Component Tests:**
+
 ```bash
 cd Frontend
 npm run test
 ```
 
 **E2E Tests (Cypress/Playwright):**
-- Route guards
+
+- Route guards and authentication
 - Role-based UI rendering
-- Data isolation
-- Invite flow
+- Data isolation between companies
+- Invite flow (creation and acceptance)
+- Form validation
+- Error handling
+
+**Test Scenarios:**
+
+1. User can log in and access dashboard
+2. User cannot access unauthorized routes
+3. Company Admin can create invites
+4. Invite acceptance creates user and logs them in
+5. Users can only see their company's data
 
 ### Manual Testing Checklist
 
 **Authentication:**
-- [ ] Login flow
-- [ ] Registration flow
-- [ ] Token refresh
-- [ ] Logout
-- [ ] Protected routes
+
+- [ ] Login with valid credentials
+- [ ] Login with invalid credentials (error handling)
+- [ ] Registration creates user and company
+- [ ] Token refresh works automatically
+- [ ] Logout clears cookies and invalidates session
+- [ ] Protected routes redirect to login
+- [ ] Expired token triggers refresh
 
 **Company System:**
-- [ ] Company registration
-- [ ] Company isolation
-- [ ] Cross-company access prevention
-- [ ] Company Admin permissions
+
+- [ ] Company registration creates company and admin
+- [ ] Company isolation enforced (users see only their company)
+- [ ] Cross-company access returns 403
+- [ ] Company Admin can update company info
+- [ ] Super Admin can access all companies
 
 **Invite System:**
-- [ ] Invite creation
-- [ ] Email sending (if configured)
-- [ ] Invite acceptance
-- [ ] Token validation
-- [ ] Expired token handling
+
+- [ ] Company Admin can create invites
+- [ ] Manager can create user invites (not manager invites)
+- [ ] Email sent via Mailtrap (if configured)
+- [ ] Invite link works and shows invite details
+- [ ] Invite acceptance creates user and logs them in
+- [ ] Invite automatically deleted after use
+- [ ] Expired invites are rejected
+- [ ] Used invites cannot be reused
 
 **RBAC:**
-- [ ] Role-based endpoint access
-- [ ] Role-based UI rendering
-- [ ] Permission validation
+
+- [ ] Each role can only access permitted endpoints
+- [ ] 403 errors for unauthorized roles
+- [ ] Role guards work correctly
+- [ ] UI shows/hides features based on role
+- [ ] Role-based dashboard redirects work
+
+**Projects & Tasks:**
+
+- [ ] Managers can create projects
+- [ ] Tasks can be assigned to users
+- [ ] Users can update their task status
+- [ ] Company isolation enforced for projects/tasks
+- [ ] Task comments work correctly
+
+**Data Validation:**
+
+- [ ] Email validation works
+- [ ] Password strength requirements enforced
+- [ ] Required fields validated
+- [ ] Invalid data returns 400/422 errors
+- [ ] Duplicate emails rejected
+
+### Performance Testing
+
+**Load Testing:**
+
+- Use tools like Apache Bench, k6, or Artillery
+- Test concurrent user logins
+- Test API endpoint response times
+- Test database query performance
+
+**Key Metrics:**
+
+- API response time < 200ms (p95)
+- Database query time < 100ms (p95)
+- Concurrent user capacity
+- Memory usage under load
+
+### Security Testing
+
+**Checklist:**
+
+- [ ] SQL injection attempts fail (N/A - MongoDB)
+- [ ] XSS attempts are sanitized
+- [ ] CSRF protection works
+- [ ] JWT tokens cannot be tampered with
+- [ ] Password hashing verified
+- [ ] Rate limiting works (if implemented)
+- [ ] CORS blocks unauthorized origins
+- [ ] Sensitive data not logged
 
 ---
 
 ## Deployment Guide
 
+### Pre-Deployment Checklist
+
+**Backend:**
+
+- [ ] All environment variables configured
+- [ ] MongoDB connection string set (Atlas recommended)
+- [ ] JWT secrets are strong and unique (32+ characters)
+- [ ] CORS configured for production domain(s)
+- [ ] Cookie settings updated for production
+- [ ] Email service configured (production SMTP)
+- [ ] Logging configured and log rotation enabled
+- [ ] Health check endpoint tested
+- [ ] Database indexes created
+- [ ] Backup strategy implemented
+
+**Frontend:**
+
+- [ ] `NEXT_PUBLIC_API_URL` set to production backend
+- [ ] Environment variables configured
+- [ ] Build tested locally
+- [ ] Error tracking configured (if applicable)
+- [ ] Analytics configured (if applicable)
+
 ### Backend Deployment
 
-1. **Environment Setup:**
-   - Set production environment variables
-   - Configure MongoDB Atlas connection
-   - Set secure JWT secrets
-   - Configure production SMTP (not Mailtrap)
+#### Option 1: PM2 (Recommended for VPS)
 
-2. **Build:**
+1. **Build the application:**
+
    ```bash
    cd backend
+   npm install --production
    npm run build
    ```
 
-3. **Start:**
-   ```bash
-   npm run start:prod
-   ```
+2. **Start with PM2:**
 
-4. **Process Manager (PM2):**
    ```bash
    pm2 start dist/main.js --name novapulse-api
+   pm2 save
+   pm2 startup  # Enable auto-start on reboot
    ```
+
+3. **PM2 Management:**
+   ```bash
+   pm2 status              # Check status
+   pm2 logs novapulse-api  # View logs
+   pm2 restart novapulse-api  # Restart
+   pm2 stop novapulse-api     # Stop
+   ```
+
+#### Option 2: Docker
+
+1. **Create Dockerfile:**
+
+   ```dockerfile
+   FROM node:18-alpine
+   WORKDIR /app
+   COPY package*.json ./
+   RUN npm ci --only=production
+   COPY . .
+   RUN npm run build
+   EXPOSE 5500
+   CMD ["node", "dist/main.js"]
+   ```
+
+2. **Build and run:**
+   ```bash
+   docker build -t novapulse-api .
+   docker run -d -p 5500:5500 --env-file .env novapulse-api
+   ```
+
+#### Option 3: Cloud Platforms
+
+**Heroku:**
+
+```bash
+heroku create novapulse-api
+heroku config:set NODE_ENV=production
+git push heroku main
+```
+
+**Railway/Render:**
+
+- Connect GitHub repository
+- Set environment variables
+- Auto-deploy on push
 
 ### Frontend Deployment
 
-1. **Environment Setup:**
-   - Set `NEXT_PUBLIC_API_URL` to production backend URL
+#### Option 1: Vercel (Recommended)
 
-2. **Build:**
+1. **Connect Repository:**
+
+   - Import GitHub repository
+   - Configure build settings:
+     - Framework: Next.js
+     - Build Command: `npm run build`
+     - Output Directory: `.next`
+
+2. **Environment Variables:**
+
+   - `NEXT_PUBLIC_API_URL`: Production backend URL
+
+3. **Auto-deploy:** Enabled by default on push to main branch
+
+#### Option 2: Netlify
+
+1. **Connect Repository:**
+
+   - Import GitHub repository
+   - Build settings:
+     - Build command: `npm run build`
+     - Publish directory: `.next`
+
+2. **Environment Variables:**
+   - Add `NEXT_PUBLIC_API_URL` in site settings
+
+#### Option 3: Self-Hosted
+
+1. **Build:**
+
    ```bash
    cd Frontend
+   npm install
    npm run build
    ```
 
-3. **Deploy:**
-   - **Vercel:** Connect GitHub repo, auto-deploy
-   - **Netlify:** Connect GitHub repo, set build command
-   - **Self-hosted:** `npm start`
+2. **Start:**
+
+   ```bash
+   npm start  # Runs on port 3000 by default
+   ```
+
+3. **With PM2:**
+   ```bash
+   pm2 start npm --name novapulse-frontend -- start
+   ```
+
+### Production Environment Variables
+
+**Backend (.env):**
+
+```env
+NODE_ENV=production
+PORT=5500
+MONGO_URI=mongodb+srv://user:pass@cluster.mongodb.net/novapulse
+JWT_SECRET=your-super-secure-secret-key-min-32-chars
+JWT_REFRESH_SECRET=your-super-secure-refresh-secret-min-32-chars
+ACCESS_TOKEN_EXPIRE=15m
+REFRESH_TOKEN_EXPIRE=30d
+COOKIE_SECURE=true
+COOKIE_DOMAIN=.yourdomain.com
+COOKIE_SAME_SITE=strict
+FRONTEND_URL=https://app.yourdomain.com
+
+# Production SMTP (not Mailtrap)
+SMTP_HOST=smtp.sendgrid.net
+SMTP_PORT=587
+SMTP_USER=apikey
+SMTP_PASS=your-sendgrid-api-key
+EMAIL_FROM=noreply@yourdomain.com
+EMAIL_FROM_NAME=NovaPulse
+```
+
+**Frontend (.env.local):**
+
+```env
+NEXT_PUBLIC_API_URL=https://api.yourdomain.com
+```
+
+### Database Setup
+
+**MongoDB Atlas (Recommended):**
+
+1. Create cluster on MongoDB Atlas
+2. Configure network access (whitelist IPs)
+3. Create database user
+4. Get connection string
+5. Set `MONGO_URI` environment variable
+
+**Database Indexes:**
+Ensure these indexes are created for optimal performance:
+
+```javascript
+// Users collection
+db.users.createIndex({ email: 1 }, { unique: true });
+db.users.createIndex({ companyId: 1 });
+db.users.createIndex({ orgId: 1 }); // Legacy
+
+// Companies collection
+db.companies.createIndex({ name: 1 });
+db.companies.createIndex({ domain: 1 }, { unique: true, sparse: true });
+
+// Invites collection
+db.invites.createIndex({ token: 1 }, { unique: true });
+db.invites.createIndex({ companyId: 1 });
+db.invites.createIndex({ email: 1 });
+db.invites.createIndex({ expiresAt: 1 });
+
+// Projects collection
+db.projects.createIndex({ companyId: 1 });
+db.projects.createIndex({ createdBy: 1 });
+db.projects.createIndex({ status: 1 });
+
+// Tasks collection
+db.tasks.createIndex({ companyId: 1 });
+db.tasks.createIndex({ assignedTo: 1 });
+db.tasks.createIndex({ status: 1 });
+db.tasks.createIndex({ projectId: 1 });
+
+// Sessions collection
+db.sessions.createIndex({ userId: 1 });
+```
+
+### Monitoring & Health Checks
+
+**Health Check Endpoint:**
+
+- URL: `GET /health`
+- Use for load balancer health checks
+- Returns: `{ ok: true, uptime: number, timestamp: number }`
+
+**Logging:**
+
+- Application logs: `logs/application-YYYY-MM-DD.log`
+- Exception logs: `logs/exceptions-YYYY-MM-DD.log`
+- Monitor log files for errors
+- Set up log rotation (daily)
+
+**Recommended Monitoring:**
+
+- **Uptime Monitoring:** UptimeRobot, Pingdom
+- **Error Tracking:** Sentry, Rollbar
+- **Performance:** New Relic, Datadog
+- **Log Aggregation:** Loggly, Papertrail
+
+### Backup Strategy
+
+**Database Backups:**
+
+1. **MongoDB Atlas:** Automated daily backups (recommended)
+2. **Manual Backups:**
+   ```bash
+   mongodump --uri="mongodb+srv://..." --out=/backup/novapulse-$(date +%Y%m%d)
+   ```
+
+**Backup Schedule:**
+
+- Daily automated backups (MongoDB Atlas)
+- Weekly manual backup verification
+- Monthly backup restoration test
+
+**Backup Retention:**
+
+- Daily backups: 7 days
+- Weekly backups: 4 weeks
+- Monthly backups: 12 months
+
+### Security Checklist
+
+- [ ] HTTPS enabled (SSL/TLS certificates)
+- [ ] JWT secrets are strong and unique
+- [ ] Cookies set to `secure: true` in production
+- [ ] CORS configured for specific domains only
+- [ ] Rate limiting implemented (recommended)
+- [ ] Input validation on all endpoints
+- [ ] SQL injection prevention (N/A - using MongoDB)
+- [ ] XSS protection (input sanitization)
+- [ ] CSRF protection (SameSite cookies)
+- [ ] Password hashing (bcrypt, 10 rounds)
+- [ ] Environment variables secured
+- [ ] Database credentials secured
+- [ ] API keys stored securely
+- [ ] Regular security updates
+- [ ] Dependency vulnerability scanning
+
+### Scaling Considerations
+
+**Backend Scaling:**
+
+- Use load balancer (Nginx, AWS ALB)
+- Multiple PM2 instances: `pm2 start dist/main.js -i max`
+- Database connection pooling
+- Redis for session storage (optional)
+- CDN for static assets
+
+**Frontend Scaling:**
+
+- Vercel/Netlify handle scaling automatically
+- CDN for static assets
+- Image optimization enabled
+- Code splitting implemented
 
 ### Production Checklist
 
-- [ ] Environment variables configured
-- [ ] MongoDB connection secure
+**Before Launch:**
+
+- [ ] All environment variables configured
+- [ ] MongoDB connection secure and tested
 - [ ] JWT secrets are strong and unique
 - [ ] CORS configured for production domain
 - [ ] Cookies set to `secure: true`
 - [ ] HTTPS enabled
 - [ ] Email service configured (production SMTP)
-- [ ] Logging configured
-- [ ] Error tracking (Sentry, etc.)
-- [ ] Monitoring (health checks)
-- [ ] Backup strategy
+- [ ] Logging configured and tested
+- [ ] Error tracking configured
+- [ ] Health checks working
+- [ ] Backup strategy implemented
+- [ ] Database indexes created
+- [ ] Performance testing completed
+- [ ] Security audit completed
+- [ ] Load testing completed
+- [ ] Documentation updated
 
 ---
 
@@ -2194,6 +3742,7 @@ npm run test
 ### Phase 3: Enhanced Project & Task Management
 
 **Planned Features:**
+
 - Advanced project templates
 - Task dependencies
 - Task time tracking
@@ -2204,6 +3753,7 @@ npm run test
 ### Phase 4: Team Collaboration
 
 **Planned Features:**
+
 - Team creation and management
 - Team-based task assignment
 - Team chat/messaging
@@ -2214,6 +3764,7 @@ npm run test
 ### Phase 5: Advanced Features
 
 **Planned Features:**
+
 - Reporting and analytics
 - Custom workflows
 - API integrations
@@ -2224,6 +3775,7 @@ npm run test
 ### Phase 6: Enterprise Features
 
 **Planned Features:**
+
 - SSO (Single Sign-On)
 - Advanced audit logging
 - Compliance features
@@ -2238,6 +3790,7 @@ npm run test
 ### Version 2.0 (November 2024) - Phase 2 Complete
 
 **Added:**
+
 - Multi-tenant company system
 - Company registration flow
 - Invite system with email integration
@@ -2248,12 +3801,14 @@ npm run test
 - Invite acceptance flow
 
 **Changed:**
+
 - User schema includes `companyId`
 - All queries filter by company
 - JWT tokens include `companyId`
 - API endpoints require company context
 
 **Fixed:**
+
 - Company isolation issues
 - Role guard normalization
 - Invite token validation
@@ -2262,6 +3817,7 @@ npm run test
 ### Version 1.0 (October 2024) - Phase 1 Complete
 
 **Added:**
+
 - JWT authentication system
 - User management (CRUD)
 - Role-based access control
@@ -2271,20 +3827,152 @@ npm run test
 
 ---
 
+## Troubleshooting
+
+### Common Issues
+
+**Backend Issues:**
+
+1. **MongoDB Connection Failed:**
+
+   - Check `MONGO_URI` environment variable
+   - Verify MongoDB is running
+   - Check network access (firewall, IP whitelist)
+   - Verify credentials
+
+2. **JWT Token Invalid:**
+
+   - Clear browser cookies
+   - Verify `JWT_SECRET` matches between restarts
+   - Check token expiration
+   - Ensure cookies are being sent (check CORS)
+
+3. **CORS Errors:**
+
+   - Verify frontend URL in CORS configuration
+   - Check `credentials: true` is set
+   - Ensure `withCredentials: true` in Axios config
+   - Check browser console for specific CORS error
+
+4. **Email Not Sending:**
+
+   - Verify Mailtrap/SMTP credentials
+   - Check email service logs
+   - Verify `EMAIL_FROM` is set
+   - Test SMTP connection manually
+
+5. **Port Already in Use:**
+
+   ```bash
+   # Find process using port
+   lsof -i :5500  # macOS/Linux
+   netstat -ano | findstr :5500  # Windows
+
+   # Kill process
+   kill -9 <PID>  # macOS/Linux
+   taskkill /PID <PID> /F  # Windows
+   ```
+
+**Frontend Issues:**
+
+1. **API Calls Failing:**
+
+   - Check `NEXT_PUBLIC_API_URL` is set correctly
+   - Verify backend is running
+   - Check browser console for errors
+   - Verify CORS is configured
+
+2. **Authentication Not Working:**
+
+   - Clear browser cookies
+   - Check Redux store state
+   - Verify token refresh is working
+   - Check network tab for API responses
+
+3. **Build Errors:**
+
+   - Clear `.next` directory: `rm -rf .next`
+   - Delete `node_modules` and reinstall
+   - Check TypeScript errors
+   - Verify environment variables
+
+4. **Routing Issues:**
+   - Check `useAuthGuard` hook
+   - Verify route protection logic
+   - Check role-based redirects
+   - Verify Next.js App Router structure
+
+### Debugging Tips
+
+**Backend Debugging:**
+
+- Enable debug logging: `NODE_ENV=development`
+- Check Winston logs in `logs/` directory
+- Use `console.log` in development (remove in production)
+- Use Postman/Insomnia to test API endpoints
+- Check MongoDB Compass for database state
+
+**Frontend Debugging:**
+
+- Use React DevTools
+- Check Redux DevTools for state
+- Use browser Network tab
+- Check browser Console for errors
+- Use Next.js debug mode: `NODE_OPTIONS='--inspect' npm run dev`
+
+**Database Debugging:**
+
+- Use MongoDB Compass for visual inspection
+- Check indexes: `db.collection.getIndexes()`
+- Verify queries: `db.collection.find({...}).explain()`
+- Check connection status: `db.serverStatus()`
+
+### Performance Optimization
+
+**Backend:**
+
+- Add database indexes for frequently queried fields
+- Use pagination for large datasets
+- Implement caching (Redis) for frequently accessed data
+- Optimize database queries (use `select()` to limit fields)
+- Use connection pooling
+
+**Frontend:**
+
+- Implement code splitting
+- Lazy load components
+- Optimize images
+- Use React.memo for expensive components
+- Implement virtual scrolling for long lists
+
+---
+
 ## Support & Resources
 
 ### Documentation
+
 - **README.md:** Quick start guide
 - **Documentation.md:** This comprehensive guide
 
-### Development
-- **Backend:** NestJS documentation
-- **Frontend:** Next.js documentation
-- **Database:** MongoDB documentation
+### Development Resources
+
+- **Backend:** [NestJS Documentation](https://docs.nestjs.com/)
+- **Frontend:** [Next.js Documentation](https://nextjs.org/docs)
+- **Database:** [MongoDB Documentation](https://docs.mongodb.com/)
+- **Mongoose:** [Mongoose Documentation](https://mongoosejs.com/docs/)
+
+### Tools & Libraries
+
+- **UI Components:** [shadcn/ui](https://ui.shadcn.com/)
+- **State Management:** [Redux Toolkit](https://redux-toolkit.js.org/)
+- **Styling:** [Tailwind CSS](https://tailwindcss.com/)
+- **Email Testing:** [Mailtrap](https://mailtrap.io/)
 
 ### Contact
+
 - **Issues:** GitHub Issues
 - **Questions:** Project maintainers
+- **Documentation Updates:** Submit PR with improvements
 
 ---
 
@@ -2294,5 +3982,40 @@ npm run test
 
 ---
 
-*This documentation is continuously updated as the project evolves. Please refer to the latest version for the most current information.*
+---
 
+## Documentation Summary
+
+This documentation provides a complete guide to the NovaPulse platform, covering:
+
+✅ **Complete API Documentation** - All endpoints with request/response examples  
+✅ **Database Schema** - Full schema definitions with relationships  
+✅ **Authentication & Security** - JWT, RBAC, and security best practices  
+✅ **Multi-Tenancy** - Complete company isolation implementation  
+✅ **Frontend Architecture** - Next.js App Router structure and routing  
+✅ **Development Workflow** - Setup, testing, and deployment guides  
+✅ **Troubleshooting** - Common issues and solutions  
+✅ **Production Deployment** - Complete deployment checklist and procedures
+
+**Key Features Documented:**
+
+- Multi-tenant SaaS architecture
+- JWT-based authentication with refresh tokens
+- Role-based access control (RBAC)
+- Company registration and management
+- Invite system with email integration
+- Project and task management
+- Team collaboration
+- Dashboard and analytics
+- Settings and billing management
+
+**Ready for:**
+
+- Development team onboarding
+- API integration
+- Production deployment
+- Maintenance and troubleshooting
+
+---
+
+_This documentation is continuously updated as the project evolves. Please refer to the latest version for the most current information._

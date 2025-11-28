@@ -8,53 +8,78 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Workflow } from "@/types/automation";
 import { toast } from "@/hooks/use-toast";
+import { workflowAPI } from "@/app/services";
 
 interface WorkflowListProps {
   workflows: Workflow[];
   onEdit: (workflow: Workflow) => void;
   onCreate: () => void;
+  onRefresh: () => void;
 }
 
-export function WorkflowList({ workflows, onEdit, onCreate }: WorkflowListProps) {
-  const [localWorkflows, setLocalWorkflows] = useState(workflows);
+export function WorkflowList({ workflows, onEdit, onCreate, onRefresh }: WorkflowListProps) {
+  const [loading, setLoading] = useState<Record<string, boolean>>({});
 
-  const toggleStatus = (id: string) => {
-    setLocalWorkflows(prev =>
-      prev.map(w =>
-        w.id === id
-          ? { ...w, status: w.status === "active" ? "inactive" : "active" as const }
-          : w
-      )
-    );
-    toast({
-      title: "Status updated",
-      description: "Workflow status has been changed",
-    });
+  const toggleStatus = async (id: string) => {
+    setLoading(prev => ({ ...prev, [id]: true }));
+    try {
+      await workflowAPI.toggleStatus(id);
+      toast({
+        title: "Status updated",
+        description: "Workflow status has been changed",
+      });
+      onRefresh();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to update status",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(prev => ({ ...prev, [id]: false }));
+    }
   };
 
-  const deleteWorkflow = (id: string) => {
-    setLocalWorkflows(prev => prev.filter(w => w.id !== id));
-    toast({
-      title: "Workflow deleted",
-      description: "The workflow has been removed",
-    });
+  const deleteWorkflow = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this workflow?")) return;
+    
+    setLoading(prev => ({ ...prev, [id]: true }));
+    try {
+      await workflowAPI.delete(id);
+      toast({
+        title: "Workflow deleted",
+        description: "The workflow has been removed",
+      });
+      onRefresh();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to delete workflow",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(prev => ({ ...prev, [id]: false }));
+    }
   };
 
-  const duplicateWorkflow = (workflow: Workflow) => {
-    const newWorkflow = {
-      ...workflow,
-      id: `wf${Date.now()}`,
-      name: `${workflow.name} (Copy)`,
-      status: "draft" as const,
-      runCount: 0,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    setLocalWorkflows(prev => [...prev, newWorkflow]);
-    toast({
-      title: "Workflow duplicated",
-      description: "A copy has been created",
-    });
+  const duplicateWorkflow = async (workflow: Workflow) => {
+    setLoading(prev => ({ ...prev, [workflow.id]: true }));
+    try {
+      const response = await workflowAPI.duplicate(workflow.id);
+      toast({
+        title: "Workflow duplicated",
+        description: "A copy has been created",
+      });
+      onRefresh();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to duplicate workflow",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(prev => ({ ...prev, [workflow.id]: false }));
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -109,6 +134,7 @@ export function WorkflowList({ workflows, onEdit, onCreate }: WorkflowListProps)
                       size="icon"
                       onClick={() => toggleStatus(workflow.id)}
                       title={workflow.status === "active" ? "Pause" : "Activate"}
+                      disabled={loading[workflow.id]}
                     >
                       {workflow.status === "active" ? (
                         <Pause className="h-4 w-4" />
@@ -121,6 +147,7 @@ export function WorkflowList({ workflows, onEdit, onCreate }: WorkflowListProps)
                       size="icon"
                       onClick={() => duplicateWorkflow(workflow)}
                       title="Duplicate"
+                      disabled={loading[workflow.id]}
                     >
                       <Copy className="h-4 w-4" />
                     </Button>
@@ -137,8 +164,9 @@ export function WorkflowList({ workflows, onEdit, onCreate }: WorkflowListProps)
                       size="icon"
                       onClick={() => deleteWorkflow(workflow.id)}
                       title="Delete"
+                      disabled={loading[workflow.id]}
                     >
-                      <Trash2 className="h-4 w-4 text-danger" />
+                      <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </div>
                 </div>

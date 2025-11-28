@@ -12,6 +12,7 @@ import { NodeConfigDialog } from "./NodeConfigDialog";
 import { ConditionalBranch, ConditionalBranchData } from "./ConditionalBranch";
 import { WorkflowExecutionLog, WorkflowExecution } from "./WorkflowExecutionLog";
 import { WorkflowEngine } from "@/lib/workflowEngine";
+import { workflowAPI } from "@/app/services";
 import { toast } from "@/hooks/use-toast";
 import {
   ReactFlow,
@@ -133,7 +134,7 @@ export function WorkflowCanvas({ workflow, onClose, onSave }: WorkflowCanvasProp
     [setEdges]
   );
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const { nodes: workflowNodes, connections: workflowConnections } = convertFromReactFlow(nodes, edges);
     const savedWorkflow: Workflow = {
       id: workflow?.id || `wf${Date.now()}`,
@@ -146,43 +147,82 @@ export function WorkflowCanvas({ workflow, onClose, onSave }: WorkflowCanvasProp
       createdAt: workflow?.createdAt || new Date(),
       updatedAt: new Date(),
     };
-    onSave(savedWorkflow);
-    toast({
-      title: "Workflow saved",
-      description: "Your workflow has been saved successfully",
-    });
+
+    try {
+      if (workflow?.id) {
+        await workflowAPI.update(workflow.id, savedWorkflow);
+      } else {
+        await workflowAPI.create(savedWorkflow);
+      }
+      onSave(savedWorkflow);
+      toast({
+        title: "Workflow saved",
+        description: "Your workflow has been saved successfully",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to save workflow",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleTest = async () => {
-    const { nodes: workflowNodes, connections: workflowConnections } = convertFromReactFlow(nodes, edges);
-    const testWorkflow: Workflow = {
-      id: workflow?.id || `wf${Date.now()}`,
-      name,
-      description,
-      status: "draft",
-      nodes: workflowNodes,
-      connections: workflowConnections,
-      runCount: 0,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+    if (!workflow?.id) {
+      toast({
+        title: "Error",
+        description: "Please save the workflow before testing",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    const engine = new WorkflowEngine(testWorkflow);
-    
     toast({
       title: "Testing workflow",
       description: "Executing workflow...",
     });
 
-    const execution = await engine.execute({ testData: "Sample trigger data" });
-    setExecutionLog(execution);
-    setIsExecutionLogOpen(true);
+    try {
+      const response = await workflowAPI.execute(workflow.id, { testData: "Sample trigger data" });
+      const execution = response.data.execution;
+      
+      // Convert backend execution to frontend format
+      const frontendExecution: WorkflowExecution = {
+        id: execution._id || execution.id,
+        workflowId: execution.workflowId,
+        workflowName: name,
+        status: execution.status,
+        startTime: new Date(execution.startedAt),
+        endTime: execution.completedAt ? new Date(execution.completedAt) : undefined,
+        trigger: execution.triggerData,
+        steps: execution.steps.map((step: any) => ({
+          id: step.id,
+          nodeId: step.nodeId,
+          nodeName: step.nodeName,
+          status: step.status,
+          startTime: new Date(step.startTime),
+          endTime: step.endTime ? new Date(step.endTime) : undefined,
+          error: step.error,
+          output: step.output,
+        })),
+      };
 
-    toast({
-      title: execution.status === "completed" ? "Test completed" : "Test failed",
-      description: `Executed ${execution.steps.length} steps`,
-      variant: execution.status === "failed" ? "destructive" : "default",
-    });
+      setExecutionLog(frontendExecution);
+      setIsExecutionLogOpen(true);
+
+      toast({
+        title: execution.status === "completed" ? "Test completed" : "Test failed",
+        description: `Executed ${execution.steps.length} steps`,
+        variant: execution.status === "failed" ? "destructive" : "default",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to execute workflow",
+        variant: "destructive",
+      });
+    }
   };
 
   const addNode = (type: "trigger" | "action", nodeType: string) => {

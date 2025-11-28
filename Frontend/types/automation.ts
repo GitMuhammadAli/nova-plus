@@ -1,6 +1,4 @@
-export type WorkflowStatus = "active" | "inactive" | "draft";
-
-export type TriggerType =
+export type TriggerType = 
   | "user_created"
   | "user_updated"
   | "order_placed"
@@ -27,25 +25,122 @@ export interface WorkflowNode {
   position: { x: number; y: number };
 }
 
+export interface Condition {
+  id: string;
+  field: string;
+  operator: "equals" | "not_equals" | "contains" | "not_contains" | "greater_than" | "less_than" | "starts_with" | "ends_with";
+  value: string;
+}
+
 export interface WorkflowConnection {
   id: string;
   source: string;
   target: string;
-  conditions?: any[];
+  conditions?: Condition[];
   logic?: "AND" | "OR";
 }
 
 export interface Workflow {
   id: string;
   name: string;
-  description: string;
-  status: WorkflowStatus;
+  description?: string;
+  status: "active" | "inactive" | "draft";
   nodes: WorkflowNode[];
   connections: WorkflowConnection[];
+  lastRun?: Date;
   runCount: number;
   createdAt: Date;
   updatedAt: Date;
-  lastRun?: Date;
   tags?: string[];
 }
 
+export interface ExecutionStep {
+  id: string;
+  nodeId: string;
+  nodeName: string;
+  status: "pending" | "running" | "success" | "failed" | "skipped";
+  startTime: Date;
+  endTime?: Date;
+  error?: string;
+  output?: any;
+}
+
+export interface WorkflowExecution {
+  id: string;
+  workflowId: string;
+  workflowName: string;
+  status: "running" | "completed" | "failed" | "cancelled";
+  startTime: Date;
+  endTime?: Date;
+  trigger: any;
+  steps: ExecutionStep[];
+}
+
+export const mockWorkflows: Workflow[] = [
+  {
+    id: "wf1",
+    name: "Welcome New Users",
+    description: "Send welcome email when a user signs up",
+    status: "active",
+    nodes: [
+      {
+        id: "n1",
+        type: "trigger",
+        triggerType: "user_created",
+        config: {},
+        position: { x: 100, y: 200 }
+      },
+      {
+        id: "n2",
+        type: "action",
+        actionType: "send_email",
+        config: { template: "welcome" },
+        position: { x: 400, y: 200 }
+      }
+    ],
+    connections: [
+      { id: "c1", source: "n1", target: "n2" }
+    ],
+    lastRun: new Date(Date.now() - 3600000),
+    runCount: 142,
+    createdAt: new Date(Date.now() - 86400000 * 30),
+    updatedAt: new Date(Date.now() - 3600000)
+  },
+  {
+    id: "wf2",
+    name: "Order Confirmation",
+    description: "Send confirmation email and SMS when order is placed",
+    status: "active",
+    nodes: [
+      {
+        id: "n1",
+        type: "trigger",
+        triggerType: "order_placed",
+        config: {},
+        position: { x: 100, y: 200 }
+      },
+      {
+        id: "n2",
+        type: "action",
+        actionType: "send_email",
+        config: { template: "order_confirmation" },
+        position: { x: 400, y: 150 }
+      },
+      {
+        id: "n3",
+        type: "action",
+        actionType: "send_sms",
+        config: { template: "order_sms" },
+        position: { x: 400, y: 250 }
+      }
+    ],
+    connections: [
+      { id: "c1", source: "n1", target: "n2" },
+      { id: "c2", source: "n1", target: "n3" }
+    ],
+    lastRun: new Date(Date.now() - 300000),
+    runCount: 487,
+    createdAt: new Date(Date.now() - 86400000 * 45),
+    updatedAt: new Date(Date.now() - 300000)
+  }
+];

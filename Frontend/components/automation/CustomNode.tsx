@@ -1,5 +1,3 @@
-"use client"
-
 import { memo } from "react";
 import { Handle, Position, NodeProps } from "@xyflow/react";
 import { Card } from "@/components/ui/card";

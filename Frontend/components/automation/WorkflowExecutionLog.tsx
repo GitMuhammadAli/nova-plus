@@ -2,7 +2,28 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CheckCircle2, XCircle, Clock, AlertCircle } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+// Simple date formatting function (no external dependency)
+const formatDistanceToNow = (date: Date, options?: { addSuffix?: boolean }): string => {
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  const seconds = Math.floor(diff / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+
+  let result = '';
+  if (days > 0) {
+    result = `${days} day${days > 1 ? 's' : ''} ago`;
+  } else if (hours > 0) {
+    result = `${hours} hour${hours > 1 ? 's' : ''} ago`;
+  } else if (minutes > 0) {
+    result = `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+  } else {
+    result = `${seconds} second${seconds !== 1 ? 's' : ''} ago`;
+  }
+
+  return options?.addSuffix ? result : result.replace(' ago', '');
+};
 
 export interface ExecutionStep {
   id: string;
@@ -54,7 +75,7 @@ export function WorkflowExecutionLog({ execution }: WorkflowExecutionLogProps) {
           <div>
             <h3 className="font-semibold">{execution.workflowName}</h3>
             <p className="text-sm text-muted-foreground">
-              Started {formatDistanceToNow(execution.startTime, { addSuffix: true })}
+              Started {formatDistanceToNow(new Date(execution.startTime), { addSuffix: true })}
             </p>
           </div>
           <Badge
@@ -74,8 +95,10 @@ export function WorkflowExecutionLog({ execution }: WorkflowExecutionLogProps) {
           <div className="space-y-3">
             {execution.steps.map((step, index) => {
               const Icon = statusIcons[step.status];
-              const duration = step.endTime
-                ? `${Math.round((step.endTime.getTime() - step.startTime.getTime()) / 1000)}s`
+              const startTime = step.startTime instanceof Date ? step.startTime : new Date(step.startTime);
+              const endTime = step.endTime ? (step.endTime instanceof Date ? step.endTime : new Date(step.endTime)) : null;
+              const duration = endTime
+                ? `${Math.round((endTime.getTime() - startTime.getTime()) / 1000)}s`
                 : "...";
 
               return (

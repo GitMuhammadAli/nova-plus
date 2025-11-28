@@ -5,7 +5,7 @@ import { DashboardSummaryDto } from './dto/dashboard-summary.dto';
 import { DashboardStatsDto } from './dto/dashboard-stats.dto';
 import { RecentActivityDto } from './dto/recent-activity.dto';
 
-@Controller('api/dashboard')
+@Controller('dashboard')
 @UseGuards(JwtAuthGuard)
 export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
@@ -21,7 +21,7 @@ export class DashboardController {
   }
 }
 
-@Controller('api/activity')
+@Controller('activity')
 @UseGuards(JwtAuthGuard)
 export class ActivityController {
   constructor(private readonly dashboardService: DashboardService) {}

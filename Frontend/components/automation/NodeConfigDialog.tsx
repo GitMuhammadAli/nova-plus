@@ -1,6 +1,4 @@
-"use client"
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,7 +15,13 @@ interface NodeConfigDialogProps {
 }
 
 export function NodeConfigDialog({ node, open, onClose, onSave }: NodeConfigDialogProps) {
-  const [config, setConfig] = useState(node?.config || {});
+  const [config, setConfig] = useState<Record<string, any>>({});
+
+  useEffect(() => {
+    if (node) {
+      setConfig(node.config || {});
+    }
+  }, [node]);
 
   const handleSave = () => {
     onSave(config);
@@ -58,6 +62,7 @@ export function NodeConfigDialog({ node, open, onClose, onSave }: NodeConfigDial
               </div>
             </>
           );
+
         case "webhook":
           return (
             <div className="space-y-2">
@@ -69,6 +74,7 @@ export function NodeConfigDialog({ node, open, onClose, onSave }: NodeConfigDial
               />
             </div>
           );
+
         default:
           return (
             <div className="space-y-2">
@@ -90,7 +96,23 @@ export function NodeConfigDialog({ node, open, onClose, onSave }: NodeConfigDial
           return (
             <>
               <div className="space-y-2">
-                <Label>Email Template</Label>
+                <Label>Recipient</Label>
+                <Input 
+                  value={config.recipient || ""} 
+                  onChange={(e) => setConfig({ ...config, recipient: e.target.value })}
+                  placeholder="user.email or {{user.email}}"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Subject</Label>
+                <Input 
+                  value={config.subject || ""} 
+                  onChange={(e) => setConfig({ ...config, subject: e.target.value })}
+                  placeholder="Email subject"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Template</Label>
                 <Select 
                   value={config.template || ""} 
                   onValueChange={(v) => setConfig({ ...config, template: v })}
@@ -105,19 +127,18 @@ export function NodeConfigDialog({ node, open, onClose, onSave }: NodeConfigDial
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label>Subject</Label>
-                <Input 
-                  value={config.subject || ""} 
-                  onChange={(e) => setConfig({ ...config, subject: e.target.value })}
-                  placeholder="Email subject"
-                />
-              </div>
             </>
           );
+
         case "send_sms":
           return (
             <div className="space-y-2">
+              <Label>Phone Number</Label>
+              <Input 
+                value={config.phone || ""} 
+                onChange={(e) => setConfig({ ...config, phone: e.target.value })}
+                placeholder="user.phone or {{user.phone}}"
+              />
               <Label>SMS Message</Label>
               <Textarea 
                 value={config.message || ""} 
@@ -127,6 +148,7 @@ export function NodeConfigDialog({ node, open, onClose, onSave }: NodeConfigDial
               />
             </div>
           );
+
         case "call_webhook":
           return (
             <>
@@ -157,6 +179,7 @@ export function NodeConfigDialog({ node, open, onClose, onSave }: NodeConfigDial
               </div>
             </>
           );
+
         case "update_record":
           return (
             <>
@@ -179,6 +202,7 @@ export function NodeConfigDialog({ node, open, onClose, onSave }: NodeConfigDial
               </div>
             </>
           );
+
         default:
           return (
             <div className="space-y-2">

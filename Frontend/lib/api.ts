@@ -1,6 +1,12 @@
 import axios, { AxiosError } from 'axios';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5500';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5500';
+// Ensure API URL includes /api/v1 prefix
+const API_URL = API_BASE.endsWith('/api/v1') 
+  ? API_BASE 
+  : API_BASE.endsWith('/') 
+    ? `${API_BASE}api/v1`
+    : `${API_BASE}/api/v1`;
 
 // Create axios instance
 export const api = axios.create({
@@ -45,7 +51,7 @@ api.interceptors.response.use(
     // Handle 401 errors
     if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
       const errorMessage =
-        (error.response?.data as { message?: string } | undefined)?.message || '';cd
+        (error.response?.data as { message?: string } | undefined)?.message || '';
       
       // If invalid signature, don't try to refresh - just clear and redirect
       if (errorMessage.includes('invalid signature') || errorMessage.includes('Token signature invalid')) {

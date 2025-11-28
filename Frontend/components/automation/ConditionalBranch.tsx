@@ -1,5 +1,3 @@
-"use client"
-
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,13 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, X } from "lucide-react";
-
-export interface Condition {
-  id: string;
-  field: string;
-  operator: "equals" | "not_equals" | "contains" | "greater_than" | "less_than";
-  value: string;
-}
+import { Condition } from "@/types/automation";
 
 export interface ConditionalBranchData {
   logic: "AND" | "OR";
@@ -101,8 +93,11 @@ export function ConditionalBranch({ data, onSave }: ConditionalBranchProps) {
                       <SelectItem value="equals">Equals</SelectItem>
                       <SelectItem value="not_equals">Not Equals</SelectItem>
                       <SelectItem value="contains">Contains</SelectItem>
+                      <SelectItem value="not_contains">Not Contains</SelectItem>
                       <SelectItem value="greater_than">Greater Than</SelectItem>
                       <SelectItem value="less_than">Less Than</SelectItem>
+                      <SelectItem value="starts_with">Starts With</SelectItem>
+                      <SelectItem value="ends_with">Ends With</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

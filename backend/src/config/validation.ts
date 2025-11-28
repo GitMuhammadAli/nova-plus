@@ -22,4 +22,19 @@ export const validationSchema = Joi.object({
   EMAIL_FROM: Joi.string().email().optional(),
   EMAIL_FROM_NAME: Joi.string().optional(),
   FRONTEND_URL: Joi.string().uri().optional(),
+  // MongoDB Connection Pooling
+  MONGO_MAX_POOL_SIZE: Joi.number().default(10),
+  MONGO_MIN_POOL_SIZE: Joi.number().default(2),
+  MONGO_MAX_IDLE_TIME_MS: Joi.number().default(30000),
+  MONGO_SERVER_SELECTION_TIMEOUT: Joi.number().default(5000),
+  MONGO_SOCKET_TIMEOUT: Joi.number().default(45000),
+  // Rate Limiting
+  THROTTLE_TTL: Joi.number().default(60),
+  THROTTLE_LIMIT: Joi.number().default(100),
+  // CORS
+  ALLOWED_ORIGINS: Joi.string().optional(),
+  // Redis (optional)
+  REDIS_URL: Joi.string().optional(),
+  REDIS_HOST: Joi.string().optional(),
+  REDIS_PORT: Joi.number().optional(),
 });
