@@ -11,6 +11,32 @@ export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
 
   /**
+   * Track a page visit (alias for /track)
+   */
+  @Post('visit')
+  @Roles(UserRole.COMPANY_ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.SUPER_ADMIN)
+  async recordVisit(
+    @Req() req,
+    @Body() body: { path: string; metadata?: Record<string, any> },
+  ) {
+    const user = req.user;
+    const companyId = user.companyId?.toString() || user.companyId;
+    const userAgent = req.headers['user-agent'] || '';
+
+    return this.analyticsService.trackVisit(companyId, {
+      userId: user._id?.toString() || user.id,
+      page: body.path,
+      referrer: body.metadata?.referrer,
+      userAgent: body.metadata?.userAgent || userAgent,
+      ipAddress: req.ip,
+      device: body.metadata?.deviceType,
+      browser: body.metadata?.browser,
+      os: body.metadata?.os,
+      duration: body.metadata?.duration,
+    });
+  }
+
+  /**
    * Track a page visit
    */
   @Post('track')
@@ -42,6 +68,17 @@ export class AnalyticsController {
       os: body.os,
       duration: body.duration,
     });
+  }
+
+  /**
+   * Get summary statistics
+   */
+  @Get('summary')
+  @Roles(UserRole.COMPANY_ADMIN, UserRole.MANAGER, UserRole.SUPER_ADMIN)
+  async getSummary(@Req() req) {
+    const user = req.user;
+    const companyId = user.companyId?.toString() || user.companyId;
+    return this.analyticsService.getSummary(companyId);
   }
 
   /**

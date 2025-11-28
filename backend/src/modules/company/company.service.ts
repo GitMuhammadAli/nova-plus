@@ -332,4 +332,28 @@ export class CompanyService {
       },
     };
   }
+
+  /**
+   * Get company statistics
+   */
+  async getCompanyStats(companyId: string, requestUserId: string, requestUserRole: string) {
+    // Verify user has access to this company
+    await this.findById(companyId, requestUserId, requestUserRole);
+
+    const [totalUsers, activeUsers, totalManagers, pendingInvites] = await Promise.all([
+      this.userModel.countDocuments({ companyId }).exec(),
+      this.userModel.countDocuments({ companyId, isActive: true }).exec(),
+      this.userModel.countDocuments({ companyId, role: UserRole.MANAGER }).exec(),
+      // Get pending invites count (would need invite service)
+      0, // Placeholder - implement with invite service
+    ]);
+
+    return {
+      totalUsers,
+      activeUsers,
+      inactiveUsers: totalUsers - activeUsers,
+      totalManagers,
+      pendingInvites,
+    };
+  }
 }

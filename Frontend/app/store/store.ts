@@ -5,6 +5,13 @@ import authReducer from "./authSlice";
 import usersReducer from "./usersSlice";
 import companyReducer from "./companySlice";
 import invitesReducer from "./invitesSlice";
+import departmentsReducer from "./departmentsSlice";
+import projectsReducer from "./projectsSlice";
+import tasksReducer from "./tasksSlice";
+import analyticsReducer from "./analyticsSlice";
+import auditReducer from "./auditSlice";
+import workflowReducer from "./workflowSlice";
+import dashboardReducer from "./dashboardSlice";
 
 const createNoopStorage = () => {
   return {
@@ -29,7 +36,13 @@ const rootReducer = combineReducers({
   users: usersReducer,
   company: companyReducer,
   invites: invitesReducer,
-  // Add more reducers here as needed
+  departments: departmentsReducer,
+  projects: projectsReducer,
+  tasks: tasksReducer,
+  analytics: analyticsReducer,
+  audit: auditReducer,
+  workflow: workflowReducer,
+  dashboard: dashboardReducer,
 });
 
 const persistConfig = {

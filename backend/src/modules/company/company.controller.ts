@@ -224,4 +224,21 @@ export class CompanyController {
     const requestUserRole = req.user.role;
     return this.companyService.update(id, updateData, requestUserId, requestUserRole);
   }
+
+  /**
+   * Get company statistics
+   * GET /company/:id/stats
+   */
+  @Get(':id/stats')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.COMPANY_ADMIN, UserRole.MANAGER, UserRole.SUPER_ADMIN)
+  async getCompanyStats(@Param('id') id: string, @Req() req) {
+    const requestUserId = req.user._id || req.user.id;
+    const requestUserRole = req.user.role;
+    const stats = await this.companyService.getCompanyStats(id, requestUserId, requestUserRole);
+    return {
+      success: true,
+      stats,
+    };
+  }
 }

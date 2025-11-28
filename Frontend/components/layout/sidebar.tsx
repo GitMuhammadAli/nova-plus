@@ -1,11 +1,11 @@
-"use client"
+"use client";
 
 import { motion } from "framer-motion";
-import { 
-  LayoutDashboard, 
-  Users, 
-  BarChart3, 
-  Settings, 
+import {
+  LayoutDashboard,
+  Users,
+  BarChart3,
+  Settings,
   Zap,
   FileText,
   CreditCard,
@@ -15,6 +15,7 @@ import {
   FolderKanban,
   Mail,
   UserCog,
+  Building2,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -29,32 +30,69 @@ interface SidebarProps {
 
 // Define all navigation items with role-based access
 const allNavItems = [
-  { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard", roles: ['admin', 'manager', 'user'] },
-  { icon: Users, label: "Users", path: "/users", roles: ['admin', 'manager'] },
-  { icon: UserCog, label: "Managers", path: "/managers", roles: ['admin'] },
-  { icon: Mail, label: "Invites", path: "/invites", roles: ['admin'] },
-  { icon: FolderKanban, label: "Projects", path: "/projects", roles: ['manager'] },
-  { icon: FileText, label: "My Tasks", path: "/tasks", roles: ['user'] },
-  { icon: BarChart3, label: "Analytics", path: "/analytics", roles: ['admin', 'manager'] },
-  { icon: Zap, label: "NovaFlow", path: "/automation", roles: ['admin', 'manager'] },
-  { icon: FileText, label: "Reports", path: "/reports", roles: ['admin', 'manager'] },
-  { icon: CreditCard, label: "Billing", path: "/billing", roles: ['admin'] },
-  { icon: Shield, label: "Audit Logs", path: "/audit-logs", roles: ['admin'] },
-  { icon: Settings, label: "Settings", path: "/settings", roles: ['admin', 'manager', 'user'] },
+  {
+    icon: LayoutDashboard,
+    label: "Dashboard",
+    path: "/dashboard",
+    roles: ["admin", "manager", "user"],
+  },
+  { icon: Users, label: "Users", path: "/users", roles: ["admin", "manager"] },
+  { icon: UserCog, label: "Managers", path: "/managers", roles: ["admin"] },
+  {
+    icon: Building2,
+    label: "Departments",
+    path: "/departments",
+    roles: ["admin", "manager"],
+  },
+  { icon: Mail, label: "Invites", path: "/invites", roles: ["admin"] },
+  {
+    icon: FolderKanban,
+    label: "Projects",
+    path: "/projects",
+    roles: ["manager"],
+  },
+  { icon: FileText, label: "My Tasks", path: "/tasks", roles: ["user"] },
+  {
+    icon: BarChart3,
+    label: "Analytics",
+    path: "/analytics",
+    roles: ["admin", "manager"],
+  },
+  {
+    icon: Zap,
+    label: "NovaFlow",
+    path: "/automation",
+    roles: ["admin", "manager"],
+  },
+  {
+    icon: FileText,
+    label: "Reports",
+    path: "/reports",
+    roles: ["admin", "manager"],
+  },
+  { icon: CreditCard, label: "Billing", path: "/billing", roles: ["admin"] },
+  { icon: Shield, label: "Audit Logs", path: "/audit-logs", roles: ["admin"] },
+  {
+    icon: Settings,
+    label: "Settings",
+    path: "/settings",
+    roles: ["admin", "manager", "user"],
+  },
 ];
 
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const pathname = usePathname();
   const { user } = useSelector((state: RootState) => state.auth);
-  const userRole = user?.role?.toLowerCase() || '';
+  const userRole = user?.role?.toLowerCase() || "";
 
   // Normalize role for matching (company_admin -> admin, super_admin -> admin)
-  const normalizedRole = userRole === 'company_admin' || userRole === 'super_admin' 
-    ? 'admin' 
-    : userRole;
+  const normalizedRole =
+    userRole === "company_admin" || userRole === "super_admin"
+      ? "admin"
+      : userRole;
 
   // Filter nav items based on user role
-  const navItems = allNavItems.filter(item => 
+  const navItems = allNavItems.filter((item) =>
     item.roles.includes(normalizedRole)
   );
 
@@ -63,7 +101,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       initial={false}
       animate={{ width: collapsed ? 64 : 256 }}
       transition={{ duration: 0.2, ease: "easeInOut" }}
-     className="h-screen bg-sidebar border-r border-sidebar-border flex flex-col z-40 shrink-0"
+      className="h-screen bg-sidebar border-r border-sidebar-border flex flex-col z-40 shrink-0"
     >
       {/* Logo */}
       <div className="h-16 flex items-center justify-between px-4 border-b border-sidebar-border">
@@ -77,10 +115,12 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
               <Zap className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="font-semibold text-lg text-sidebar-foreground">NovaPulse</span>
+            <span className="font-semibold text-lg text-sidebar-foreground">
+              NovaPulse
+            </span>
           </motion.div>
         )}
-        
+
         {collapsed && (
           <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center mx-auto">
             <Zap className="w-5 h-5 text-primary-foreground" />
@@ -93,7 +133,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
         <ul className="space-y-1">
           {navItems.map((item) => {
             const isActive = pathname === item.path;
-            
+
             return (
               <li key={item.path}>
                 <Link

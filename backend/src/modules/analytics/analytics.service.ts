@@ -53,6 +53,85 @@ export class AnalyticsService {
   }
 
   /**
+   * Get summary statistics
+   */
+  async getSummary(companyId: string) {
+    const now = new Date();
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const sixtyDaysAgo = new Date();
+    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+
+    // Get total visitors
+    const totalVisitors = await this.visitModel.distinct('userId', {
+      companyId: new Types.ObjectId(companyId),
+    }).then(ids => ids.filter(Boolean).length);
+
+    // Get visitors in last 30 days
+    const visitorsLast30Days = await this.visitModel.distinct('userId', {
+      companyId: new Types.ObjectId(companyId),
+      visitedAt: { $gte: thirtyDaysAgo },
+    }).then(ids => ids.filter(Boolean).length);
+
+    // Get visitors in previous 30 days
+    const visitorsPrev30Days = await this.visitModel.distinct('userId', {
+      companyId: new Types.ObjectId(companyId),
+      visitedAt: { $gte: sixtyDaysAgo, $lt: thirtyDaysAgo },
+    }).then(ids => ids.filter(Boolean).length);
+
+    const visitorChange = visitorsPrev30Days > 0
+      ? ((visitorsLast30Days - visitorsPrev30Days) / visitorsPrev30Days) * 100
+      : (visitorsLast30Days > 0 ? 100 : 0);
+
+    // Get total users, projects, tasks
+    const totalUsers = await this.userModel.countDocuments({
+      companyId: new Types.ObjectId(companyId),
+    });
+
+    const totalProjects = await this.projectModel.countDocuments({
+      companyId: new Types.ObjectId(companyId),
+    });
+
+    const totalTasks = await this.taskModel.countDocuments({
+      companyId: new Types.ObjectId(companyId),
+    });
+
+    // Get average session duration
+    const recentVisits = await this.visitModel.find({
+      companyId: new Types.ObjectId(companyId),
+      visitedAt: { $gte: thirtyDaysAgo },
+    }).lean();
+
+    const totalDuration = recentVisits.reduce((sum, v) => sum + (v.duration || 0), 0);
+    const avgDurationSeconds = recentVisits.length > 0 ? totalDuration / recentVisits.length : 0;
+    const avgSessionDuration = this.formatDuration(avgDurationSeconds);
+
+    // Calculate conversion rate (mock for now)
+    const conversionRate = totalUsers > 0 && totalVisitors > 0 
+      ? (totalUsers / Math.max(totalVisitors, totalUsers)) * 100 
+      : 0;
+    const conversionRateChange = 2.1; // Placeholder
+
+    // Calculate revenue (mock for now)
+    const revenue = 0; // TODO: Get from billing module
+    const revenueChange = 0; // Placeholder
+
+    return {
+      totalVisitors,
+      visitorsLast30Days,
+      visitorChange: Math.round(visitorChange * 100) / 100,
+      avgSessionDuration,
+      conversionRate: Math.round(conversionRate * 100) / 100,
+      conversionRateChange,
+      revenue,
+      revenueChange,
+      totalUsers,
+      totalProjects,
+      totalTasks,
+    };
+  }
+
+  /**
    * Get comprehensive analytics stats for a company
    */
   async getAnalyticsStats(companyId: string, period: string = '6m'): Promise<AnalyticsStatsDto> {

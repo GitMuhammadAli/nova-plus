@@ -1,16 +1,31 @@
- "use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/app/store/store";
 import { fetchCompanyUsers } from "@/app/store/usersSlice";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Bell, Lock, Users, Zap, Building2, Globe, FileText, Image } from "lucide-react";
+import {
+  Bell,
+  Lock,
+  Users,
+  Zap,
+  Building2,
+  Globe,
+  FileText,
+  Image,
+} from "lucide-react";
 import { companyAPI } from "@/app/services";
 import { useToast } from "@/hooks/use-toast";
 
@@ -81,12 +96,16 @@ export default function SettingsPage() {
         description: companyForm.description,
         logoUrl: companyForm.logoUrl,
       });
-      toast({ title: "Company updated", description: "Workspace settings saved successfully." });
+      toast({
+        title: "Company updated",
+        description: "Workspace settings saved successfully.",
+      });
       setCompanyInfo((prev: any) => ({ ...prev, ...companyForm }));
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error?.response?.data?.message || "Failed to update company.",
+        description:
+          error?.response?.data?.message || "Failed to update company.",
         variant: "destructive",
       });
     } finally {
@@ -95,7 +114,9 @@ export default function SettingsPage() {
   };
 
   const totalUsers = users.length;
-  const totalManagers = users.filter((u) => (u.role || "").toLowerCase() === "manager").length;
+  const totalManagers = users.filter(
+    (u) => (u.role || "").toLowerCase() === "manager"
+  ).length;
   const activeUsers = users.filter((u) => u.isActive !== false).length;
 
   return (
@@ -112,7 +133,9 @@ export default function SettingsPage() {
           <Card className="p-6">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="text-xl font-semibold text-foreground">Company Profile</h3>
+                <h3 className="text-xl font-semibold text-foreground">
+                  Company Profile
+                </h3>
                 <p className="text-sm text-muted-foreground">
                   Update how your workspace appears across NovaPulse
                 </p>
@@ -136,7 +159,9 @@ export default function SettingsPage() {
                 <Input
                   className="mt-2"
                   value={companyForm.name}
-                  onChange={(e) => handleCompanyInputChange("name", e.target.value)}
+                  onChange={(e) =>
+                    handleCompanyInputChange("name", e.target.value)
+                  }
                   disabled={companyLoading}
                   placeholder="Acme Inc."
                 />
@@ -149,7 +174,9 @@ export default function SettingsPage() {
                 <Input
                   className="mt-2"
                   value={companyForm.domain}
-                  onChange={(e) => handleCompanyInputChange("domain", e.target.value)}
+                  onChange={(e) =>
+                    handleCompanyInputChange("domain", e.target.value)
+                  }
                   disabled={companyLoading}
                   placeholder="acme.com"
                 />
@@ -162,7 +189,9 @@ export default function SettingsPage() {
                 <textarea
                   className="mt-2 w-full min-h-[120px] border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary p-3"
                   value={companyForm.description}
-                  onChange={(e) => handleCompanyInputChange("description", e.target.value)}
+                  onChange={(e) =>
+                    handleCompanyInputChange("description", e.target.value)
+                  }
                   placeholder="Tell your team what this workspace is all about..."
                   disabled={companyLoading}
                 />
@@ -175,17 +204,25 @@ export default function SettingsPage() {
                 <Input
                   className="mt-2"
                   value={companyForm.logoUrl}
-                  onChange={(e) => handleCompanyInputChange("logoUrl", e.target.value)}
+                  onChange={(e) =>
+                    handleCompanyInputChange("logoUrl", e.target.value)
+                  }
                   disabled={companyLoading}
                   placeholder="https://..."
                 />
               </div>
             </div>
             <div className="flex gap-3 justify-end mt-6">
-              <Button variant="outline" disabled={companyLoading || savingCompany}>
+              <Button
+                variant="outline"
+                disabled={companyLoading || savingCompany}
+              >
                 Cancel
               </Button>
-              <Button onClick={handleSaveCompany} disabled={companyLoading || savingCompany}>
+              <Button
+                onClick={handleSaveCompany}
+                disabled={companyLoading || savingCompany}
+              >
                 {savingCompany ? "Saving..." : "Save Changes"}
               </Button>
             </div>
@@ -194,7 +231,9 @@ export default function SettingsPage() {
           <Card className="p-6">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div>
-                <h3 className="text-lg font-semibold text-foreground">Workspace Overview</h3>
+                <h3 className="text-lg font-semibold text-foreground">
+                  Workspace Overview
+                </h3>
                 <p className="text-sm text-muted-foreground">
                   Key stats for your NovaPulse workspace.
                 </p>
@@ -213,16 +252,22 @@ export default function SettingsPage() {
               </div>
               <div className="p-4 border border-border rounded-lg">
                 <p className="text-sm text-muted-foreground">Active Users</p>
-                <p className="text-2xl font-bold text-green-600">{activeUsers}</p>
+                <p className="text-2xl font-bold text-green-600">
+                  {activeUsers}
+                </p>
               </div>
               <div className="p-4 border border-border rounded-lg">
                 <p className="text-sm text-muted-foreground">Managers</p>
-                <p className="text-2xl font-bold text-primary">{totalManagers}</p>
+                <p className="text-2xl font-bold text-primary">
+                  {totalManagers}
+                </p>
               </div>
             </div>
             <div className="grid gap-4 md:grid-cols-2 mt-6">
               <div className="p-4 border border-border rounded-lg">
-                <p className="text-sm text-muted-foreground">Workspace Created</p>
+                <p className="text-sm text-muted-foreground">
+                  Workspace Created
+                </p>
                 <p className="text-base font-medium">
                   {companyInfo?.createdAt
                     ? new Date(companyInfo.createdAt).toLocaleDateString()
@@ -276,21 +321,38 @@ export default function SettingsPage() {
           </TabsList>
 
           <TabsContent value="account" className="space-y-6 mt-6">
-            <div className="space-y-4">
+            <div className="space-y-4 p-6">
               <div>
-                <label className="text-sm font-medium text-foreground">Full Name</label>
+                <label className="text-sm font-medium text-foreground">
+                  Full Name
+                </label>
                 <Input defaultValue={user?.name || ""} className="mt-2" />
               </div>
               <div>
-                <label className="text-sm font-medium text-foreground">Email Address</label>
-                <Input defaultValue={user?.email || ""} type="email" className="mt-2" disabled />
+                <label className="text-sm font-medium text-foreground">
+                  Email Address
+                </label>
+                <Input
+                  defaultValue={user?.email || ""}
+                  type="email"
+                  className="mt-2"
+                  disabled
+                />
               </div>
               <div>
-                <label className="text-sm font-medium text-foreground">Company</label>
-                <Input defaultValue={companyInfo?.name || ""} className="mt-2" disabled />
+                <label className="text-sm font-medium text-foreground">
+                  Company
+                </label>
+                <Input
+                  defaultValue={companyInfo?.name || ""}
+                  className="mt-2"
+                  disabled
+                />
               </div>
               <div>
-                <label className="text-sm font-medium text-foreground">Bio</label>
+                <label className="text-sm font-medium text-foreground">
+                  Bio
+                </label>
                 <textarea
                   defaultValue=""
                   className="w-full mt-2 p-3 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
@@ -299,7 +361,7 @@ export default function SettingsPage() {
                 />
               </div>
             </div>
-            <div className="flex gap-3">
+            <div className="flex gap-3 px-6 pb-6">
               <Button>Save Changes</Button>
               <Button variant="outline" className="bg-transparent">
                 Cancel
@@ -308,11 +370,12 @@ export default function SettingsPage() {
           </TabsContent>
 
           <TabsContent value="notifications" className="space-y-6 mt-6">
-            <div className="space-y-4">
+            <div className="space-y-4 p-6">
               {[
                 {
                   title: "Email Notifications",
-                  description: "Receive email updates about your account activity",
+                  description:
+                    "Receive email updates about your account activity",
                   enabled: emailNotifications,
                   onChange: setEmailNotifications,
                 },
@@ -323,10 +386,17 @@ export default function SettingsPage() {
                   onChange: setPushNotifications,
                 },
               ].map((notification, index) => (
-                <div key={index} className="flex items-center justify-between p-4 border border-border rounded-lg">
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-4 border border-border rounded-lg"
+                >
                   <div>
-                    <p className="font-medium text-foreground">{notification.title}</p>
-                    <p className="text-sm text-muted-foreground">{notification.description}</p>
+                    <p className="font-medium text-foreground">
+                      {notification.title}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {notification.description}
+                    </p>
                   </div>
                   <input
                     type="checkbox"
@@ -337,7 +407,9 @@ export default function SettingsPage() {
                 </div>
               ))}
             </div>
-            <Button>Save Preferences</Button>
+            <div className="px-6 pb-6">
+              <Button>Save Preferences</Button>
+            </div>
           </TabsContent>
 
           <TabsContent value="security" className="space-y-6 mt-6">
@@ -346,7 +418,9 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <p className="font-medium text-foreground">Password</p>
-                    <p className="text-sm text-muted-foreground">Last changed 3 months ago</p>
+                    <p className="text-sm text-muted-foreground">
+                      Last changed 3 months ago
+                    </p>
                   </div>
                   <Button variant="outline" className="bg-transparent">
                     Change Password
@@ -357,8 +431,12 @@ export default function SettingsPage() {
               <div className="p-4 border border-border rounded-lg">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium text-foreground">Two-Factor Authentication</p>
-                    <p className="text-sm text-muted-foreground">Add an extra layer of security</p>
+                    <p className="font-medium text-foreground">
+                      Two-Factor Authentication
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Add an extra layer of security
+                    </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant={twoFactorEnabled ? "default" : "secondary"}>
@@ -393,12 +471,19 @@ export default function SettingsPage() {
                   connected: false,
                 },
               ].map((integration, index) => (
-                <div key={index} className="flex items-center justify-between p-4 border border-border rounded-lg">
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-4 border border-border rounded-lg"
+                >
                   <div className="flex items-center gap-4">
                     <span className="text-2xl">{integration.icon}</span>
                     <div>
-                      <p className="font-medium text-foreground">{integration.name}</p>
-                      <p className="text-sm text-muted-foreground">{integration.description}</p>
+                      <p className="font-medium text-foreground">
+                        {integration.name}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {integration.description}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">

@@ -100,14 +100,16 @@ export default function Analytics() {
       const trackVisit = async () => {
         try {
           await analyticsAPI.trackVisit({
-            page: '/analytics',
+            page: "/analytics",
             referrer: document.referrer,
             userAgent: navigator.userAgent,
-            device: /Mobile|Android|iPhone|iPad/.test(navigator.userAgent) ? 'mobile' : 'desktop',
+            device: /Mobile|Android|iPhone|iPad/.test(navigator.userAgent)
+              ? "mobile"
+              : "desktop",
           });
         } catch (error) {
           // Silent fail - don't interrupt user experience
-          console.error('Failed to track visit:', error);
+          console.error("Failed to track visit:", error);
         }
       };
       trackVisit();
@@ -118,7 +120,7 @@ export default function Analytics() {
   useEffect(() => {
     const fetchAnalytics = async () => {
       if (!user) return;
-      
+
       setLoading(true);
       try {
         const response = await analyticsAPI.getStats(timeRange);
@@ -128,7 +130,8 @@ export default function Analytics() {
       } catch (error: any) {
         toast({
           title: "Error",
-          description: error.response?.data?.message || "Failed to load analytics",
+          description:
+            error.response?.data?.message || "Failed to load analytics",
           variant: "destructive",
         });
       } finally {
@@ -159,52 +162,62 @@ export default function Analytics() {
 
   const handleExport = () => {
     if (!stats) return;
-    
+
     const dataStr = JSON.stringify(stats, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const dataBlob = new Blob([dataStr], { type: "application/json" });
     const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = url;
-    link.download = `analytics-${timeRange}-${new Date().toISOString().split('T')[0]}.json`;
+    link.download = `analytics-${timeRange}-${
+      new Date().toISOString().split("T")[0]
+    }.json`;
     link.click();
     URL.revokeObjectURL(url);
-    
+
     toast({
       title: "Exported",
       description: "Analytics data exported successfully",
     });
   };
 
-  const statsCards = stats ? [
+  // Safe stats access with defaults
+  const safeStats = (stats as AnalyticsStats) || {};
+  const totalVisitors = safeStats.totalVisitors ?? 0;
+  const avgSessionDuration = safeStats.avgSessionDuration || "0m 0s";
+  const conversionRate = safeStats.conversionRate ?? 0;
+  const revenue = safeStats.revenue ?? 0;
+  const growth = safeStats.growth || {};
+
+  const statsCards = [
     {
       label: "Total Visitors",
-      value: stats.totalVisitors.toLocaleString(),
-      change: `+${stats.growth.visitors.toFixed(1)}%`,
+      value: totalVisitors.toLocaleString(),
+      change: growth.visitors ? `+${growth.visitors.toFixed(1)}%` : "0%",
       icon: Users,
       trend: "up",
     },
     {
       label: "Avg. Session Duration",
-      value: stats.avgSessionDuration,
-      change: `+${stats.growth.sessions.toFixed(1)}%`,
+      value: avgSessionDuration,
+      change: growth.sessions ? `+${growth.sessions.toFixed(1)}%` : "0%",
       icon: Activity,
       trend: "up",
     },
     {
       label: "Conversion Rate",
-      value: `${stats.conversionRate.toFixed(1)}%`,
-      change: `+${stats.growth.conversion.toFixed(1)}%`,
+      value: `${conversionRate.toFixed(1)}%`,
+      change: growth.conversion ? `+${growth.conversion.toFixed(1)}%` : "0%",
       icon: TrendingUp,
       trend: "up",
     },
     {
       label: "Revenue",
-      value: `$${stats.revenue.toLocaleString()}`,
-      change: `+${stats.growth.revenue.toFixed(1)}%`,
+      value: `$${revenue.toLocaleString()}`,
+      change: growth.revenue ? `+${growth.revenue.toFixed(1)}%` : "0%",
       icon: DollarSign,
       trend: "up",
     },
-  ] : [];
+  ];
 
   if (loading && !stats) {
     return (
@@ -308,7 +321,7 @@ export default function Analytics() {
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height={400}>
-                  <AreaChart data={stats.trafficData}>
+                  <AreaChart data={stats?.trafficData || []}>
                     <defs>
                       <linearGradient id="visitors" x1="0" y1="0" x2="0" y2="1">
                         <stop
@@ -322,7 +335,13 @@ export default function Analytics() {
                           stopOpacity={0}
                         />
                       </linearGradient>
-                      <linearGradient id="pageviews" x1="0" y1="0" x2="0" y2="1">
+                      <linearGradient
+                        id="pageviews"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
                         <stop
                           offset="5%"
                           stopColor="hsl(var(--success))"
@@ -335,8 +354,14 @@ export default function Analytics() {
                         />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" />
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="hsl(var(--border))"
+                    />
+                    <XAxis
+                      dataKey="date"
+                      stroke="hsl(var(--muted-foreground))"
+                    />
                     <YAxis stroke="hsl(var(--muted-foreground))" />
                     <Tooltip
                       contentStyle={{
@@ -377,9 +402,18 @@ export default function Analytics() {
               ) : (
                 <>
                   <ResponsiveContainer width="100%" height={400}>
-                    <BarChart data={stats.conversionData} layout="vertical">
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis type="number" stroke="hsl(var(--muted-foreground))" />
+                    <BarChart
+                      data={stats?.conversionData || []}
+                      layout="vertical"
+                    >
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="hsl(var(--border))"
+                      />
+                      <XAxis
+                        type="number"
+                        stroke="hsl(var(--muted-foreground))"
+                      />
                       <YAxis
                         dataKey="stage"
                         type="category"
@@ -392,14 +426,22 @@ export default function Analytics() {
                           borderRadius: "8px",
                         }}
                       />
-                      <Bar dataKey="count" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+                      <Bar
+                        dataKey="count"
+                        fill="hsl(var(--primary))"
+                        radius={[0, 4, 4, 0]}
+                      />
                     </BarChart>
                   </ResponsiveContainer>
                   <div className="mt-4 grid grid-cols-4 gap-4">
-                    {stats.conversionData.map((item) => (
+                    {(stats?.conversionData || []).map((item) => (
                       <div key={item.stage} className="text-center">
-                        <div className="text-2xl font-bold">{item.rate.toFixed(1)}%</div>
-                        <div className="text-sm text-muted-foreground">{item.stage}</div>
+                        <div className="text-2xl font-bold">
+                          {item.rate.toFixed(1)}%
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {item.stage}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -412,7 +454,9 @@ export default function Analytics() {
           <TabsContent value="devices" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card className="p-6">
-                <h3 className="text-lg font-semibold mb-4">Device Distribution</h3>
+                <h3 className="text-lg font-semibold mb-4">
+                  Device Distribution
+                </h3>
                 {loading ? (
                   <div className="flex items-center justify-center h-[300px]">
                     <Loader2 className="w-6 h-6 animate-spin text-primary" />
@@ -421,16 +465,31 @@ export default function Analytics() {
                   <ResponsiveContainer width="100%" height={300}>
                     <PieChart>
                       <Pie
-                        data={stats.deviceData}
+                        data={
+                          stats?.deviceData?.map(({ name, value, color }) => ({
+                            name,
+                            value,
+                            color,
+                          })) || []
+                        }
                         cx="50%"
                         cy="50%"
                         labelLine={false}
-                        label={({ name, value }) => `${name}: ${value}%`}
+                        label={(props: {
+                          name?: string;
+                          payload?: { value?: number };
+                        }) =>
+                          `${props.name}: ${
+                            props.payload &&
+                            typeof props.payload.value === "number"
+                              ? props.payload.value
+                              : ""
+                          }%`
+                        }
                         outerRadius={100}
-                        fill="#8884d8"
                         dataKey="value"
                       >
-                        {stats.deviceData.map((entry, index) => (
+                        {(stats?.deviceData || []).map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Pie>
@@ -442,8 +501,11 @@ export default function Analytics() {
               <Card className="p-6">
                 <h3 className="text-lg font-semibold mb-4">Device Stats</h3>
                 <div className="space-y-4">
-                  {stats.deviceData.map((device) => (
-                    <div key={device.name} className="flex items-center justify-between">
+                  {(stats?.deviceData || []).map((device) => (
+                    <div
+                      key={device.name}
+                      className="flex items-center justify-between"
+                    >
                       <div className="flex items-center gap-3">
                         <div
                           className="w-3 h-3 rounded-full"
@@ -454,7 +516,10 @@ export default function Analytics() {
                       <div className="text-right">
                         <div className="font-bold">{device.value}%</div>
                         <div className="text-sm text-muted-foreground">
-                          {Math.round((device.value / 100) * stats.totalVisitors).toLocaleString()} users
+                          {Math.round(
+                            (device.value / 100) * (stats?.totalVisitors || 0)
+                          ).toLocaleString()}{" "}
+                          users
                         </div>
                       </div>
                     </div>
@@ -467,15 +532,17 @@ export default function Analytics() {
           {/* Top Pages Tab */}
           <TabsContent value="pages" className="space-y-6">
             <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Top Performing Pages</h3>
+              <h3 className="text-lg font-semibold mb-4">
+                Top Performing Pages
+              </h3>
               {loading ? (
                 <div className="flex items-center justify-center h-[400px]">
                   <Loader2 className="w-6 h-6 animate-spin text-primary" />
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {stats.topPages.length > 0 ? (
-                    stats.topPages.map((page, index) => (
+                  {(stats?.topPages || []).length > 0 ? (
+                    (stats?.topPages || []).map((page, index) => (
                       <div
                         key={page.page}
                         className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
@@ -495,7 +562,9 @@ export default function Analytics() {
                           <div className="text-xl font-bold">
                             {page.views.toLocaleString()}
                           </div>
-                          <div className="text-sm text-muted-foreground">views</div>
+                          <div className="text-sm text-muted-foreground">
+                            views
+                          </div>
                         </div>
                       </div>
                     ))
@@ -513,4 +582,3 @@ export default function Analytics() {
     </AppShell>
   );
 }
-

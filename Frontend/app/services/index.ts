@@ -52,15 +52,12 @@ export const usersAPI = {
 // ANALYTICS API
 // ============================================
 export const analyticsAPI = {
-  getStats: (period?: string) => api.get('/analytics/stats', { params: { period } }),
+  getSummary: () => api.get('/analytics/summary'),
   
-  getTraffic: (period?: string) => api.get('/analytics/traffic', { params: { period } }),
+  getAnalyticsStats: (period?: string) => api.get('/analytics/stats', { params: { period } }),
   
-  getDevices: (period?: string) => api.get('/analytics/devices', { params: { period } }),
-  
-  getConversion: (period?: string) => api.get('/analytics/conversion', { params: { period } }),
-  
-  getTopPages: (period?: string) => api.get('/analytics/top-pages', { params: { period } }),
+  recordVisit: (path: string, metadata?: Record<string, any>) => 
+    api.post('/analytics/visit', { path, metadata }),
   
   trackVisit: (data: {
     page: string;
@@ -71,7 +68,17 @@ export const analyticsAPI = {
     browser?: string;
     os?: string;
     duration?: number;
-  }) => api.post('/analytics/track', data),
+  }) => api.post('/analytics/visit', { path: data.page, metadata: data }),
+  
+  getStats: (period?: string) => api.get('/analytics/stats', { params: { period } }),
+  
+  getTraffic: (period?: string) => api.get('/analytics/traffic', { params: { period } }),
+  
+  getDevices: (period?: string) => api.get('/analytics/devices', { params: { period } }),
+  
+  getConversion: (period?: string) => api.get('/analytics/conversion', { params: { period } }),
+  
+  getTopPages: (period?: string) => api.get('/analytics/top-pages', { params: { period } }),
 };
 
 // ============================================
@@ -206,6 +213,7 @@ export const activityAPI = {
 export const companyAPI = {
   getAll: () => api.get('/company/all'),
   getById: (id: string) => api.get(`/company/${id}`),
+  getStats: (id: string) => api.get(`/company/${id}/stats`),
   create: (data: {
     name: string;
     domain?: string;
@@ -226,6 +234,42 @@ export const companyAPI = {
 };
 
 // ============================================
+// DEPARTMENT API
+// ============================================
+export const departmentAPI = {
+  getAll: () => api.get('/departments'),
+  
+  getById: (id: string) => api.get(`/departments/${id}`),
+  
+  create: (data: any) => api.post('/departments', data),
+  
+  update: (id: string, data: any) => api.patch(`/departments/${id}`, data),
+  
+  delete: (id: string) => api.delete(`/departments/${id}`),
+  
+  assignManager: (id: string, managerId: string) => 
+    api.post(`/departments/${id}/assign-manager`, { managerId }),
+  
+  addMember: (id: string, userId: string) => 
+    api.post(`/departments/${id}/members`, { userId }),
+  
+  removeMember: (id: string, userId: string) => 
+    api.delete(`/departments/${id}/members/${userId}`),
+};
+
+// ============================================
+// AUDIT API
+// ============================================
+export const auditAPI = {
+  getAll: (params?: { page?: number; limit?: number; search?: string; action?: string; severity?: string; userId?: string; resource?: string; startDate?: string; endDate?: string }) => 
+    api.get('/audit/logs', { params }),
+  
+  getRecent: (limit?: number) => api.get('/audit/recent', { params: { limit } }),
+  
+  getById: (id: string) => api.get(`/audit/${id}`),
+};
+
+// ============================================
 // WORKFLOW API
 // ============================================
 export const workflowAPI = {
@@ -238,17 +282,14 @@ export const workflowAPI = {
   
   update: (id: string, data: any) => api.patch(`/workflow/${id}`, data),
   
-  delete: (id: string) => api.delete(`/workflow/${id}`),
+  remove: (id: string) => api.delete(`/workflow/${id}`),
   
-  toggleStatus: (id: string) => api.patch(`/workflow/${id}/toggle-status`),
+  toggleStatus: (id: string) => api.post(`/workflow/${id}/toggle-status`),
   
   duplicate: (id: string) => api.post(`/workflow/${id}/duplicate`),
   
   execute: (id: string, triggerData?: any) => 
     api.post(`/workflow/${id}/execute`, { triggerData }),
-  
-  getExecutions: (id: string, limit?: number) => 
-    api.get(`/workflow/${id}/executions`, { params: { limit } }),
 };
 
 // ============================================
