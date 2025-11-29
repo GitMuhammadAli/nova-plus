@@ -33,6 +33,8 @@ import { MetricsController } from './common/controllers/metrics.controller';
       load: [configuration],
       validationSchema,
     }),
+    // Scheduling
+    ScheduleModule.forRoot(),
     // Rate Limiting
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],
@@ -76,6 +78,7 @@ import { MetricsController } from './common/controllers/metrics.controller';
     QueueModule,
     WebhookModule,
     CommonModule,
+    AIModule,
   ],
   controllers: [],
   providers: [
