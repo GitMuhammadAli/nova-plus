@@ -18,7 +18,7 @@ export class WebhookWorker {
     const redisClient = this.queueService.getRedisClient();
     
     this.worker = new Worker(
-      'nova:webhook',
+      'nova-webhook',
       async (job) => {
         const { webhookId, url, secret, event, data } = job.data;
         const startTime = Date.now();

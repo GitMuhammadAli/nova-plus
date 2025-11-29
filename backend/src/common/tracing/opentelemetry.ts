@@ -1,5 +1,5 @@
 import { NodeSDK } from '@opentelemetry/sdk-node';
-import { Resource } from '@opentelemetry/resources';
+import { defaultResource, resourceFromAttributes } from '@opentelemetry/resources';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
 import { MongooseInstrumentation } from '@opentelemetry/instrumentation-mongoose';
@@ -14,13 +14,13 @@ export function initializeTracing(serviceName: string = 'novapulse-api'): void {
   }
 
   try {
-    const defaultResource = Resource.default();
-    const customResource = new Resource({
+    // Create resource with service attributes
+    const customResource = resourceFromAttributes({
       [SemanticResourceAttributes.SERVICE_NAME]: serviceName,
       [SemanticResourceAttributes.SERVICE_VERSION]: process.env.npm_package_version || '1.0.0',
       [SemanticResourceAttributes.DEPLOYMENT_ENVIRONMENT]: process.env.NODE_ENV || 'development',
     });
-    const resource = defaultResource.merge(customResource);
+    const resource = defaultResource().merge(customResource);
 
     sdk = new NodeSDK({
       resource,

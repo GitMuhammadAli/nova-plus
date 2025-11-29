@@ -24,10 +24,10 @@ export class QueueService {
   private reportQueue: Queue;
 
   constructor(
-    @InjectQueue('nova:email') emailQueue: Queue,
-    @InjectQueue('nova:webhook') webhookQueue: Queue,
-    @InjectQueue('nova:workflow') workflowQueue: Queue,
-    @InjectQueue('nova:report') reportQueue: Queue,
+    @InjectQueue('nova-email') emailQueue: Queue,
+    @InjectQueue('nova-webhook') webhookQueue: Queue,
+    @InjectQueue('nova-workflow') workflowQueue: Queue,
+    @InjectQueue('nova-report') reportQueue: Queue,
     @Inject(REDIS_CLIENT) private readonly redisClient: Redis,
   ) {
     this.emailQueue = emailQueue;
@@ -146,19 +146,19 @@ export class QueueService {
    */
   async add(queueName: string, jobName: string, payload: any, options?: JobOptions) {
     let queue: Queue;
-    switch (queueName) {
-      case 'nova:email':
-        queue = this.emailQueue;
-        break;
-      case 'nova:webhook':
-        queue = this.webhookQueue;
-        break;
-      case 'nova:workflow':
-        queue = this.workflowQueue;
-        break;
-      case 'nova:report':
-        queue = this.reportQueue;
-        break;
+        switch (queueName) {
+          case 'nova-email':
+            queue = this.emailQueue;
+            break;
+          case 'nova-webhook':
+            queue = this.webhookQueue;
+            break;
+          case 'nova-workflow':
+            queue = this.workflowQueue;
+            break;
+          case 'nova-report':
+            queue = this.reportQueue;
+            break;
       default:
         throw new Error(`Unknown queue: ${queueName}`);
     }

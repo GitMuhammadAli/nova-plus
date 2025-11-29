@@ -17,7 +17,7 @@ export class EmailWorker {
     const redisClient = this.queueService.getRedisClient();
     
     this.worker = new Worker(
-      'nova:email',
+      'nova-email',
       async (job) => {
         const { to, subject, template, data, html, text } = job.data;
         

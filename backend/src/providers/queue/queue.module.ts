@@ -19,12 +19,12 @@ import { REDIS_CLIENT, redisProvider } from '../redis/redis.provider';
       },
       inject: [ConfigService],
     }),
-    // Register queues
+    // Register queues (BullMQ doesn't allow colons in queue names)
     BullModule.registerQueue(
-      { name: 'nova:email' },
-      { name: 'nova:webhook' },
-      { name: 'nova:workflow' },
-      { name: 'nova:report' },
+      { name: 'nova-email' },
+      { name: 'nova-webhook' },
+      { name: 'nova-workflow' },
+      { name: 'nova-report' },
     ),
   ],
   controllers: [QueueController],

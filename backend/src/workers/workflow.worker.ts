@@ -16,7 +16,7 @@ export class WorkflowWorker {
     const redisClient = this.queueService.getRedisClient();
     
     this.worker = new Worker(
-      'nova:workflow',
+      'nova-workflow',
       async (job) => {
         const { workflowId, triggerData } = job.data;
         

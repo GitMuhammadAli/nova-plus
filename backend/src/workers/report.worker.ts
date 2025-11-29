@@ -16,7 +16,7 @@ export class ReportWorker {
     const redisClient = this.queueService.getRedisClient();
     
     this.worker = new Worker(
-      'nova:report',
+      'nova-report',
       async (job) => {
         const { reportType, companyId, userId, params } = job.data;
         
