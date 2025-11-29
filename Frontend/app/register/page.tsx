@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
-import { clearError, fetchMe, resetLoading } from "@/app/store/authSlice";
+import { clearError, fetchMe, resetLoading, setUser } from "@/app/store/authSlice";
 import { registerCompany } from "@/app/store/companySlice";
 import { AppDispatch, RootState } from "@/app/store/store";
 import Link from "next/link";
@@ -148,12 +148,23 @@ export default function Register() {
     setValidationError(null);
     setSuccess(false);
 
-    if (isSubmitting) {
+    // Prevent double submission
+    if (isSubmitting || success) {
       return;
     }
 
     if (!joinCompanyData.inviteToken) {
       setValidationError("Invite token is required");
+      return;
+    }
+
+    if (!joinCompanyData.name || joinCompanyData.name.trim().length === 0) {
+      setValidationError("Name is required");
+      return;
+    }
+
+    if (!joinCompanyData.email || joinCompanyData.email.trim().length === 0) {
+      setValidationError("Email is required");
       return;
     }
 
@@ -167,37 +178,51 @@ export default function Register() {
     try {
       const { inviteAPI } = await import("@/app/services");
       const response = await inviteAPI.acceptInvite(joinCompanyData.inviteToken, {
-        name: joinCompanyData.name,
-        email: joinCompanyData.email,
+        name: joinCompanyData.name.trim(),
+        email: joinCompanyData.email.trim(),
         password: joinCompanyData.password,
       });
 
-      if (response.data?.user) {
+      if (response.data?.user || response.data?.success) {
         setSuccess(true);
         setSuccessMessage("Account created successfully! Redirecting to your dashboard...");
         
+        // Disable form to prevent re-submission
+        // Keep isSubmitting true to prevent button clicks
+        
         // Wait a bit to ensure cookies are set by the browser
-        await new Promise(resolve => setTimeout(resolve, 300));
+        await new Promise(resolve => setTimeout(resolve, 500));
         
         // Fetch the complete user data from backend (cookies are set by backend)
         try {
-          await dispatch(fetchMe()).unwrap();
-          setTimeout(() => {
-            router.replace("/dashboard");
-          }, 500);
+          const userResult = await dispatch(fetchMe()).unwrap();
+          if (userResult) {
+            // User is authenticated, redirect immediately
+            router.push("/dashboard");
+            return; // Exit early
+          }
         } catch (error) {
           console.error('Failed to fetch user after invite acceptance:', error);
-          // Still redirect even if fetchMe fails (cookies should be set)
-          setTimeout(() => {
-            router.replace("/dashboard");
-          }, 1000);
+          // Set user from response if available
+          if (response.data?.user) {
+            dispatch(setUser(response.data.user));
+          }
         }
+        
+        // Fallback redirect (cookies should be set by backend)
+        setTimeout(() => {
+          router.push("/dashboard");
+        }, 1000);
+      } else {
+        throw new Error("Invalid response from server");
       }
     } catch (err: any) {
-      setValidationError(err.response?.data?.message || "Failed to accept invite");
-    } finally {
+      console.error('Invite acceptance error:', err);
+      const errorMessage = err.response?.data?.message || err.message || "Failed to accept invite";
+      setValidationError(errorMessage);
       setIsSubmitting(false);
     }
+    // Don't set isSubmitting to false if success - keep it true to prevent re-submission
   };
 
   const handleInviteTokenChange = (token: string) => {
@@ -370,15 +395,15 @@ export default function Register() {
               <form onSubmit={handleJoinCompany} className="space-y-4" noValidate>
                 <div className="space-y-2">
                   <Label htmlFor="inviteToken">Invite Token *</Label>
-                  <Input
-                    id="inviteToken"
-                    type="text"
-                    placeholder="Enter invite token"
-                    value={joinCompanyData.inviteToken}
-                    onChange={(e) => handleInviteTokenChange(e.target.value)}
-                    required
-                    disabled={isLoading || loadingInvite}
-                  />
+                    <Input
+                      id="inviteToken"
+                      type="text"
+                      placeholder="Enter invite token"
+                      value={joinCompanyData.inviteToken}
+                      onChange={(e) => handleInviteTokenChange(e.target.value)}
+                      required
+                      disabled={isLoading || loadingInvite || isSubmitting || success}
+                    />
                   {loadingInvite && (
                     <p className="text-xs text-muted-foreground">Validating invite...</p>
                   )}
@@ -403,7 +428,7 @@ export default function Register() {
                       value={joinCompanyData.name}
                       onChange={(e) => setJoinCompanyData({ ...joinCompanyData, name: e.target.value })}
                       required
-                      disabled={isLoading}
+                      disabled={isLoading || isSubmitting || success}
                     />
                   </div>
                 </div>
@@ -420,7 +445,7 @@ export default function Register() {
                       value={joinCompanyData.email}
                       onChange={(e) => setJoinCompanyData({ ...joinCompanyData, email: e.target.value })}
                       required
-                      disabled={isLoading}
+                      disabled={isLoading || isSubmitting || success}
                     />
                   </div>
                 </div>
@@ -438,14 +463,23 @@ export default function Register() {
                       onChange={(e) => setJoinCompanyData({ ...joinCompanyData, password: e.target.value })}
                       required
                       minLength={6}
-                      disabled={isLoading}
+                      disabled={isLoading || isSubmitting || success}
                     />
                   </div>
                   <p className="text-xs text-muted-foreground">Minimum 6 characters</p>
                 </div>
 
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Joining..." : "Join Company"}
+                <Button type="submit" className="w-full" disabled={isLoading || isSubmitting || success}>
+                  {success ? (
+                    <>
+                      <CheckCircle2 className="w-4 h-4 mr-2" />
+                      Redirecting...
+                    </>
+                  ) : isSubmitting ? (
+                    "Joining..."
+                  ) : (
+                    "Join Company"
+                  )}
                 </Button>
               </form>
             </TabsContent>

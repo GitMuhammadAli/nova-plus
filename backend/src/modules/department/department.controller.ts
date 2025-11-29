@@ -153,5 +153,25 @@ export class DepartmentController {
       department,
     };
   }
+
+  @Get(':id/members')
+  @Roles(UserRole.COMPANY_ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.SUPER_ADMIN)
+  async getMembers(@Param('id') id: string, @Req() req) {
+    const user = req.user;
+    const companyId = user.companyId?.toString() || user.companyId;
+
+    const department = await this.departmentService.findOne(id, companyId);
+    const members = await this.departmentService.getMembers(id, companyId);
+
+    return {
+      success: true,
+      department: {
+        _id: department._id,
+        name: department.name,
+        description: department.description,
+      },
+      members,
+    };
+  }
 }
 

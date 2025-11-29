@@ -356,4 +356,51 @@ export class CompanyService {
       pendingInvites,
     };
   }
+
+  /**
+   * Get company activity (last 30 actions)
+   */
+  async getCompanyActivity(companyId: string, requestUserId: string, requestUserRole: string) {
+    // Verify user has access to this company
+    await this.findById(companyId, requestUserId, requestUserRole);
+
+    // For now, return empty array - would need AuditLog or Activity service
+    // This should be implemented with AuditService injection
+    return [];
+  }
+
+  /**
+   * Get company profile with details
+   */
+  async getCompanyProfile(companyId: string, requestUserId: string, requestUserRole: string) {
+    // Verify user has access to this company
+    const company = await this.findById(companyId, requestUserId, requestUserRole);
+
+    // Get additional details
+    const [totalUsers, totalManagers, totalProjects] = await Promise.all([
+      this.userModel.countDocuments({ companyId }).exec(),
+      this.userModel.countDocuments({ companyId, role: UserRole.MANAGER }).exec(),
+      // Would need Project model
+      0,
+    ]);
+
+    // Convert to plain object to access timestamps
+    const companyObj = company.toObject ? company.toObject() : company as any;
+
+    return {
+      company: {
+        _id: company._id,
+        name: company.name,
+        domain: company.domain,
+        isActive: company.isActive,
+        createdAt: companyObj.createdAt,
+        updatedAt: companyObj.updatedAt,
+      },
+      stats: {
+        totalUsers,
+        totalManagers,
+        totalProjects,
+      },
+    };
+  }
 }

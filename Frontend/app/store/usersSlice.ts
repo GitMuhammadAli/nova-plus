@@ -46,7 +46,9 @@ export const fetchUsers = createAsyncThunk(
   async (params: { page?: number; limit?: number; search?: string } = {}, { rejectWithValue }) => {
     try {
       const response = await usersAPI.getAll(params || {});
-      return response.data;
+      // TransformInterceptor wraps in { success: true, data: ... }
+      const data = response.data?.data || response.data?.users || response.data || [];
+      return Array.isArray(data) ? data : [];
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch users');
     }
@@ -58,7 +60,9 @@ export const fetchCompanyUsers = createAsyncThunk(
   async (params: { page?: number; limit?: number; search?: string } = {}, { rejectWithValue }) => {
     try {
       const response = await usersAPI.getCompanyUsers(params || {});
-      return response.data;
+      // TransformInterceptor wraps in { success: true, data: ... }
+      const data = response.data?.data || response.data?.users || response.data || [];
+      return Array.isArray(data) ? data : [];
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch company users');
     }
@@ -82,7 +86,8 @@ export const createUser = createAsyncThunk(
   async (data: any, { rejectWithValue }) => {
     try {
       const response = await usersAPI.create(data);
-      return response.data;
+      // TransformInterceptor wraps in { success: true, data: ... }
+      return response.data?.data || response.data?.user || response.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to create user');
     }

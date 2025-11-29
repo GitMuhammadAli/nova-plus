@@ -42,17 +42,21 @@ export const fetchCompanyInvites = createAsyncThunk(
   async (companyId: string, { rejectWithValue }) => {
     try {
       const response = await inviteAPI.getCompanyInvites(companyId);
-      // Backend wraps response in { success: true, data: [...] }
+      // TransformInterceptor wraps in { success: true, data: [...] }
       // Handle different response structures
       const invites = Array.isArray(response.data?.data)
         ? response.data.data
-        : Array.isArray(response.data)
-        ? response.data
         : Array.isArray(response.data?.invites)
         ? response.data.invites
+        : Array.isArray(response.data)
+        ? response.data
+        : Array.isArray(response)
+        ? response
         : [];
+      console.log('Fetched invites:', invites.length, invites);
       return invites;
     } catch (error: any) {
+      console.error('Failed to fetch invites:', error);
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch invites');
     }
   }
@@ -62,12 +66,24 @@ export const fetchCompanyInvites = createAsyncThunk(
 export const createInvite = createAsyncThunk(
   'invites/createInvite',
   async (
-    data: { email?: string; role: string; expiresInDays?: number },
-    { rejectWithValue }
+    data: { email?: string; role: string; expiresInDays?: number; companyId?: string },
+    { rejectWithValue, getState }
   ) => {
     try {
-      const response = await inviteAPI.createInvite(data);
-      return response.data;
+      // Get companyId from state if not provided
+      const state = getState() as any;
+      const companyId = data.companyId || state?.auth?.user?.companyId;
+      
+      if (!companyId) {
+        return rejectWithValue('Company ID is required');
+      }
+      
+      const response = await inviteAPI.createInvite(
+        { email: data.email, role: data.role, expiresInDays: data.expiresInDays },
+        companyId
+      );
+      // TransformInterceptor wraps in { success: true, data: { invite, inviteLink } }
+      return response.data?.data || response.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to create invite');
     }
@@ -86,6 +102,48 @@ export const revokeInvite = createAsyncThunk(
       return inviteId;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to revoke invite');
+    }
+  }
+);
+
+// Resend invite
+export const resendInvite = createAsyncThunk(
+  'invites/resendInvite',
+  async (inviteId: string, { rejectWithValue }) => {
+    try {
+      const response = await inviteAPI.resendInvite(inviteId);
+      return { inviteId, ...response.data };
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to resend invite');
+    }
+  }
+);
+
+// Cancel invite
+export const cancelInvite = createAsyncThunk(
+  'invites/cancelInvite',
+  async (inviteId: string, { rejectWithValue }) => {
+    try {
+      const response = await inviteAPI.cancelInvite(inviteId);
+      return inviteId;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to cancel invite');
+    }
+  }
+);
+
+// Bulk create invites
+export const bulkCreateInvites = createAsyncThunk(
+  'invites/bulkCreateInvites',
+  async (
+    data: { companyId: string; invites: Array<{ email?: string; role: string; expiresInDays?: number }> },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await inviteAPI.bulkCreateInvites(data);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to bulk create invites');
     }
   }
 );
@@ -148,6 +206,54 @@ const invitesSlice = createSlice({
         );
       })
       .addCase(revokeInvite.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      });
+
+    // Resend invite
+    builder
+      .addCase(resendInvite.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(resendInvite.fulfilled, (state) => {
+        state.isLoading = false;
+      })
+      .addCase(resendInvite.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      });
+
+    // Cancel invite
+    builder
+      .addCase(cancelInvite.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(cancelInvite.fulfilled, (state, action) => {
+        state.isLoading = false;
+        const invitesArray = Array.isArray(state.invites) ? state.invites : [];
+        state.invites = invitesArray.map((invite) =>
+          invite._id === action.payload
+            ? { ...invite, isActive: false }
+            : invite
+        );
+      })
+      .addCase(cancelInvite.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      });
+
+    // Bulk create invites
+    builder
+      .addCase(bulkCreateInvites.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(bulkCreateInvites.fulfilled, (state) => {
+        state.isLoading = false;
+      })
+      .addCase(bulkCreateInvites.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
       });

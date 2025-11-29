@@ -36,6 +36,8 @@ const CompanyAdminDashboard = () => {
     totalRegularUsers: 0,
     recentUsers: 0,
   });
+  const [companyStats, setCompanyStats] = useState<any>(null);
+  const [activity, setActivity] = useState<any[]>([]);
   const [company, setCompany] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [invites, setInvites] = useState<any[]>([]);
@@ -132,6 +134,22 @@ const CompanyAdminDashboard = () => {
         }
 
         await loadCompanyUsers(companyId);
+
+        // Fetch company stats
+        try {
+          const statsRes = await companyAPI.getStats(companyId);
+          setCompanyStats(statsRes.data?.stats || statsRes.data);
+        } catch (err) {
+          console.error('Failed to fetch company stats:', err);
+        }
+
+        // Fetch activity
+        try {
+          const activityRes = await companyAPI.getActivity(companyId);
+          setActivity(Array.isArray(activityRes?.data?.activity) ? activityRes.data.activity : []);
+        } catch (err) {
+          console.error('Failed to fetch activity:', err);
+        }
 
         // Fetch invites
         try {
@@ -578,6 +596,46 @@ const CompanyAdminDashboard = () => {
                   >
                     <Trash2 className="w-4 h-4 text-destructive" />
                   </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+
+        {/* Activity Feed */}
+        <Card className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-foreground">Recent Activity</h2>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push('/audit-logs')}
+            >
+              View All
+            </Button>
+          </div>
+          {activity.length === 0 ? (
+            <p className="text-muted-foreground text-sm">No recent activity</p>
+          ) : (
+            <div className="space-y-3">
+              {activity.slice(0, 10).map((item: any, index: number) => (
+                <div
+                  key={item._id || index}
+                  className="flex items-start gap-3 p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                >
+                  <div className="w-2 h-2 rounded-full bg-primary mt-2 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-foreground">
+                      <span className="font-medium">{item.userName || 'System'}</span>
+                      {' '}
+                      <span>{item.action || item.description || 'performed an action'}</span>
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {item.createdAt
+                        ? new Date(item.createdAt).toLocaleString()
+                        : 'Recently'}
+                    </p>
+                  </div>
                 </div>
               ))}
             </div>

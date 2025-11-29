@@ -55,7 +55,8 @@ export const fetchAuditLogs = createAsyncThunk(
   } = {}, { rejectWithValue }) => {
     try {
       const response = await auditAPI.getAll(params);
-      return response.data;
+      // TransformInterceptor wraps in { success: true, data: ... }
+      return response.data?.data || response.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch audit logs');
     }

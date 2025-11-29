@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { Invite, InviteDocument } from './entities/invite.entity';
 import { User, UserRole } from '../user/entities/user.entity';
 import { Company } from '../company/entities/company.entity';
@@ -66,7 +66,7 @@ export class InviteService {
       // Check if there's already an active (unused) invite for this email in this company
       const existingInvite = await this.inviteModel.findOne({
         email: createInviteDto.email,
-        companyId: companyId,
+        companyId: new Types.ObjectId(companyId),
         isUsed: false,
         isActive: true,
         expiresAt: { $gt: new Date() },
@@ -97,8 +97,8 @@ export class InviteService {
     // Create invite
     const invite = new this.inviteModel({
       token,
-      companyId,
-      createdBy: creatorId,
+      companyId: new Types.ObjectId(companyId),
+      createdBy: new Types.ObjectId(creatorId),
       email: createInviteDto.email,
       role: createInviteDto.role,
       expiresAt,
@@ -198,6 +198,33 @@ export class InviteService {
     // Check if user already exists
     const existingUser = await this.userModel.findOne({ email: acceptInviteDto.email }).exec();
     if (existingUser) {
+      // If user exists and is in the same company, this might be a duplicate submission
+      // Check if they're trying to accept the same invite again
+      if (existingUser.companyId?.toString() === invite.companyId.toString()) {
+        // User already exists in this company - might be duplicate submission
+        // Mark invite as used if not already marked
+        if (!invite.isUsed) {
+          invite.isUsed = true;
+          invite.usedBy = existingUser._id as any;
+          invite.usedAt = new Date();
+          await invite.save();
+        }
+        
+        // Return the existing user (allows for idempotent requests)
+        const userObj: any = existingUser.toObject ? existingUser.toObject() : existingUser;
+        delete userObj.password;
+        
+        const company = await this.companyModel.findById(invite.companyId).exec();
+        return {
+          user: userObj,
+          company: company ? {
+            _id: company._id,
+            name: company.name,
+            domain: company.domain,
+          } : null,
+          alreadyExists: true,
+        };
+      }
       throw new BadRequestException('User with this email already exists');
     }
 
@@ -220,15 +247,20 @@ export class InviteService {
       isActive: true,
     });
 
-    // Update company users array
-    company.users.push(user._id as any);
-    if (invite.role === 'manager') {
+    // Update company users array (only if not already added)
+    if (!company.users.some((uid: any) => uid.toString() === user._id.toString())) {
+      company.users.push(user._id as any);
+    }
+    if (invite.role === 'manager' && !company.managers.some((uid: any) => uid.toString() === user._id.toString())) {
       company.managers.push(user._id as any);
     }
     await company.save();
 
-    // Delete the invite after successful registration (invite is single-use)
-    await this.inviteModel.deleteOne({ _id: invite._id }).exec();
+    // Mark invite as used instead of deleting (for audit trail)
+    invite.isUsed = true;
+    invite.usedBy = user._id as any;
+    invite.usedAt = new Date();
+    await invite.save();
 
     // Return user without password
     const userObj: any = user.toObject();
@@ -260,9 +292,9 @@ export class InviteService {
 
     const invites = await this.inviteModel
       .find({
-        companyId,
-        isActive: true,
-      }) // Only return active invites (revoked invites are hidden)
+        companyId: new Types.ObjectId(companyId),
+        // Return all invites (active and inactive) - frontend will filter
+      })
       .populate('createdBy', 'name email')
       .populate('usedBy', 'name email')
       .sort({ createdAt: -1 })
@@ -303,6 +335,218 @@ export class InviteService {
     await this.inviteModel.deleteOne({ _id: inviteId }).exec();
 
     return { message: 'Invite deleted successfully' };
+  }
+
+  /**
+   * Resend an invite email
+   */
+  async resendInvite(inviteId: string, companyId: string, requestUserId: string, requestUserRole: UserRole) {
+    // Verify access
+    if (requestUserRole !== UserRole.COMPANY_ADMIN && requestUserRole !== UserRole.SUPER_ADMIN) {
+      throw new ForbiddenException('Only company admins can resend invites');
+    }
+
+    const user = await this.userModel.findById(requestUserId).exec();
+    if (requestUserRole === UserRole.COMPANY_ADMIN && user?.companyId?.toString() !== companyId) {
+      throw new ForbiddenException('You can only resend invites for your own company');
+    }
+
+    const invite = await this.inviteModel.findById(inviteId).exec();
+    if (!invite || invite.companyId.toString() !== companyId) {
+      throw new NotFoundException('Invite not found');
+    }
+
+    if (invite.isUsed) {
+      throw new BadRequestException('Cannot resend a used invite');
+    }
+
+    if (!invite.isActive) {
+      throw new BadRequestException('Cannot resend an inactive invite');
+    }
+
+    if (!invite.email) {
+      throw new BadRequestException('Cannot resend invite without email address');
+    }
+
+    // Resend email
+    const inviteLink = `${process.env.FRONTEND_URL || 'http://localhost:3100'}/register?token=${invite.token}`;
+    const company = await this.companyModel.findById(companyId).exec();
+    const inviter = await this.userModel.findById(invite.createdBy).exec();
+
+    try {
+      await this.emailService.sendInviteEmail({
+        to: invite.email,
+        inviteLink,
+        companyName: company?.name || 'Unknown Company',
+        inviterName: inviter?.name || 'Admin',
+        role: invite.role,
+        expiresAt: invite.expiresAt,
+      });
+    } catch (error) {
+      console.error('Failed to resend invite email:', error);
+      throw new BadRequestException('Failed to resend invite email');
+    }
+
+    return {
+      success: true,
+      message: 'Invite email resent successfully',
+      invite: {
+        _id: invite._id,
+        email: invite.email,
+        role: invite.role,
+        expiresAt: invite.expiresAt,
+      },
+    };
+  }
+
+  /**
+   * Cancel an invite (deactivate it)
+   */
+  async cancelInvite(inviteId: string, companyId: string, requestUserId: string, requestUserRole: UserRole) {
+    // Verify access
+    if (requestUserRole !== UserRole.COMPANY_ADMIN && requestUserRole !== UserRole.SUPER_ADMIN) {
+      throw new ForbiddenException('Only company admins can cancel invites');
+    }
+
+    const user = await this.userModel.findById(requestUserId).exec();
+    if (requestUserRole === UserRole.COMPANY_ADMIN && user?.companyId?.toString() !== companyId) {
+      throw new ForbiddenException('You can only cancel invites for your own company');
+    }
+
+    const invite = await this.inviteModel.findById(inviteId).exec();
+    if (!invite || invite.companyId.toString() !== companyId) {
+      throw new NotFoundException('Invite not found');
+    }
+
+    if (invite.isUsed) {
+      throw new BadRequestException('Cannot cancel a used invite');
+    }
+
+    invite.isActive = false;
+    await invite.save();
+
+    return {
+      success: true,
+      message: 'Invite cancelled successfully',
+    };
+  }
+
+  /**
+   * Bulk create invites
+   */
+  async bulkCreateInvites(
+    companyId: string,
+    creatorId: string,
+    creatorRole: UserRole,
+    invites: Array<{ email?: string; role: string; expiresInDays?: number }>,
+  ) {
+    // Verify access
+    if (creatorRole !== UserRole.COMPANY_ADMIN && creatorRole !== UserRole.SUPER_ADMIN) {
+      throw new ForbiddenException('Only company admins can bulk create invites');
+    }
+
+    const user = await this.userModel.findById(creatorId).exec();
+    if (creatorRole === UserRole.COMPANY_ADMIN && user?.companyId?.toString() !== companyId) {
+      throw new ForbiddenException('You can only create invites for your own company');
+    }
+
+    const company = await this.companyModel.findById(companyId).exec();
+    if (!company) {
+      throw new NotFoundException('Company not found');
+    }
+
+    const created: any[] = [];
+    const failed: Array<{ email?: string; error: string }> = [];
+
+    for (const inviteData of invites) {
+      try {
+        // Validate role
+        const role = inviteData.role.toLowerCase();
+        if (role !== 'user' && role !== 'manager') {
+          failed.push({ email: inviteData.email, error: 'Invalid role' });
+          continue;
+        }
+
+        // Check if email already exists (if provided)
+        if (inviteData.email) {
+          const existingUser = await this.userModel.findOne({ email: inviteData.email }).exec();
+          if (existingUser) {
+            failed.push({ email: inviteData.email, error: 'User with this email already exists' });
+            continue;
+          }
+        }
+
+        // Generate unique token
+        let token = this.generateToken();
+        let attempts = 0;
+        while (await this.inviteModel.findOne({ token }).exec() && attempts < 10) {
+          token = this.generateToken();
+          attempts++;
+        }
+
+        if (attempts >= 10) {
+          failed.push({ email: inviteData.email, error: 'Failed to generate unique token' });
+          continue;
+        }
+
+        // Set expiration
+        const expiresInDays = inviteData.expiresInDays || 3;
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + expiresInDays);
+
+        // Create invite
+        const invite = new this.inviteModel({
+          token,
+          companyId,
+          createdBy: creatorId,
+          email: inviteData.email,
+          role: role === 'user' ? UserRole.USER : UserRole.MANAGER,
+          expiresAt,
+          isUsed: false,
+          isActive: true,
+        });
+
+        const savedInvite = await invite.save();
+        const inviteLink = `${process.env.FRONTEND_URL || 'http://localhost:3100'}/register?token=${savedInvite.token}`;
+
+        // Send email if email is provided
+        if (inviteData.email) {
+          const inviter = await this.userModel.findById(creatorId).exec();
+          try {
+            await this.emailService.sendInviteEmail({
+              to: inviteData.email,
+              inviteLink,
+              companyName: company.name,
+              inviterName: inviter?.name || 'Admin',
+              role: savedInvite.role,
+              expiresAt: savedInvite.expiresAt,
+            });
+          } catch (error) {
+            console.error('Failed to send invite email:', error);
+            // Don't fail the invite creation if email fails
+          }
+        }
+
+        created.push({
+          _id: savedInvite._id,
+          email: savedInvite.email,
+          role: savedInvite.role,
+          inviteLink,
+          expiresAt: savedInvite.expiresAt,
+        });
+      } catch (error: any) {
+        failed.push({ email: inviteData.email, error: error.message || 'Unknown error' });
+      }
+    }
+
+    return {
+      success: true,
+      created,
+      failed,
+      total: invites.length,
+      createdCount: created.length,
+      failedCount: failed.length,
+    };
   }
 }
 

@@ -57,56 +57,68 @@ export default function AcceptInvitePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setSubmitting(true);
 
-    if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters long");
-      setSubmitting(false);
+    // Prevent double submission
+    if (submitting || success) {
       return;
     }
 
+    if (!formData.name || formData.name.trim().length === 0) {
+      setError("Name is required");
+      return;
+    }
+
+    if (!formData.email || formData.email.trim().length === 0) {
+      setError("Email is required");
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      setError("Password must be at least 6 characters long");
+      return;
+    }
+
+    setSubmitting(true);
+
     try {
       const response = await inviteAPI.acceptInvite(token, {
-        name: formData.name,
-        email: formData.email,
+        name: formData.name.trim(),
+        email: formData.email.trim(),
         password: formData.password,
       });
 
-      if (response.data?.user) {
+      if (response.data?.user || response.data?.success) {
+        setSuccess(true);
         // Wait a bit to ensure cookies are set by the browser
-        await new Promise(resolve => setTimeout(resolve, 300));
+        await new Promise(resolve => setTimeout(resolve, 500));
         
         // Fetch the current user to verify authentication and get full user data
         try {
           const userResponse = await dispatch(fetchMe());
           if (fetchMe.fulfilled.match(userResponse)) {
-            setSuccess(true);
             // Redirect immediately after successful authentication
-            setTimeout(() => {
-              router.replace("/dashboard");
-            }, 500);
-          } else {
-            // If fetchMe fails, still set the user from response and redirect
-            dispatch(setUser(response.data.user));
-            setSuccess(true);
-            setTimeout(() => {
-              router.replace("/dashboard");
-            }, 500);
+            router.push("/dashboard");
+            return; // Exit early
           }
         } catch (fetchError) {
-          // If fetchMe fails, still set the user from response and redirect
-          dispatch(setUser(response.data.user));
-          setSuccess(true);
-          setTimeout(() => {
-            router.replace("/dashboard");
-          }, 500);
+          console.error('Failed to fetch user:', fetchError);
         }
+        
+        // If fetchMe fails, still set the user from response and redirect
+        if (response.data?.user) {
+          dispatch(setUser(response.data.user));
+        }
+        setTimeout(() => {
+          router.push("/dashboard");
+        }, 1000);
       }
     } catch (err: any) {
+      console.error('Invite acceptance error:', err);
       const errorMessage = err.response?.data?.message || "Failed to accept invite";
       setError(errorMessage);
       setSubmitting(false);
     }
+    // Don't set submitting to false if success - keep it true to prevent re-submission
   };
 
   if (loading) {

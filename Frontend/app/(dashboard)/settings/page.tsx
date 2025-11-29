@@ -14,6 +14,7 @@ import {
 import { AnimatedCard } from "@/components/motion/animated-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -26,7 +27,7 @@ import {
   FileText,
   Image,
 } from "lucide-react";
-import { companyAPI } from "@/app/services";
+import { companyAPI, settingsAPI } from "@/app/services";
 import { useToast } from "@/hooks/use-toast";
 
 export default function SettingsPage() {
@@ -51,6 +52,15 @@ export default function SettingsPage() {
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [pushNotifications, setPushNotifications] = useState(false);
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(true);
+  const [branding, setBranding] = useState({
+    logo: "",
+    primaryColor: "#3b82f6",
+    secondaryColor: "#8b5cf6",
+    companyName: "",
+  });
+  const [permissions, setPermissions] = useState<Record<string, any>>({});
+  const [savingBranding, setSavingBranding] = useState(false);
+  const [savingPermissions, setSavingPermissions] = useState(false);
 
   useEffect(() => {
     const loadCompany = async () => {
@@ -80,7 +90,80 @@ export default function SettingsPage() {
     };
 
     loadCompany();
+    loadBranding();
+    loadPermissions();
   }, [companyId, isCompanyAdmin, dispatch, toast]);
+
+  const loadBranding = async () => {
+    if (!isCompanyAdmin) return;
+    try {
+      const response = await settingsAPI.getBranding();
+      const brandingData = response.data?.settings || [];
+      const brandingObj: any = {};
+      brandingData.forEach((setting: any) => {
+        brandingObj[setting.key] = setting.value;
+      });
+      setBranding({
+        logo: brandingObj.logo || "",
+        primaryColor: brandingObj.primaryColor || "#3b82f6",
+        secondaryColor: brandingObj.secondaryColor || "#8b5cf6",
+        companyName: brandingObj.companyName || companyInfo?.name || "",
+      });
+    } catch (error) {
+      console.error("Failed to load branding:", error);
+    }
+  };
+
+  const loadPermissions = async () => {
+    if (!isCompanyAdmin) return;
+    try {
+      const response = await settingsAPI.getPermissions();
+      const permissionsData = response.data?.settings || [];
+      if (permissionsData.length > 0) {
+        setPermissions(permissionsData[0].value || {});
+      }
+    } catch (error) {
+      console.error("Failed to load permissions:", error);
+    }
+  };
+
+  const handleSaveBranding = async () => {
+    setSavingBranding(true);
+    try {
+      await settingsAPI.updateBranding(branding);
+      toast({
+        title: "Success",
+        description: "Branding settings saved successfully",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error?.response?.data?.message || "Failed to save branding",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingBranding(false);
+    }
+  };
+
+  const handleSavePermissions = async () => {
+    setSavingPermissions(true);
+    try {
+      await settingsAPI.updatePermissions(permissions);
+      toast({
+        title: "Success",
+        description: "Permissions updated successfully",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error?.response?.data?.message || "Failed to save permissions",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingPermissions(false);
+    }
+  };
 
   const handleCompanyInputChange = (field: string, value: string) => {
     setCompanyForm((prev) => ({ ...prev, [field]: value }));
@@ -318,6 +401,24 @@ export default function SettingsPage() {
               <Zap className="w-4 h-4 mr-2" />
               Integrations
             </TabsTrigger>
+            {isCompanyAdmin && (
+              <>
+                <TabsTrigger
+                  value="branding"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary"
+                >
+                  <Image className="w-4 h-4 mr-2" />
+                  Branding
+                </TabsTrigger>
+                <TabsTrigger
+                  value="permissions"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary"
+                >
+                  <Lock className="w-4 h-4 mr-2" />
+                  Permissions
+                </TabsTrigger>
+              </>
+            )}
           </TabsList>
 
           <TabsContent value="account" className="space-y-6 mt-6">
@@ -496,6 +597,159 @@ export default function SettingsPage() {
               ))}
             </div>
           </TabsContent>
+
+          {isCompanyAdmin && (
+            <>
+              <TabsContent value="branding" className="space-y-6 mt-6">
+                <div className="space-y-4 p-6">
+                  <div>
+                    <Label htmlFor="logo">Logo URL</Label>
+                    <Input
+                      id="logo"
+                      value={branding.logo}
+                      onChange={(e) =>
+                        setBranding({ ...branding, logo: e.target.value })
+                      }
+                      placeholder="https://example.com/logo.png"
+                      className="mt-2"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="primaryColor">Primary Color</Label>
+                    <div className="flex gap-2 mt-2">
+                      <Input
+                        id="primaryColor"
+                        type="color"
+                        value={branding.primaryColor}
+                        onChange={(e) =>
+                          setBranding({ ...branding, primaryColor: e.target.value })
+                        }
+                        className="w-20 h-10"
+                      />
+                      <Input
+                        value={branding.primaryColor}
+                        onChange={(e) =>
+                          setBranding({ ...branding, primaryColor: e.target.value })
+                        }
+                        placeholder="#3b82f6"
+                        className="flex-1"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="secondaryColor">Secondary Color</Label>
+                    <div className="flex gap-2 mt-2">
+                      <Input
+                        id="secondaryColor"
+                        type="color"
+                        value={branding.secondaryColor}
+                        onChange={(e) =>
+                          setBranding({ ...branding, secondaryColor: e.target.value })
+                        }
+                        className="w-20 h-10"
+                      />
+                      <Input
+                        value={branding.secondaryColor}
+                        onChange={(e) =>
+                          setBranding({ ...branding, secondaryColor: e.target.value })
+                        }
+                        placeholder="#8b5cf6"
+                        className="flex-1"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="companyName">Company Name (Display)</Label>
+                    <Input
+                      id="companyName"
+                      value={branding.companyName}
+                      onChange={(e) =>
+                        setBranding({ ...branding, companyName: e.target.value })
+                      }
+                      placeholder="Your Company Name"
+                      className="mt-2"
+                    />
+                  </div>
+                </div>
+                <div className="px-6 pb-6">
+                  <Button onClick={handleSaveBranding} disabled={savingBranding}>
+                    {savingBranding ? "Saving..." : "Save Branding"}
+                  </Button>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="permissions" className="space-y-6 mt-6">
+                <div className="space-y-4 p-6">
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-medium mb-3">Role Permissions</h4>
+                      <div className="space-y-3">
+                        {["user", "manager", "company_admin"].map((role) => (
+                          <Card key={role} className="p-4">
+                            <div className="flex items-center justify-between mb-3">
+                              <h5 className="font-medium capitalize">{role.replace("_", " ")}</h5>
+                              <Badge variant="outline">{role}</Badge>
+                            </div>
+                            <div className="space-y-2">
+                              {[
+                                "create_users",
+                                "edit_users",
+                                "delete_users",
+                                "create_projects",
+                                "edit_projects",
+                                "delete_projects",
+                                "view_analytics",
+                                "manage_settings",
+                              ].map((permission) => (
+                                <div
+                                  key={permission}
+                                  className="flex items-center justify-between"
+                                >
+                                  <Label
+                                    htmlFor={`${role}-${permission}`}
+                                    className="text-sm font-normal cursor-pointer"
+                                  >
+                                    {permission.replace("_", " ").replace(/\b\w/g, (l) =>
+                                      l.toUpperCase()
+                                    )}
+                                  </Label>
+                                  <input
+                                    type="checkbox"
+                                    id={`${role}-${permission}`}
+                                    checked={
+                                      permissions[role]?.[permission] || false
+                                    }
+                                    onChange={(e) => {
+                                      setPermissions({
+                                        ...permissions,
+                                        [role]: {
+                                          ...permissions[role],
+                                          [permission]: e.target.checked,
+                                        },
+                                      });
+                                    }}
+                                    className="w-4 h-4 rounded border-border cursor-pointer"
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="px-6 pb-6">
+                  <Button
+                    onClick={handleSavePermissions}
+                    disabled={savingPermissions}
+                  >
+                    {savingPermissions ? "Saving..." : "Save Permissions"}
+                  </Button>
+                </div>
+              </TabsContent>
+            </>
+          )}
         </Tabs>
       </AnimatedCard>
     </div>

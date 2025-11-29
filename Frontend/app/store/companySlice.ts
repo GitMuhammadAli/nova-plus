@@ -42,7 +42,9 @@ export const fetchCompanies = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await companyAPI.getAll();
-      return response.data;
+      // TransformInterceptor wraps in { success: true, data: ... }
+      const data = response.data?.data || response.data?.companies || response.data || [];
+      return Array.isArray(data) ? data : [];
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch companies');
     }
@@ -54,7 +56,8 @@ export const fetchCompanyById = createAsyncThunk(
   async (id: string, { rejectWithValue }) => {
     try {
       const response = await companyAPI.getById(id);
-      return response.data;
+      // TransformInterceptor wraps in { success: true, data: ... }
+      return response.data?.data || response.data?.company || response.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch company');
     }

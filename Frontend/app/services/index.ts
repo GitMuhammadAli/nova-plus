@@ -109,6 +109,17 @@ export const settingsAPI = {
   update: (id: string, data: any) => api.patch(`/settings/${id}`, data),
   
   delete: (id: string) => api.delete(`/settings/${id}`),
+  
+  getCompany: () => api.get('/settings/company'),
+  
+  getBranding: () => api.get('/settings/branding'),
+  
+  updateBranding: (data: { logo?: string; primaryColor?: string; secondaryColor?: string; companyName?: string }) =>
+    api.patch('/settings/branding', data),
+  
+  getPermissions: () => api.get('/settings/permissions'),
+  
+  updatePermissions: (data: Record<string, any>) => api.patch('/settings/permissions', data),
 };
 
 // ============================================
@@ -214,6 +225,8 @@ export const companyAPI = {
   getAll: () => api.get('/company/all'),
   getById: (id: string) => api.get(`/company/${id}`),
   getStats: (id: string) => api.get(`/company/${id}/stats`),
+  getActivity: (id: string) => api.get(`/company/${id}/activity`),
+  getProfile: (id: string) => api.get(`/company/${id}/profile`),
   create: (data: {
     name: string;
     domain?: string;
@@ -300,7 +313,7 @@ export const inviteAPI = {
     email?: string;
     role: string;
     expiresInDays?: number;
-  }) => api.post(`/company/invite`, data),
+  }, companyId: string) => api.post(`/invite/company/${companyId}`, data),
   getInvite: (token: string) => api.get(`/invite/${token}`),
   acceptInvite: (token: string, data: {
     name: string;
@@ -309,4 +322,8 @@ export const inviteAPI = {
   }) => api.post(`/invite/${token}/accept`, data),
   getCompanyInvites: (companyId: string) => api.get(`/invite/company/${companyId}`),
   revokeInvite: (inviteId: string, companyId: string) => api.delete(`/invite/${inviteId}/company/${companyId}`),
+  resendInvite: (inviteId: string) => api.post(`/invite/${inviteId}/resend`),
+  cancelInvite: (inviteId: string) => api.post(`/invite/${inviteId}/cancel`),
+  bulkCreateInvites: (data: { companyId: string; invites: Array<{ email?: string; role: string; expiresInDays?: number }> }) => 
+    api.post(`/invite/bulk`, data),
 };

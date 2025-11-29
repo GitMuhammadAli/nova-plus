@@ -241,4 +241,38 @@ export class CompanyController {
       stats,
     };
   }
+
+  /**
+   * Get company activity (last 30 actions)
+   * GET /company/:id/activity
+   */
+  @Get(':id/activity')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.COMPANY_ADMIN, UserRole.MANAGER, UserRole.SUPER_ADMIN)
+  async getCompanyActivity(@Param('id') id: string, @Req() req) {
+    const requestUserId = req.user._id || req.user.id;
+    const requestUserRole = req.user.role;
+    const activity = await this.companyService.getCompanyActivity(id, requestUserId, requestUserRole);
+    return {
+      success: true,
+      activity,
+    };
+  }
+
+  /**
+   * Get company profile with details
+   * GET /company/:id/profile
+   */
+  @Get(':id/profile')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.COMPANY_ADMIN, UserRole.MANAGER, UserRole.SUPER_ADMIN)
+  async getCompanyProfile(@Param('id') id: string, @Req() req) {
+    const requestUserId = req.user._id || req.user.id;
+    const requestUserRole = req.user.role;
+    const profile = await this.companyService.getCompanyProfile(id, requestUserId, requestUserRole);
+    return {
+      success: true,
+      profile,
+    };
+  }
 }

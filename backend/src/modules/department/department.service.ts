@@ -153,5 +153,23 @@ export class DepartmentService {
     department.members = department.members.filter(m => m.toString() !== userId);
     return department.save();
   }
+
+  async getMembers(departmentId: string, companyId: string): Promise<any[]> {
+    const department = await this.departmentModel.findOne({
+      _id: departmentId,
+      companyId: new Types.ObjectId(companyId),
+    });
+
+    if (!department) {
+      throw new NotFoundException('Department not found');
+    }
+
+    const members = await this.userModel.find({
+      _id: { $in: department.members },
+      companyId: new Types.ObjectId(companyId),
+    }).select('name email role isActive').exec();
+
+    return members;
+  }
 }
 

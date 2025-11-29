@@ -30,7 +30,11 @@ export class InviteController {
   ) {
     const creatorId = req.user._id || req.user.id;
     const creatorRole = req.user.role;
-    return this.inviteService.createInvite(companyId, creatorId, creatorRole, createInviteDto);
+    // Use companyId from user session if available, otherwise use param
+    const userCompanyId = req.user.companyId?.toString() || companyId;
+    const result = await this.inviteService.createInvite(userCompanyId, creatorId, creatorRole, createInviteDto);
+    // Return in format that TransformInterceptor will wrap
+    return result;
   }
 
   /**
@@ -64,7 +68,7 @@ export class InviteController {
   ) {
     const result = await this.inviteService.acceptInvite(token, acceptInviteDto);
 
-    // Generate JWT tokens for the new user
+    // Generate JWT tokens for the user (new or existing)
     const userId = result.user._id?.toString() || result.user._id;
     const payload = {
       sub: userId,
@@ -77,7 +81,7 @@ export class InviteController {
     const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
     const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
 
-    // Set auth cookies
+    // Set auth cookies (always set, even for existing users)
     res.cookie('access_token', accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -95,7 +99,9 @@ export class InviteController {
 
     return {
       success: true,
-      message: 'Invite accepted successfully',
+      message: result.alreadyExists 
+        ? 'You are already registered. Logging you in...' 
+        : 'Invite accepted successfully',
       user: result.user,
       company: result.company,
     };
@@ -111,7 +117,9 @@ export class InviteController {
   async getCompanyInvites(@Param('companyId') companyId: string, @Req() req) {
     const requestUserId = req.user._id || req.user.id;
     const requestUserRole = req.user.role;
-    return this.inviteService.getCompanyInvites(companyId, requestUserId, requestUserRole);
+    const invites = await this.inviteService.getCompanyInvites(companyId, requestUserId, requestUserRole);
+    // Return invites array directly - TransformInterceptor will wrap it in { success: true, data: invites }
+    return invites;
   }
 
   /**
@@ -129,6 +137,56 @@ export class InviteController {
     const requestUserId = req.user._id || req.user.id;
     const requestUserRole = req.user.role;
     return this.inviteService.revokeInvite(inviteId, companyId, requestUserId, requestUserRole);
+  }
+
+  /**
+   * Resend an invite (Company Admin only)
+   * POST /invite/:inviteId/resend
+   */
+  @Post(':inviteId/resend')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.COMPANY_ADMIN, UserRole.SUPER_ADMIN)
+  async resendInvite(
+    @Param('inviteId') inviteId: string,
+    @Req() req,
+  ) {
+    const requestUserId = req.user._id || req.user.id;
+    const requestUserRole = req.user.role;
+    const companyId = req.user.companyId?.toString() || req.user.companyId;
+    return this.inviteService.resendInvite(inviteId, companyId, requestUserId, requestUserRole);
+  }
+
+  /**
+   * Cancel an invite (Company Admin only)
+   * POST /invite/:inviteId/cancel
+   */
+  @Post(':inviteId/cancel')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.COMPANY_ADMIN, UserRole.SUPER_ADMIN)
+  async cancelInvite(
+    @Param('inviteId') inviteId: string,
+    @Req() req,
+  ) {
+    const requestUserId = req.user._id || req.user.id;
+    const requestUserRole = req.user.role;
+    const companyId = req.user.companyId?.toString() || req.user.companyId;
+    return this.inviteService.cancelInvite(inviteId, companyId, requestUserId, requestUserRole);
+  }
+
+  /**
+   * Bulk create invites (Company Admin only)
+   * POST /invite/bulk
+   */
+  @Post('bulk')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.COMPANY_ADMIN, UserRole.SUPER_ADMIN)
+  async bulkCreateInvites(
+    @Body() body: { companyId: string; invites: Array<{ email?: string; role: string; expiresInDays?: number }> },
+    @Req() req,
+  ) {
+    const creatorId = req.user._id || req.user.id;
+    const creatorRole = req.user.role;
+    return this.inviteService.bulkCreateInvites(body.companyId, creatorId, creatorRole, body.invites);
   }
 }
 

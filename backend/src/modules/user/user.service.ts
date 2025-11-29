@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Document } from 'mongoose';
+import { Model, Document, Types } from 'mongoose';
 import { User, UserRole } from './entities/user.entity';
 import bcrypt from 'bcrypt';
 
@@ -374,5 +374,136 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
     return { message: 'User deleted successfully' };
+  }
+
+  /**
+   * Bulk create users
+   */
+  async bulkCreate(creatorId: string, companyId: string, users: Array<{ name: string; email: string; password: string; role?: UserRole; departmentId?: string }>) {
+    const created: any[] = [];
+    const failed: Array<{ email: string; error: string }> = [];
+
+    for (const userData of users) {
+      try {
+        // Check if email already exists
+        const existing = await this.userModel.findOne({ email: userData.email }).exec();
+        if (existing) {
+          failed.push({ email: userData.email, error: 'Email already exists' });
+          continue;
+        }
+
+        const hashedPassword = await bcrypt.hash(userData.password, 10);
+        const user = new this.userModel({
+          name: userData.name,
+          email: userData.email,
+          password: hashedPassword,
+          role: userData.role || UserRole.USER,
+          companyId: new Types.ObjectId(companyId),
+          createdBy: new Types.ObjectId(creatorId),
+          isActive: true,
+        });
+
+        const savedUser = await user.save();
+        const userObj: any = savedUser.toObject ? savedUser.toObject() : savedUser;
+        delete userObj.password;
+
+        // If departmentId provided, add user to department (would need DepartmentService)
+        if (userData.departmentId) {
+          // This would require injecting DepartmentService
+          // For now, we'll just set the department field
+          await this.userModel.findByIdAndUpdate(savedUser._id, { department: userData.departmentId }).exec();
+        }
+
+        created.push(userObj);
+      } catch (error: any) {
+        failed.push({ email: userData.email, error: error.message || 'Unknown error' });
+      }
+    }
+
+    return { created, failed };
+  }
+
+  /**
+   * Assign user to department
+   */
+  async assignDepartment(userId: string, departmentId: string | undefined, companyId: string) {
+    const user = await this.userModel.findOne({
+      _id: userId,
+      $or: [{ companyId }, { orgId: companyId }],
+    }).exec();
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Update user's department field
+    const updateData: any = {};
+    if (departmentId) {
+      updateData.department = departmentId;
+    } else {
+      updateData.$unset = { department: '' };
+    }
+
+    const updatedUser = await this.userModel.findByIdAndUpdate(userId, updateData, { new: true }).select('-password').exec();
+    return updatedUser;
+  }
+
+  /**
+   * Assign manager to user
+   */
+  async assignManager(userId: string, managerId: string | undefined, companyId: string) {
+    const user = await this.userModel.findOne({
+      _id: userId,
+      $or: [{ companyId }, { orgId: companyId }],
+    }).exec();
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (managerId) {
+      const manager = await this.userModel.findOne({
+        _id: managerId,
+        $or: [{ companyId }, { orgId: companyId }],
+        role: UserRole.MANAGER,
+      }).exec();
+
+      if (!manager) {
+        throw new NotFoundException('Manager not found or invalid');
+      }
+    }
+
+    const updateData: any = {};
+    if (managerId) {
+      updateData.managerId = new Types.ObjectId(managerId);
+    } else {
+      updateData.$unset = { managerId: '' };
+    }
+
+    const updatedUser = await this.userModel.findByIdAndUpdate(userId, updateData, { new: true }).select('-password').exec();
+    return updatedUser;
+  }
+
+  /**
+   * Get user statistics for company
+   */
+  async getStats(companyId: string) {
+    const [totalUsers, activeUsers, inactiveUsers, managers, users, admins] = await Promise.all([
+      this.userModel.countDocuments({ $or: [{ companyId }, { orgId: companyId }] }).exec(),
+      this.userModel.countDocuments({ $or: [{ companyId }, { orgId: companyId }], isActive: true }).exec(),
+      this.userModel.countDocuments({ $or: [{ companyId }, { orgId: companyId }], isActive: false }).exec(),
+      this.userModel.countDocuments({ $or: [{ companyId }, { orgId: companyId }], role: UserRole.MANAGER }).exec(),
+      this.userModel.countDocuments({ $or: [{ companyId }, { orgId: companyId }], role: UserRole.USER }).exec(),
+      this.userModel.countDocuments({ $or: [{ companyId }, { orgId: companyId }], role: UserRole.COMPANY_ADMIN }).exec(),
+    ]);
+
+    return {
+      totalUsers,
+      activeUsers,
+      inactiveUsers,
+      managers,
+      users,
+      admins,
+    };
   }
 }

@@ -41,7 +41,8 @@ export const fetchAnalyticsSummary = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await analyticsAPI.getSummary();
-      return response.data;
+      // TransformInterceptor wraps in { success: true, data: ... }
+      return response.data?.data || response.data?.summary || response.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch analytics summary');
     }
@@ -53,7 +54,8 @@ export const fetchAnalyticsStats = createAsyncThunk(
   async (period: string = '6m', { rejectWithValue }) => {
     try {
       const response = await analyticsAPI.getAnalyticsStats(period);
-      return response.data;
+      // TransformInterceptor wraps in { success: true, data: ... }
+      return response.data?.data || response.data?.stats || response.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch analytics stats');
     }

@@ -163,6 +163,7 @@ export default function InvitesPage() {
           email: newInvite.email || undefined,
           role: newInvite.role,
           expiresInDays: newInvite.expiresInDays,
+          companyId: companyId,
         })
       ).unwrap();
 
@@ -330,9 +331,20 @@ export default function InvitesPage() {
   const stats = {
     total: invitesArray.length,
     used: invitesArray.filter((i) => i.isUsed).length,
-    unused: invitesArray.filter((i) => !i.isUsed && new Date(i.expiresAt) > new Date() && i.isActive).length,
+    unused: invitesArray.filter((i) => !i.isUsed && new Date(i.expiresAt) > new Date() && i.isActive !== false).length,
     expired: invitesArray.filter((i) => !i.isUsed && new Date(i.expiresAt) < new Date()).length,
   };
+
+  // Debug: Log invites to console
+  useEffect(() => {
+    console.log('Invites page - Redux state:', { 
+      invitesCount: invitesArray.length, 
+      invites, 
+      isLoading, 
+      error,
+      companyId 
+    });
+  }, [invitesArray.length, invites, isLoading, error, companyId]);
 
   return (
     <div className="space-y-6 p-6">
