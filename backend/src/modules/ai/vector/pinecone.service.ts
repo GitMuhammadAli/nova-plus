@@ -3,12 +3,6 @@ import { ConfigService } from '@nestjs/config';
 import { EmbeddingService } from '../pipeline/embedding.service';
 import logger from '../../../common/logger/winston.logger';
 
-// Dynamic import for Pinecone to avoid type issues
-let Pinecone: any;
-
-// Dynamic import for Pinecone to avoid type issues
-let Pinecone: any;
-
 export interface VectorMetadata {
   text: string;
   entityId: string;
@@ -44,14 +38,15 @@ export class PineconeService implements OnModuleInit {
     if (apiKey) {
       try {
         // Dynamic import to handle optional dependency
+        // @ts-ignore - Pinecone types may not be available
         const pineconeModule = await import('@pinecone-database/pinecone');
-        Pinecone = pineconeModule.Pinecone;
-        this.pinecone = new Pinecone({
+        const PineconeClass = pineconeModule.Pinecone;
+        this.pinecone = new PineconeClass({
           apiKey,
         });
         logger.info('Pinecone client initialized', { indexName: this.indexName });
-      } catch (error) {
-        logger.warn('Pinecone module not available', { error: error.message });
+      } catch (error: any) {
+        logger.warn('Pinecone module not available', { error: error?.message || 'Unknown error' });
       }
     } else {
       logger.warn('Pinecone API key not configured, vector search will fail');
