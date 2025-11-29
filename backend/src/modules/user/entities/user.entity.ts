@@ -51,6 +51,57 @@ export class User {
 
   @Prop()
   location?: string;
+
+  // Phase 4 additions
+  @Prop()
+  lastSeenAt?: Date;
+
+  @Prop({
+    type: [{
+      deviceId: String,
+      userAgent: String,
+      ip: String,
+      lastSeenAt: Date,
+    }],
+    default: [],
+  })
+  devices?: Array<{
+    deviceId: string;
+    userAgent: string;
+    ip: string;
+    lastSeenAt: Date;
+  }>;
+
+  @Prop({
+    type: {
+      enabled: Boolean,
+      secret: String,
+      recoveryCodes: [String],
+    },
+    default: { enabled: false },
+  })
+  mfa?: {
+    enabled: boolean;
+    secret?: string;
+    recoveryCodes?: string[];
+  };
+
+  @Prop({
+    type: {
+      department: String,
+      location: String,
+      level: String,
+    },
+    default: {},
+  })
+  abacAttributes?: {
+    department?: string;
+    location?: string;
+    level?: string;
+  };
+
+  @Prop({ default: false })
+  isSuspended?: boolean;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

@@ -11,6 +11,7 @@ import { User, UserDocument } from './../user/entities/user.entity';
 import { Session } from './entities/session.entity';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { MfaService } from './mfa.service';
 
 @Injectable()
 export class AuthService {
@@ -18,6 +19,7 @@ export class AuthService {
     @InjectModel(User.name) private userModel: Model<User>,
     @InjectModel(Session.name) private sessionModel: Model<Session>,
     private jwtService: JwtService,
+    private mfaService: MfaService,
   ) {}
 
   async register(dto: RegisterDto) {

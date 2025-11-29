@@ -19,4 +19,12 @@ export default () => ({
     fromName: process.env.EMAIL_FROM_NAME || 'NovaPulse',
   },
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3100',
+  redis: {
+    url: process.env.REDIS_URL || 'redis://localhost:6379',
+    host: process.env.REDIS_HOST || 'localhost',
+    port: parseInt(process.env.REDIS_PORT ?? '6379', 10),
+  },
+  queue: {
+    concurrency: parseInt(process.env.QUEUE_CONCURRENCY ?? '5', 10),
+  },
 });

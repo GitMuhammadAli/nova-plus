@@ -52,11 +52,23 @@ export class AuthController {
     const ip = req.ip || req.socket.remoteAddress || 'unknown';
     const userAgent = String(req.headers['user-agent'] ?? '');
     
-    const { accessToken, refreshToken, user } = await this.authService.login(
+    const result = await this.authService.login(
       dto,
       userAgent,
       ip,
     );
+    
+    // Check if MFA is required
+    if (result.requiresMfa) {
+      return {
+        success: false,
+        requiresMfa: true,
+        userId: result.userId,
+        message: result.message,
+      };
+    }
+    
+    const { accessToken, refreshToken, user } = result;
     
     // Set cookies BEFORE returning response
     this.setAuthCookies(res, accessToken, refreshToken);

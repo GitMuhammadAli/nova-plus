@@ -7,6 +7,8 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { UsersModule } from '../user/user.module';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
+import { MfaService } from './mfa.service';
+import { MfaController } from './mfa.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { User, UserSchema } from './../user/entities/user.entity'; 
 import { Session, SessionSchema } from './entities/session.entity';
@@ -33,8 +35,8 @@ import { getJwtSecret } from './utils/jwt-secret.util';
       },
     }),
   ],
-  providers: [AuthService, JwtStrategy],
-  controllers: [AuthController],
-  // exports: [AuthService], 
+  providers: [AuthService, JwtStrategy, MfaService],
+  controllers: [AuthController, MfaController],
+  exports: [AuthService, MfaService],
 })
 export class AuthModule {}

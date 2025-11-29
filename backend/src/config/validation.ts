@@ -37,4 +37,6 @@ export const validationSchema = Joi.object({
   REDIS_URL: Joi.string().optional(),
   REDIS_HOST: Joi.string().optional(),
   REDIS_PORT: Joi.number().optional(),
+  // Queue Configuration
+  QUEUE_CONCURRENCY: Joi.number().default(5),
 });

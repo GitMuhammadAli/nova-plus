@@ -20,6 +20,8 @@ import { AuditModule } from './modules/audit/audit.module';
 import { DepartmentModule } from './modules/department/department.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { WorkflowModule } from './modules/workflow/workflow.module';
+import { QueueModule } from './providers/queue/queue.module';
+import { WebhookModule } from './modules/webhook/webhook.module';
 
 @Module({
   imports: [
@@ -68,6 +70,8 @@ import { WorkflowModule } from './modules/workflow/workflow.module';
     DepartmentModule,
     AnalyticsModule,
     WorkflowModule,
+    QueueModule,
+    WebhookModule,
   ],
   controllers: [],
   providers: [
