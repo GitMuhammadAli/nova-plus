@@ -132,9 +132,7 @@ export class WebhookController {
 
     const result = await this.webhookService.testWebhook(id, companyId);
 
-    return {
-      ...result,
-    };
+    return result;
   }
 
   @Get(':id/logs')

@@ -30,9 +30,11 @@ export class EmailWorker {
 
             try {
               // Import EmailService dynamically to avoid circular dependencies
-              const { AppModule } = await import('../app.module');
-              const { NestFactory } = await import('@nestjs/core');
+              // Using require for dynamic imports in workers to avoid TypeScript module resolution issues
+              const { AppModule } = require('../app.module');
+              const { NestFactory } = require('@nestjs/core');
               const appContext = await NestFactory.createApplicationContext(AppModule);
+              const { EmailService } = require('../modules/email/email.service');
               const emailService = appContext.get(EmailService);
 
           // For now, use sendInviteEmail if template is 'invite', otherwise log

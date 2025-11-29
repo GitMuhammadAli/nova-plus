@@ -14,14 +14,16 @@ export function initializeTracing(serviceName: string = 'novapulse-api'): void {
   }
 
   try {
+    const defaultResource = Resource.default();
+    const customResource = new Resource({
+      [SemanticResourceAttributes.SERVICE_NAME]: serviceName,
+      [SemanticResourceAttributes.SERVICE_VERSION]: process.env.npm_package_version || '1.0.0',
+      [SemanticResourceAttributes.DEPLOYMENT_ENVIRONMENT]: process.env.NODE_ENV || 'development',
+    });
+    const resource = defaultResource.merge(customResource);
+
     sdk = new NodeSDK({
-      resource: Resource.default().merge(
-        new Resource({
-          [SemanticResourceAttributes.SERVICE_NAME]: serviceName,
-          [SemanticResourceAttributes.SERVICE_VERSION]: process.env.npm_package_version || '1.0.0',
-          [SemanticResourceAttributes.DEPLOYMENT_ENVIRONMENT]: process.env.NODE_ENV || 'development',
-        })
-      ),
+      resource,
       instrumentations: [
         new HttpInstrumentation({
           // Ignore health check endpoints

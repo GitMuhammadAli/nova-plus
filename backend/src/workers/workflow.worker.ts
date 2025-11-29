@@ -28,10 +28,19 @@ export class WorkflowWorker {
 
         try {
           // Import WorkflowService dynamically
-          const { AppModule } = await import('../app.module');
-          const { NestFactory } = await import('@nestjs/core');
+          // Using require for dynamic imports in workers to avoid TypeScript module resolution issues
+          const { AppModule } = require('../app.module');
+          const { NestFactory } = require('@nestjs/core');
           const appContext = await NestFactory.createApplicationContext(AppModule);
-          const workflowService = appContext.get('WorkflowService');
+          // Try to get WorkflowService, but handle if it doesn't exist
+          let workflowService;
+          try {
+            const { WorkflowService } = require('../modules/workflow/workflow.service');
+            workflowService = appContext.get(WorkflowService);
+          } catch (e) {
+            logger.warn('WorkflowService not available', { error: e });
+            workflowService = null;
+          }
 
           // Execute workflow
           if (workflowService && typeof workflowService.execute === 'function') {

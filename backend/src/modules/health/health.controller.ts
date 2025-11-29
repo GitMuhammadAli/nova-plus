@@ -1,5 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
-import { HealthCheck, HealthCheckService, MongooseHealthIndicator, MemoryHealthIndicator } from '@nestjs/terminus';
+import { HealthCheck, HealthCheckService, MongooseHealthIndicator, MemoryHealthIndicator, HealthIndicatorResult } from '@nestjs/terminus';
 import { Inject } from '@nestjs/common';
 import Redis from 'ioredis';
 import { REDIS_CLIENT } from '../../providers/redis/redis.provider';
@@ -38,12 +38,12 @@ export class HealthController {
     ]);
   }
 
-      private async checkRedis(): Promise<{ redis: { status: string } }> {
-        try {
-          await this.redisClient.ping();
-          return { redis: { status: 'up' } };
-        } catch (error) {
-          throw new Error('Redis is down');
-        }
-      }
+  private async checkRedis(): Promise<HealthIndicatorResult> {
+    try {
+      await this.redisClient.ping();
+      return { redis: { status: 'up' } } as HealthIndicatorResult;
+    } catch (error) {
+      throw new Error('Redis is down');
+    }
+  }
 }

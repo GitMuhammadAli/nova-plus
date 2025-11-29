@@ -24,8 +24,8 @@ export class MfaController {
     const result = await this.mfaService.setupMfa(user._id || user.id, companyId);
 
     return {
-      success: true,
       ...result,
+      success: true,
     };
   }
 
@@ -46,8 +46,8 @@ export class MfaController {
     );
 
     return {
-      success: true,
       ...result,
+      success: true,
     };
   }
 
@@ -64,8 +64,8 @@ export class MfaController {
     const result = await this.mfaService.disableMfa(user._id || user.id, companyId);
 
     return {
-      success: true,
       ...result,
+      success: true,
     };
   }
 
