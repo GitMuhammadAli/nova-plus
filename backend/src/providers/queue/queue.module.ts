@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { BullModule } from '@nestjs/bullmq';
 import { QueueService } from './queue.service';
+import { QueueController } from './queue.controller';
 import { REDIS_CLIENT, redisProvider } from '../redis/redis.provider';
 
 @Module({
@@ -26,6 +27,7 @@ import { REDIS_CLIENT, redisProvider } from '../redis/redis.provider';
       { name: 'nova:report' },
     ),
   ],
+  controllers: [QueueController],
   providers: [redisProvider, QueueService],
   exports: [QueueService, REDIS_CLIENT, BullModule],
 })

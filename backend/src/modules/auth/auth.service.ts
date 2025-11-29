@@ -32,12 +32,30 @@ export class AuthService {
     return this.buildResponseTokens(user);
   }
 
-  async login(dto: LoginDto, userAgent: string, ip: string) {
+  async login(dto: LoginDto, userAgent: string, ip: string): Promise<any> {
     const user = await this.userModel.findOne({ email: dto.email });
     if (!user) throw new UnauthorizedException('Invalid credentials.');
 
     const match = await bcrypt.compare(dto.password, user.password);
     if (!match) throw new UnauthorizedException('Invalid credentials.');
+
+    // Check if MFA is enabled
+    if (user.mfa?.enabled) {
+      // If MFA is enabled but no token provided, return MFA required flag
+      if (!dto.mfaToken) {
+        return {
+          requiresMfa: true,
+          userId: user._id.toString(),
+          message: 'MFA token required',
+        };
+      }
+
+      // Verify MFA token
+      const mfaValid = await this.mfaService.verifyMfaToken(user._id.toString(), dto.mfaToken);
+      if (!mfaValid) {
+        throw new UnauthorizedException('Invalid MFA token.');
+      }
+    }
 
     return this.buildResponseTokens(user, userAgent, ip);
   }

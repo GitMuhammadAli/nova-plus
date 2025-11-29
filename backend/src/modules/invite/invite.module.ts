@@ -9,6 +9,7 @@ import { InviteController } from './invite.controller';
 import { getJwtSecret } from '../auth/utils/jwt-secret.util';
 import { CompanyModule } from '../company/company.module';
 import { EmailModule } from '../email/email.module';
+import { CommonModule } from '../../common/common.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { EmailModule } from '../email/email.module';
     }),
     forwardRef(() => CompanyModule),
     EmailModule,
+    CommonModule,
   ],
   providers: [InviteService],
   controllers: [InviteController],

@@ -28,12 +28,12 @@ export class EmailWorker {
           attempt: job.attemptsMade + 1,
         });
 
-        try {
-          // Import EmailService dynamically to avoid circular dependencies
-          const { EmailModule } = await import('../modules/email/email.module');
-          const { NestFactory } = await import('@nestjs/core');
-          const appContext = await NestFactory.createApplicationContext(EmailModule);
-          const emailService = appContext.get(EmailService);
+            try {
+              // Import EmailService dynamically to avoid circular dependencies
+              const { AppModule } = await import('../app.module');
+              const { NestFactory } = await import('@nestjs/core');
+              const appContext = await NestFactory.createApplicationContext(AppModule);
+              const emailService = appContext.get(EmailService);
 
           // For now, use sendInviteEmail if template is 'invite', otherwise log
           // TODO: Add generic sendEmail method to EmailService

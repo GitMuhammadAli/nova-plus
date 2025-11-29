@@ -152,10 +152,11 @@ export class WebhookWorker {
     duration?: number,
   ) {
     try {
-      const { WebhookModule } = await import('../modules/webhook/webhook.module');
+      const { AppModule } = await import('../app.module');
       const { NestFactory } = await import('@nestjs/core');
-      const appContext = await NestFactory.createApplicationContext(WebhookModule);
-      const webhookService = appContext.get('WebhookService');
+      const appContext = await NestFactory.createApplicationContext(AppModule);
+      const { WebhookService } = await import('../modules/webhook/webhook.service');
+      const webhookService = appContext.get(WebhookService);
       
       if (webhookService && typeof webhookService.logDelivery === 'function') {
         await webhookService.logDelivery(

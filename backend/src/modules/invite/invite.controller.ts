@@ -7,6 +7,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRole } from '../user/entities/user.entity';
 import { JwtService } from '@nestjs/jwt';
+import { RedisThrottleGuard } from '../../common/guards/redis-throttle.guard';
 import type { Response } from 'express';
 
 @Controller('invite')
@@ -21,7 +22,7 @@ export class InviteController {
    * POST /company/:companyId/invite
    */
   @Post('company/:companyId')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, RedisThrottleGuard)
   @Roles(UserRole.COMPANY_ADMIN, UserRole.MANAGER)
   async createInvite(
     @Param('companyId') companyId: string,

@@ -145,6 +145,10 @@ export class WebhookService {
   async testWebhook(id: string, companyId: string): Promise<{ success: boolean; message: string }> {
     const webhook = await this.findOne(id, companyId);
 
+    if (!webhook._id) {
+      throw new NotFoundException('Webhook not found');
+    }
+
     // Trigger test event
     await this.triggerWebhook(webhook._id.toString(), 'webhook.test', {
       test: true,

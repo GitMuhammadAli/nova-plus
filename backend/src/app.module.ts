@@ -22,6 +22,9 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { WorkflowModule } from './modules/workflow/workflow.module';
 import { QueueModule } from './providers/queue/queue.module';
 import { WebhookModule } from './modules/webhook/webhook.module';
+import { CommonModule } from './common/common.module';
+import { PrometheusService } from './common/metrics/prom-client';
+import { MetricsController } from './common/controllers/metrics.controller';
 
 @Module({
   imports: [
@@ -72,10 +75,12 @@ import { WebhookModule } from './modules/webhook/webhook.module';
     WorkflowModule,
     QueueModule,
     WebhookModule,
+    CommonModule,
   ],
   controllers: [],
   providers: [
-    // Global Rate Limiting Guard
+    // Global Rate Limiting Guard (fallback to in-memory throttler)
+    // Redis throttle guard is applied per-route where needed
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,

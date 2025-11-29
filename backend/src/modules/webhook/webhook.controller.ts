@@ -133,7 +133,6 @@ export class WebhookController {
     const result = await this.webhookService.testWebhook(id, companyId);
 
     return {
-      success: true,
       ...result,
     };
   }

@@ -16,6 +16,8 @@ import {
   Mail,
   UserCog,
   Building2,
+  Webhook,
+  Activity,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -72,6 +74,18 @@ const allNavItems = [
   },
   { icon: CreditCard, label: "Billing", path: "/billing", roles: ["admin"] },
   { icon: Shield, label: "Audit Logs", path: "/audit-logs", roles: ["admin"] },
+  {
+    icon: Webhook,
+    label: "Webhooks",
+    path: "/webhooks",
+    roles: ["admin", "manager"],
+  },
+  {
+    icon: Activity,
+    label: "Jobs",
+    path: "/jobs",
+    roles: ["admin", "manager"],
+  },
   {
     icon: Settings,
     label: "Settings",

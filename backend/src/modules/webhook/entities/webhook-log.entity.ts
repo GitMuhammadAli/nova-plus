@@ -13,7 +13,7 @@ export class WebhookLog {
   @Prop({ required: true })
   event: string;
 
-  @Prop({ type: Types.Mixed })
+  @Prop({ type: Object })
   payload: any;
 
   @Prop()

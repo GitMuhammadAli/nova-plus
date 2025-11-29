@@ -219,6 +219,28 @@ export const activityAPI = {
 };
 
 // ============================================
+// WEBHOOK API
+// ============================================
+export const webhookAPI = {
+  getAll: () => api.get('/webhooks'),
+  getById: (id: string) => api.get(`/webhooks/${id}`),
+  create: (data: { url: string; events: string[]; retries?: number; isActive?: boolean }) =>
+    api.post('/webhooks', data),
+  update: (id: string, data: { url?: string; events?: string[]; retries?: number; isActive?: boolean }) =>
+    api.patch(`/webhooks/${id}`, data),
+  delete: (id: string) => api.delete(`/webhooks/${id}`),
+  test: (id: string) => api.post(`/webhooks/${id}/test`),
+  getLogs: (id: string, limit?: number) => api.get(`/webhooks/${id}/logs`, { params: { limit } }),
+};
+
+// ============================================
+// QUEUE API
+// ============================================
+export const queueAPI = {
+  getStats: () => api.get('/queue/stats'),
+};
+
+// ============================================
 // COMPANY API
 // ============================================
 export const companyAPI = {

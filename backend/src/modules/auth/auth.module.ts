@@ -13,11 +13,13 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { User, UserSchema } from './../user/entities/user.entity'; 
 import { Session, SessionSchema } from './entities/session.entity';
 import { getJwtSecret } from './utils/jwt-secret.util';
+import { CommonModule } from '../../common/common.module';
 
 @Module({
   imports: [
     UsersModule,
     PassportModule,
+    CommonModule,
     MongooseModule.forFeature([
       { name: User.name, schema: UserSchema },
       { name: Session.name, schema: SessionSchema },

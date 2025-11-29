@@ -10,10 +10,16 @@ import logger from './common/logger/winston.logger';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import compression from 'compression';
+import * as tracing from './common/tracing/opentelemetry';
 
 async function bootstrap() {
+  // Initialize OpenTelemetry tracing
+  const configService = new ConfigService();
+  const serviceName = configService.get<string>('SERVICE_NAME') || 'novapulse-api';
+  tracing.initializeTracing(serviceName);
+
   const app = await NestFactory.create(AppModule);
-  const configService = app.get(ConfigService);
+  const appConfigService = app.get(ConfigService);
   
   // Security Headers
   app.use(helmet({
@@ -49,9 +55,9 @@ async function bootstrap() {
   app.use(cookieParser());
   
   // CORS - Environment-based configuration
-  const nodeEnv = configService.get<string>('NODE_ENV') || 'development';
+  const nodeEnv = appConfigService.get<string>('NODE_ENV') || 'development';
   const allowedOrigins = nodeEnv === 'production'
-    ? (configService.get<string>('ALLOWED_ORIGINS')?.split(',') || [])
+    ? (appConfigService.get<string>('ALLOWED_ORIGINS')?.split(',') || [])
     : ['http://localhost:3100', 'http://127.0.0.1:3100'];
 
   app.enableCors({
@@ -72,9 +78,44 @@ async function bootstrap() {
   // Global API prefix
   app.setGlobalPrefix('api/v1');
   
-  const port = configService.get<number>('port') ?? 5500;
+  const port = appConfigService.get<number>('port') ?? 5500;
+  
+  // Graceful shutdown
+  const gracefulShutdown = async (signal: string) => {
+    logger.info(`Received ${signal}, starting graceful shutdown...`);
+    
+    // Stop accepting new requests
+    const server = app.getHttpServer();
+    server.close(() => {
+      logger.info('HTTP server closed');
+    });
+
+    // Shutdown OpenTelemetry
+        await tracing.shutdownTracing();
+    
+    // Close application
+    await app.close();
+    logger.info('Application closed, exiting...');
+    process.exit(0);
+  };
+
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+  // Handle unhandled promise rejections
+  process.on('unhandledRejection', (reason, promise) => {
+    logger.error('Unhandled Rejection', { reason, promise });
+  });
+
+  // Handle uncaught exceptions
+  process.on('uncaughtException', (error) => {
+    logger.error('Uncaught Exception', { error });
+    gracefulShutdown('uncaughtException');
+  });
+
   await app.listen(port);
   logger.info(`🚀 Server started on port ${port} in ${nodeEnv} mode`);
   logger.info(`📝 API available at http://localhost:${port}/api/v1`);
+  logger.info(`🏥 Health checks available at http://localhost:${port}/api/v1/health`);
 }
 bootstrap();

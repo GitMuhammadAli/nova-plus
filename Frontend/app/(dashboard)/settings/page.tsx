@@ -514,45 +514,13 @@ export default function SettingsPage() {
           </TabsContent>
 
           <TabsContent value="security" className="space-y-6 mt-6">
-            <div className="space-y-4">
-              <div className="p-4 border border-border rounded-lg">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <p className="font-medium text-foreground">Password</p>
-                    <p className="text-sm text-muted-foreground">
-                      Last changed 3 months ago
-                    </p>
-                  </div>
-                  <Button variant="outline" className="bg-transparent">
-                    Change Password
-                  </Button>
-                </div>
-              </div>
-
-              <div className="p-4 border border-border rounded-lg">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-foreground">
-                      Two-Factor Authentication
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Add an extra layer of security
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant={twoFactorEnabled ? "default" : "secondary"}>
-                      {twoFactorEnabled ? "Enabled" : "Disabled"}
-                    </Badge>
-                    <Button
-                      variant="outline"
-                      className="bg-transparent"
-                      onClick={() => setTwoFactorEnabled(!twoFactorEnabled)}
-                    >
-                      {twoFactorEnabled ? "Disable" : "Enable"}
-                    </Button>
-                  </div>
-                </div>
-              </div>
+            <div className="p-6">
+              <p className="text-muted-foreground mb-4">
+                For detailed security settings including MFA setup, please visit the Security page.
+              </p>
+              <Button asChild>
+                <a href="/settings/security">Go to Security Settings</a>
+              </Button>
             </div>
           </TabsContent>
 

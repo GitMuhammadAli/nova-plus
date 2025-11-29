@@ -14,6 +14,7 @@ import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { RedisThrottleGuard } from '../../common/guards/redis-throttle.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -21,6 +22,7 @@ export class AuthController {
 
   @Post('register')
   @HttpCode(201)
+  @UseGuards(RedisThrottleGuard)
   async register(
     @Body() dto: RegisterDto,
     @Res({ passthrough: true }) res: Response,
@@ -44,6 +46,7 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(200)
+  @UseGuards(RedisThrottleGuard)
   async login(
     @Body() dto: LoginDto,
     @Req() req: Request,
