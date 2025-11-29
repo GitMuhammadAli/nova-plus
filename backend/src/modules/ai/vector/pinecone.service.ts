@@ -1,7 +1,13 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Pinecone } from '@pinecone-database/pinecone';
+import { EmbeddingService } from '../pipeline/embedding.service';
 import logger from '../../../common/logger/winston.logger';
+
+// Dynamic import for Pinecone to avoid type issues
+let Pinecone: any;
+
+// Dynamic import for Pinecone to avoid type issues
+let Pinecone: any;
 
 export interface VectorMetadata {
   text: string;
@@ -23,7 +29,7 @@ export interface Vector {
  */
 @Injectable()
 export class PineconeService implements OnModuleInit {
-  private pinecone: Pinecone | null = null;
+  private pinecone: any = null;
   private indexName: string;
   private dimension: number = 1536;
 
@@ -36,10 +42,17 @@ export class PineconeService implements OnModuleInit {
     const environment = this.configService.get<string>('PINECONE_ENVIRONMENT', 'us-east-1');
 
     if (apiKey) {
-      this.pinecone = new Pinecone({
-        apiKey,
-      });
-      logger.info('Pinecone client initialized', { indexName: this.indexName });
+      try {
+        // Dynamic import to handle optional dependency
+        const pineconeModule = await import('@pinecone-database/pinecone');
+        Pinecone = pineconeModule.Pinecone;
+        this.pinecone = new Pinecone({
+          apiKey,
+        });
+        logger.info('Pinecone client initialized', { indexName: this.indexName });
+      } catch (error) {
+        logger.warn('Pinecone module not available', { error: error.message });
+      }
     } else {
       logger.warn('Pinecone API key not configured, vector search will fail');
     }
@@ -92,9 +105,7 @@ export class PineconeService implements OnModuleInit {
 
     try {
       // Generate query embedding
-      const embeddingService = new (await import('../pipeline/embedding.service')).EmbeddingService(
-        this.configService,
-      );
+      const embeddingService = new EmbeddingService(this.configService);
       const queryEmbedding = await embeddingService.embed(query);
 
       // Build filter

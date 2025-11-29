@@ -6,7 +6,12 @@ import { ChunkService } from './chunk.service';
 import { EmbeddingService } from './embedding.service';
 import { PineconeService } from '../vector/pinecone.service';
 import logger from '../../../common/logger/winston.logger';
-import { EventType } from '../../../../shared/events/event.schema';
+// EventType enum - defined locally to avoid cross-project dependency
+enum EventType {
+  USER_CREATED = 'user.created',
+  COMPANY_UPDATED = 'company.updated',
+  INVITE_SENT = 'invite.sent',
+}
 
 /**
  * Ingestion Consumer
