@@ -88,7 +88,7 @@ export function UserFormDialog({ open, onOpenChange, user, onSave, currentUserRo
       status: "active",
       department: "",
       location: "",
-      managerId: "",
+      managerId: "unassigned",
       password: "",
       confirmPassword: "",
     },
@@ -96,6 +96,10 @@ export function UserFormDialog({ open, onOpenChange, user, onSave, currentUserRo
 
   useEffect(() => {
     if (user) {
+      const managerIdValue = typeof user.managerId === 'object' 
+        ? (user.managerId?._id || user.managerId?.id || "unassigned")
+        : ((user.managerId as string) || "unassigned");
+      
       form.reset({
         name: user.name,
         email: user.email,
@@ -103,7 +107,7 @@ export function UserFormDialog({ open, onOpenChange, user, onSave, currentUserRo
         status: user.isActive === false ? "inactive" : "active",
         department: user.department || "",
         location: user.location || "",
-        managerId: typeof user.managerId === 'object' ? user.managerId?._id || user.managerId?.id || "" : (user.managerId as string) || "",
+        managerId: managerIdValue,
         password: "",
         confirmPassword: "",
       });
@@ -115,7 +119,7 @@ export function UserFormDialog({ open, onOpenChange, user, onSave, currentUserRo
         status: "active",
         department: "",
         location: "",
-        managerId: "",
+        managerId: "unassigned",
         password: "",
         confirmPassword: "",
       });
@@ -124,14 +128,40 @@ export function UserFormDialog({ open, onOpenChange, user, onSave, currentUserRo
 
   const selectedRole = form.watch('role');
 
+  // Generate a secure random password
+  const generateSecurePassword = (): string => {
+    const length = 12;
+    const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+    let password = '';
+    if (typeof window !== 'undefined' && window.crypto && window.crypto.getRandomValues) {
+      const values = window.crypto.getRandomValues(new Uint32Array(length));
+      password = Array.from(values, x => charset[x % charset.length]).join('');
+    } else {
+      // Fallback for older browsers
+      for (let i = 0; i < length; i++) {
+        password += charset.charAt(Math.floor(Math.random() * charset.length));
+      }
+    }
+    return password;
+  };
+
   const onSubmit = async (values: UserFormValues) => {
+    // For new users, auto-generate password if not provided
     if (!user) {
-      if (!values.password || !values.confirmPassword) {
-        form.setError('password', { message: 'Password is required for new users' });
-        form.setError('confirmPassword', { message: 'Confirm password is required' });
+      // Auto-generate secure password for new users
+      if (!values.password) {
+        values.password = generateSecurePassword();
+        values.confirmPassword = values.password;
+      } else if (values.password !== values.confirmPassword) {
+        form.setError('confirmPassword', { message: 'Passwords do not match' });
         return;
       }
-      if (values.password !== values.confirmPassword) {
+    } else {
+      // For editing users, only include password if provided
+      if (!values.password) {
+        delete values.password;
+        delete values.confirmPassword;
+      } else if (values.password !== values.confirmPassword) {
         form.setError('confirmPassword', { message: 'Passwords do not match' });
         return;
       }
@@ -141,7 +171,7 @@ export function UserFormDialog({ open, onOpenChange, user, onSave, currentUserRo
       await onSave({
         ...values,
         _id: user?._id,
-        managerId: values.managerId || undefined,
+        managerId: values.managerId && values.managerId !== "unassigned" ? values.managerId : undefined,
       });
       form.reset();
       onOpenChange(false);
@@ -152,8 +182,8 @@ export function UserFormDialog({ open, onOpenChange, user, onSave, currentUserRo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-5xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b">
           <DialogTitle>{user ? "Edit User" : "Add New User"}</DialogTitle>
           <DialogDescription>
             {user
@@ -162,7 +192,8 @@ export function UserFormDialog({ open, onOpenChange, user, onSave, currentUserRo
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
+            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
             <FormField
               control={form.control}
               name="name"
@@ -259,14 +290,17 @@ export function UserFormDialog({ open, onOpenChange, user, onSave, currentUserRo
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Assign Manager</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || ''}>
+                    <Select 
+                      onValueChange={(value) => field.onChange(value === "unassigned" ? undefined : value)} 
+                      value={field.value || "unassigned"}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select a manager" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">Unassigned</SelectItem>
+                        <SelectItem value="unassigned">Unassigned</SelectItem>
                         {managers.map((manager) => (
                           <SelectItem key={manager._id} value={manager._id}>
                             {manager.name || manager.email}
@@ -307,34 +341,54 @@ export function UserFormDialog({ open, onOpenChange, user, onSave, currentUserRo
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Password {user ? "(leave blank to keep current password)" : ""}</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="••••••" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {/* Password fields - only show for editing users (optional) */}
+            {user && (
+              <>
+                <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-md">
+                  <p className="font-medium mb-1">Change Password (Optional)</p>
+                  <p className="text-xs">Leave blank to keep the current password. User will need to change password on next login.</p>
+                </div>
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>New Password</FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder="Leave blank to keep current" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-            <FormField
-              control={form.control}
-              name="confirmPassword"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Confirm Password</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="••••••" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <DialogFooter>
+                <FormField
+                  control={form.control}
+                  name="confirmPassword"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Confirm New Password</FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder="Leave blank to keep current" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </>
+            )}
+
+            {/* For new users, show info about auto-generated password */}
+            {!user && (
+              <div className="text-sm text-muted-foreground bg-blue-50 dark:bg-blue-950/20 p-3 rounded-md border border-blue-200 dark:border-blue-800">
+                <p className="font-medium mb-1 text-blue-900 dark:text-blue-100">🔒 Secure Password Generation</p>
+                <p className="text-xs text-blue-700 dark:text-blue-300">
+                  A secure random password will be automatically generated for this user. They will receive an email invitation to set their own password on first login.
+                </p>
+              </div>
+            )}
+            </div>
+            <DialogFooter className="px-6 py-4 border-t bg-muted/50">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>

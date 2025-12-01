@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import {
   Bell,
@@ -26,18 +27,23 @@ import {
   Globe,
   FileText,
   Image,
+  Clock,
 } from "lucide-react";
 import { companyAPI, settingsAPI } from "@/app/services";
 import { useToast } from "@/hooks/use-toast";
+import { useRolePermissions } from "@/hooks/useRolePermissions";
 
 export default function SettingsPage() {
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
   const { users } = useSelector((state: RootState) => state.users);
   const { toast } = useToast();
+  const { permissions, hasPermission } = useRolePermissions();
 
   const isCompanyAdmin = user?.role?.toLowerCase() === "company_admin";
   const companyId = user?.companyId;
+  const canViewSettings = hasPermission('canViewSettings');
+  const canEditSettings = hasPermission('canEditSettings');
 
   const [companyForm, setCompanyForm] = useState({
     name: "",
@@ -58,13 +64,13 @@ export default function SettingsPage() {
     secondaryColor: "#8b5cf6",
     companyName: "",
   });
-  const [permissions, setPermissions] = useState<Record<string, any>>({});
+  const [permissionsSettings, setPermissionsSettings] = useState<Record<string, any>>({});
   const [savingBranding, setSavingBranding] = useState(false);
   const [savingPermissions, setSavingPermissions] = useState(false);
 
   useEffect(() => {
     const loadCompany = async () => {
-      if (!companyId || !isCompanyAdmin) return;
+      if (!companyId || !isCompanyAdmin || !canViewSettings) return;
       setCompanyLoading(true);
       try {
         const response = await companyAPI.getById(companyId);
@@ -92,10 +98,10 @@ export default function SettingsPage() {
     loadCompany();
     loadBranding();
     loadPermissions();
-  }, [companyId, isCompanyAdmin, dispatch, toast]);
+  }, [companyId, isCompanyAdmin, canViewSettings, dispatch, toast]);
 
   const loadBranding = async () => {
-    if (!isCompanyAdmin) return;
+    if (!isCompanyAdmin || !canViewSettings) return;
     try {
       const response = await settingsAPI.getBranding();
       const brandingData = response.data?.settings || [];
@@ -120,7 +126,7 @@ export default function SettingsPage() {
       const response = await settingsAPI.getPermissions();
       const permissionsData = response.data?.settings || [];
       if (permissionsData.length > 0) {
-        setPermissions(permissionsData[0].value || {});
+        setPermissionsSettings(permissionsData[0].value || {});
       }
     } catch (error) {
       console.error("Failed to load permissions:", error);
@@ -417,6 +423,13 @@ export default function SettingsPage() {
                   <Lock className="w-4 h-4 mr-2" />
                   Permissions
                 </TabsTrigger>
+                <TabsTrigger
+                  value="work-hours"
+                  className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary"
+                >
+                  <Clock className="w-4 h-4 mr-2" />
+                  Work Hours
+                </TabsTrigger>
               </>
             )}
           </TabsList>
@@ -471,6 +484,98 @@ export default function SettingsPage() {
           </TabsContent>
 
           <TabsContent value="notifications" className="space-y-6 mt-6">
+            <Card className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-xl font-semibold text-foreground">
+                    Notification Preferences
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Configure how and when you receive notifications
+                  </p>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                  <div>
+                    <Label className="text-sm font-medium">Email Notifications</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Receive email notifications for important updates
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      className="w-4 h-4 rounded border-border"
+                      defaultChecked
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                  <div>
+                    <Label className="text-sm font-medium">Task Assignments</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Get notified when tasks are assigned to you
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      className="w-4 h-4 rounded border-border"
+                      defaultChecked
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                  <div>
+                    <Label className="text-sm font-medium">Project Updates</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Receive updates about project changes
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      className="w-4 h-4 rounded border-border"
+                      defaultChecked
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                  <div>
+                    <Label className="text-sm font-medium">Team Invitations</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Get notified when you're invited to join a team
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      className="w-4 h-4 rounded border-border"
+                      defaultChecked
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                  <div>
+                    <Label className="text-sm font-medium">Weekly Reports</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Receive weekly summary reports
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      className="w-4 h-4 rounded border-border"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-3 justify-end mt-6">
+                <Button variant="outline">Cancel</Button>
+                <Button>Save Preferences</Button>
+              </div>
+            </Card>
             <div className="space-y-4 p-6">
               {[
                 {
@@ -717,13 +822,13 @@ export default function SettingsPage() {
                                     type="checkbox"
                                     id={`${role}-${permission}`}
                                     checked={
-                                      permissions[role]?.[permission] || false
+                                      permissionsSettings[role]?.[permission] || false
                                     }
                                     onChange={(e) => {
-                                      setPermissions({
-                                        ...permissions,
+                                      setPermissionsSettings({
+                                        ...permissionsSettings,
                                         [role]: {
-                                          ...permissions[role],
+                                          ...permissionsSettings[role],
                                           [permission]: e.target.checked,
                                         },
                                       });
@@ -747,6 +852,107 @@ export default function SettingsPage() {
                     {savingPermissions ? "Saving..." : "Save Permissions"}
                   </Button>
                 </div>
+              </TabsContent>
+              
+              <TabsContent value="work-hours" className="space-y-6 mt-6">
+                <Card className="p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <h3 className="text-xl font-semibold text-foreground">
+                        Work Hours
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        Set your default work hours and timezone
+                      </p>
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div>
+                        <Label htmlFor="timezone">Timezone</Label>
+                        <Select defaultValue="UTC">
+                          <SelectTrigger id="timezone" className="mt-2">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="UTC">UTC (Coordinated Universal Time)</SelectItem>
+                            <SelectItem value="America/New_York">Eastern Time (ET)</SelectItem>
+                            <SelectItem value="America/Chicago">Central Time (CT)</SelectItem>
+                            <SelectItem value="America/Denver">Mountain Time (MT)</SelectItem>
+                            <SelectItem value="America/Los_Angeles">Pacific Time (PT)</SelectItem>
+                            <SelectItem value="Europe/London">London (GMT)</SelectItem>
+                            <SelectItem value="Europe/Paris">Paris (CET)</SelectItem>
+                            <SelectItem value="Asia/Dubai">Dubai (GST)</SelectItem>
+                            <SelectItem value="Asia/Tokyo">Tokyo (JST)</SelectItem>
+                            <SelectItem value="Asia/Shanghai">Shanghai (CST)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="work-days">Work Days</Label>
+                        <div className="flex gap-2 mt-2">
+                          {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
+                            <Button
+                              key={day}
+                              variant="outline"
+                              size="sm"
+                              className="flex-1"
+                            >
+                              {day}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div>
+                        <Label htmlFor="start-time">Start Time</Label>
+                        <Input
+                          id="start-time"
+                          type="time"
+                          defaultValue="09:00"
+                          className="mt-2"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="end-time">End Time</Label>
+                        <Input
+                          id="end-time"
+                          type="time"
+                          defaultValue="17:00"
+                          className="mt-2"
+                        />
+                      </div>
+                    </div>
+                    <div className="p-4 bg-muted rounded-lg">
+                      <Label className="text-sm font-medium">Lunch Break</Label>
+                      <div className="grid gap-4 md:grid-cols-2 mt-2">
+                        <div>
+                          <Label htmlFor="lunch-start" className="text-xs text-muted-foreground">Start</Label>
+                          <Input
+                            id="lunch-start"
+                            type="time"
+                            defaultValue="12:00"
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="lunch-end" className="text-xs text-muted-foreground">End</Label>
+                          <Input
+                            id="lunch-end"
+                            type="time"
+                            defaultValue="13:00"
+                            className="mt-1"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex gap-3 justify-end mt-6">
+                    <Button variant="outline">Cancel</Button>
+                    <Button>Save Work Hours</Button>
+                  </div>
+                </Card>
               </TabsContent>
             </>
           )}

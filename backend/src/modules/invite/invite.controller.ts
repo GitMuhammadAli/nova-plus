@@ -6,19 +6,85 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRole } from '../user/entities/user.entity';
-import { JwtService } from '@nestjs/jwt';
-import type { Response } from 'express';
+import { AuthService } from '../auth/auth.service';
+import type { Response, Request } from 'express';
 
 @Controller('invite')
 export class InviteController {
   constructor(
     private readonly inviteService: InviteService,
-    private readonly jwtService: JwtService,
+    private readonly authService: AuthService,
   ) {}
 
   /**
+   * Accept invite and create user account (public)
+   * POST /invite/:token/accept
+   * This must come before other POST routes to avoid route conflicts
+   */
+  @Post(':token/accept')
+  async acceptInvite(
+    @Param('token') token: string,
+    @Body() acceptInviteDto: AcceptInviteDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.inviteService.acceptInvite(token, acceptInviteDto);
+
+    // Get user from result (could be newly created or existing)
+    const user = result.user;
+    
+    // Use AuthService to generate tokens and create session (same as regular registration/login)
+    const ip = req.ip || req.socket.remoteAddress || 'unknown';
+    const userAgent = String(req.headers['user-agent'] ?? '');
+    const { accessToken, refreshToken } = await this.authService.buildResponseTokens(user, userAgent, ip);
+
+    // Set auth cookies using the same method as regular registration
+    const isProduction = process.env.NODE_ENV === 'production';
+    res.cookie('access_token', accessToken, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 15 * 60 * 1000, // 15 minutes
+    });
+    res.cookie('refresh_token', refreshToken, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
+    return {
+      success: true,
+      message: result.alreadyExists 
+        ? 'You are already registered. Logging you in...' 
+        : 'Invite accepted successfully',
+      user: result.user,
+      company: result.company,
+    };
+  }
+
+  /**
+   * Bulk create invites (Company Admin only)
+   * POST /invite/bulk
+   * This must come before parameterized routes
+   */
+  @Post('bulk')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.COMPANY_ADMIN, UserRole.SUPER_ADMIN)
+  async bulkCreateInvites(
+    @Body() body: { companyId: string; invites: Array<{ email?: string; role: string; expiresInDays?: number }> },
+    @Req() req,
+  ) {
+    const creatorId = req.user._id || req.user.id;
+    const creatorRole = req.user.role;
+    return this.inviteService.bulkCreateInvites(body.companyId, creatorId, creatorRole, body.invites);
+  }
+
+  /**
    * Create invite for a company (Company Admin or Manager)
-   * POST /company/:companyId/invite
+   * POST /invite/company/:companyId
    */
   @Post('company/:companyId')
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -44,66 +110,21 @@ export class InviteController {
   @Get(':token')
   async getInvite(@Param('token') token: string) {
     const invite = await this.inviteService.getInviteByToken(token);
+    
+    // Extract company info from populated companyId
+    const company = invite.companyId as any;
+    const companyName = company?.name || (typeof company === 'string' ? '' : '');
+    
     return {
       invite: {
         _id: invite._id,
         email: invite.email,
         role: invite.role,
         company: invite.companyId,
+        companyName: companyName,
         createdBy: invite.createdBy,
         expiresAt: invite.expiresAt,
       },
-    };
-  }
-
-  /**
-   * Accept invite and create user account (public)
-   * POST /invite/:token/accept
-   */
-  @Post(':token/accept')
-  async acceptInvite(
-    @Param('token') token: string,
-    @Body() acceptInviteDto: AcceptInviteDto,
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    const result = await this.inviteService.acceptInvite(token, acceptInviteDto);
-
-    // Generate JWT tokens for the user (new or existing)
-    const userId = result.user._id?.toString() || result.user._id;
-    const payload = {
-      sub: userId,
-      email: result.user.email,
-      role: result.user.role,
-      companyId: result.user.companyId,
-      orgId: result.user.companyId,
-    };
-
-    const accessToken = this.jwtService.sign(payload, { expiresIn: '15m' });
-    const refreshToken = this.jwtService.sign(payload, { expiresIn: '7d' });
-
-    // Set auth cookies (always set, even for existing users)
-    res.cookie('access_token', accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 15 * 60 * 1000, // 15 minutes
-    });
-    res.cookie('refresh_token', refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    });
-
-    return {
-      success: true,
-      message: result.alreadyExists 
-        ? 'You are already registered. Logging you in...' 
-        : 'Invite accepted successfully',
-      user: result.user,
-      company: result.company,
     };
   }
 
@@ -173,20 +194,5 @@ export class InviteController {
     return this.inviteService.cancelInvite(inviteId, companyId, requestUserId, requestUserRole);
   }
 
-  /**
-   * Bulk create invites (Company Admin only)
-   * POST /invite/bulk
-   */
-  @Post('bulk')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.COMPANY_ADMIN, UserRole.SUPER_ADMIN)
-  async bulkCreateInvites(
-    @Body() body: { companyId: string; invites: Array<{ email?: string; role: string; expiresInDays?: number }> },
-    @Req() req,
-  ) {
-    const creatorId = req.user._id || req.user.id;
-    const creatorRole = req.user.role;
-    return this.inviteService.bulkCreateInvites(body.companyId, creatorId, creatorRole, body.invites);
-  }
 }
 

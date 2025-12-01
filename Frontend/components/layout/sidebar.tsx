@@ -22,6 +22,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useSelector } from "react-redux";
 import { RootState } from "@/app/store/store";
+import { normalizeRole, hasPermission } from "@/lib/roles-config";
 
 interface SidebarProps {
   collapsed: boolean;
@@ -83,18 +84,40 @@ const allNavItems = [
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const pathname = usePathname();
   const { user } = useSelector((state: RootState) => state.auth);
-  const userRole = user?.role?.toLowerCase() || "";
+  const userRole = user?.role || "";
+  const normalizedRole = normalizeRole(userRole);
 
-  // Normalize role for matching (company_admin -> admin, super_admin -> admin)
-  const normalizedRole =
-    userRole === "company_admin" || userRole === "super_admin"
-      ? "admin"
-      : userRole;
-
-  // Filter nav items based on user role
-  const navItems = allNavItems.filter((item) =>
-    item.roles.includes(normalizedRole)
-  );
+  // Filter nav items based on user role using role permissions
+  const navItems = allNavItems.filter((item) => {
+    // Check if role is in allowed roles for this nav item (legacy check)
+    const legacyNormalized = normalizedRole === "company_admin" || normalizedRole === "super_admin" 
+      ? "admin" 
+      : normalizedRole;
+    if (item.roles.includes(legacyNormalized)) {
+      return true;
+    }
+    
+    // Also check using role permissions for specific pages
+    const pagePermissionMap: Record<string, keyof import('@/lib/roles-config').RolePermission> = {
+      '/users': 'canViewUsers',
+      '/managers': 'canViewManagers',
+      '/projects': 'canViewProjects',
+      '/tasks': 'canViewTasks',
+      '/departments': 'canViewDepartments',
+      '/teams': 'canViewTeams',
+      '/invites': 'canViewInvites',
+      '/analytics': 'canViewAnalytics',
+      '/reports': 'canViewReports',
+      '/settings': 'canViewSettings',
+      '/billing': 'canViewBilling',
+      '/audit-logs': 'canViewAuditLogs',
+    };
+    const permission = pagePermissionMap[item.path];
+    if (permission) {
+      return hasPermission(userRole, permission);
+    }
+    return false;
+  });
 
   return (
     <motion.aside

@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { dashboardAPI, activityAPI } from '@/app/services';
 import { DashboardSummary, DashboardStats, RecentActivity } from '@/types/dashboard';
+import { useRolePermissions } from '@/hooks/useRolePermissions';
 
 // --- ACTIVITY FEED COMPONENT ---
 

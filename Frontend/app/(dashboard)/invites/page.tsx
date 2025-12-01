@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/app/store/store";
 import { fetchCompanyInvites, createInvite, revokeInvite, clearError } from "@/app/store/invitesSlice";
 import { fetchUsers, deleteUser } from "@/app/store/usersSlice";
+import { useRolePermissions } from "@/hooks/useRolePermissions";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,8 +48,8 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import {
   Search,
-  Plus,
   Mail,
+  Plus,
   Copy,
   Trash2,
   UserX,
@@ -88,6 +89,7 @@ export default function InvitesPage() {
   const { users } = useSelector((state: RootState) => state.users);
   const { user: currentUser } = useSelector((state: RootState) => state.auth);
   const { toast } = useToast();
+  const { permissions, hasPermission } = useRolePermissions();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "used" | "unused" | "expired">("all");
@@ -106,11 +108,20 @@ export default function InvitesPage() {
   const companyId = currentUser?.companyId;
 
   useEffect(() => {
-    if (companyId) {
+    if (companyId && hasPermission('canViewInvites')) {
       dispatch(fetchCompanyInvites(companyId));
       dispatch(fetchUsers({}));
     }
-  }, [dispatch, companyId]);
+  }, [dispatch, companyId, hasPermission]);
+
+  // Auto-refresh every 30 seconds
+  useEffect(() => {
+    if (!companyId || !hasPermission('canViewInvites')) return;
+    const interval = setInterval(() => {
+      dispatch(fetchCompanyInvites(companyId));
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [companyId, dispatch, hasPermission]);
 
   useEffect(() => {
     if (error) {
@@ -148,6 +159,14 @@ export default function InvitesPage() {
   });
 
   const handleCreateInvite = async () => {
+    if (!hasPermission('canCreateInvites')) {
+      toast({
+        title: "Access Denied",
+        description: "You don't have permission to create invites",
+        variant: "destructive",
+      });
+      return;
+    }
     if (!companyId) {
       toast({
         title: "Error",
@@ -188,6 +207,14 @@ export default function InvitesPage() {
   };
 
   const handleDeleteInvite = async () => {
+    if (!hasPermission('canRevokeInvites')) {
+      toast({
+        title: "Access Denied",
+        description: "You don't have permission to revoke invites",
+        variant: "destructive",
+      });
+      return;
+    }
     if (!selectedInvite) {
       toast({
         title: "Error",
@@ -356,10 +383,12 @@ export default function InvitesPage() {
             Manage invites and users who joined via invites
           </p>
         </div>
-        <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
-          <Plus className="w-4 h-4" />
-          Create Invite
-        </Button>
+        {permissions.canCreateInvites && (
+          <Button onClick={() => setCreateDialogOpen(true)} className="gap-2">
+            <Plus className="w-4 h-4" />
+            Create Invite
+          </Button>
+        )}
       </div>
 
       {/* Stats Cards */}
@@ -503,26 +532,61 @@ export default function InvitesPage() {
                   <TableCell>
                     <div className="flex items-center gap-2">
                       {!invite.isUsed && invite.isActive && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => copyInviteLink(invite)}
+                            className="h-8 w-8 p-0"
+                            title="Copy invite link"
+                          >
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                          {permissions.canCreateInvites && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={async () => {
+                                try {
+                                  const { inviteAPI } = await import("@/app/services");
+                                  await inviteAPI.resendInvite(invite._id);
+                                  toast({
+                                    title: "Success",
+                                    description: "Invite resent successfully",
+                                  });
+                                  if (companyId) {
+                                    dispatch(fetchCompanyInvites(companyId));
+                                  }
+                                } catch (error: any) {
+                                  toast({
+                                    title: "Error",
+                                    description: error?.response?.data?.message || "Failed to resend invite",
+                                    variant: "destructive",
+                                  });
+                                }
+                              }}
+                              className="h-8 w-8 p-0"
+                              title="Resend invite"
+                            >
+                              <Mail className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </>
+                      )}
+                      {permissions.canRevokeInvites && (
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => copyInviteLink(invite)}
-                          className="h-8 w-8 p-0"
+                          onClick={() => {
+                            setSelectedInvite(invite);
+                            setDeleteDialogOpen(true);
+                          }}
+                          className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                          title="Delete invite"
                         >
-                          <Copy className="w-4 h-4" />
+                          <Trash2 className="w-4 h-4" />
                         </Button>
                       )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedInvite(invite);
-                          setDeleteDialogOpen(true);
-                        }}
-                        className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>

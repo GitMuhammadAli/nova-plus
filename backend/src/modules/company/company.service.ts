@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, ForbiddenException, Inject, forwardRef } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { JwtService } from '@nestjs/jwt';
@@ -6,6 +6,7 @@ import { Company, CompanyDocument } from './entities/company.entity';
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { RegisterCompanyDto } from './dto/register-company.dto';
 import { User, UserRole } from '../user/entities/user.entity';
+import { AuditService } from '../audit/audit.service';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -16,6 +17,8 @@ export class CompanyService {
     @InjectModel(User.name)
     private userModel: Model<User>,
     private jwtService: JwtService,
+    @Inject(forwardRef(() => AuditService))
+    private auditService: AuditService,
   ) {}
 
   /**
@@ -364,9 +367,23 @@ export class CompanyService {
     // Verify user has access to this company
     await this.findById(companyId, requestUserId, requestUserRole);
 
-    // For now, return empty array - would need AuditLog or Activity service
-    // This should be implemented with AuditService injection
-    return [];
+    // Get recent activity from AuditService
+    try {
+      const activities = await this.auditService.getRecentActivity(companyId, 30);
+      return activities.map((activity: any) => ({
+        _id: activity._id,
+        action: activity.action,
+        resource: activity.resource,
+        userId: activity.userId,
+        userName: activity.userName || (activity.userId?.name || activity.userId?.email || 'System'),
+        description: activity.description || `${activity.action} ${activity.resource}`,
+        createdAt: activity.createdAt,
+        metadata: activity.metadata,
+      }));
+    } catch (error) {
+      console.error('Failed to fetch company activity:', error);
+      return [];
+    }
   }
 
   /**

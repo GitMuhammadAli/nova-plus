@@ -7,6 +7,7 @@ import { CompanyController } from './company.controller';
 import { User, UserSchema } from '../user/entities/user.entity';
 import { getJwtSecret } from '../auth/utils/jwt-secret.util';
 import { InviteModule } from '../invite/invite.module';
+import { AuditModule } from '../audit/audit.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { InviteModule } from '../invite/invite.module';
       signOptions: { expiresIn: '15m' },
     }),
     forwardRef(() => InviteModule),
+    AuditModule,
   ],
   providers: [CompanyService],
   controllers: [CompanyController],

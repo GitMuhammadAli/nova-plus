@@ -43,6 +43,7 @@ import {
 } from "lucide-react";
 import { analyticsAPI } from "@/app/services";
 import { useToast } from "@/hooks/use-toast";
+import { useRolePermissions } from "@/hooks/useRolePermissions";
 
 interface TrafficDataPoint {
   date: string;
@@ -90,6 +91,7 @@ interface AnalyticsStats {
 export default function Analytics() {
   const { user } = useSelector((state: RootState) => state.auth);
   const { toast } = useToast();
+  const { permissions, hasPermission } = useRolePermissions();
   const [timeRange, setTimeRange] = useState("6m");
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<AnalyticsStats | null>(null);
@@ -119,7 +121,7 @@ export default function Analytics() {
   // Fetch analytics data
   useEffect(() => {
     const fetchAnalytics = async () => {
-      if (!user) return;
+      if (!user || !hasPermission('canViewAnalytics')) return;
 
       setLoading(true);
       try {
@@ -140,7 +142,7 @@ export default function Analytics() {
     };
 
     fetchAnalytics();
-  }, [timeRange, user, toast]);
+  }, [timeRange, user, toast, hasPermission]);
 
   // Auto-refresh every 30 seconds
   useEffect(() => {
