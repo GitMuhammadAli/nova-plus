@@ -8,16 +8,39 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { RoleGuard } from "@/components/guards/RoleGuard";
 import { useRolePermissions } from "@/hooks/useRolePermissions";
-import { Plus, Search, Edit, Trash2, Calendar, CheckCircle2, Loader2, RefreshCw, User } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Edit,
+  Trash2,
+  Calendar,
+  CheckCircle2,
+  Loader2,
+  RefreshCw,
+  User as UserIcon,
+} from "lucide-react";
 import { taskAPI, projectAPI, usersAPI } from "@/app/services";
 import { toast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
+import { User } from "@/types/user";
 
 interface Task {
   _id: string;
@@ -34,12 +57,6 @@ interface Task {
 interface Project {
   _id: string;
   name: string;
-}
-
-interface User {
-  _id: string;
-  name?: string;
-  email: string;
 }
 
 export default function TasksPage() {
@@ -65,8 +82,9 @@ export default function TasksPage() {
     assignedTo: "",
   });
 
-  const canCreateEdit = hasPermission('canCreateTasks') || hasPermission('canEditTasks');
-  const canSeeAll = hasPermission('canViewAllTasks'); // Managers/admins see all tasks, users see only their own
+  const canCreateEdit =
+    hasPermission("canCreateTasks") || hasPermission("canEditTasks");
+  const canSeeAll = hasPermission("canViewAllTasks"); // Managers/admins see all tasks, users see only their own
 
   useEffect(() => {
     if (user) {
@@ -89,11 +107,11 @@ export default function TasksPage() {
   const fetchTasks = async () => {
     setLoading(true);
     try {
-      const response = canSeeAll 
+      const response = canSeeAll
         ? await taskAPI.getAll({})
         : await taskAPI.getMyTasks();
       const data = response.data || response;
-      setTasks(Array.isArray(data) ? data : (data?.data || []));
+      setTasks(Array.isArray(data) ? data : data?.data || []);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -110,10 +128,10 @@ export default function TasksPage() {
     try {
       const response = await projectAPI.findAll();
       const data = response.data || response;
-      const projectsList = Array.isArray(data) ? data : (data?.data || []);
+      const projectsList = Array.isArray(data) ? data : data?.data || [];
       setProjects(projectsList);
     } catch (error: any) {
-      console.error('Failed to load projects:', error);
+      // Silently handle error - projects will see empty state
     } finally {
       setLoadingProjects(false);
     }
@@ -123,28 +141,28 @@ export default function TasksPage() {
     setLoadingUsers(true);
     try {
       let response;
-      if (currentUserRole === 'company_admin') {
+      if (currentUserRole === "company_admin") {
         response = await usersAPI.getCompanyUsers({ limit: 1000 });
-      } else if (normalizedRole === 'admin') {
+      } else if (normalizedRole === "admin") {
         response = await usersAPI.getAll({ limit: 1000 });
-      } else if (normalizedRole === 'manager') {
+      } else if (normalizedRole === "manager") {
         response = await usersAPI.getMyUsers({ limit: 1000 });
       } else {
         response = await usersAPI.getAll({ limit: 1000 });
       }
-      
+
       const data = response.data || response;
-      const usersList = Array.isArray(data) ? data : (data?.data || []);
+      const usersList = Array.isArray(data) ? data : data?.data || [];
       setAvailableUsers(usersList);
     } catch (error: any) {
-      console.error('Failed to load users:', error);
+      // Silently handle error - users will see empty state
     } finally {
       setLoadingUsers(false);
     }
   };
 
   const handleCreate = () => {
-    if (!hasPermission('canCreateTasks')) {
+    if (!hasPermission("canCreateTasks")) {
       toast({
         title: "Access Denied",
         description: "You don't have permission to create tasks",
@@ -167,14 +185,22 @@ export default function TasksPage() {
 
   const handleEdit = (task: Task) => {
     setEditingTask(task);
-    const projectId = typeof task.projectId === 'object' ? task.projectId?._id : task.projectId || "";
-    const assignedTo = typeof task.assignedTo === 'object' ? task.assignedTo?._id : task.assignedTo || "";
+    const projectId =
+      typeof task.projectId === "object"
+        ? task.projectId?._id
+        : task.projectId || "";
+    const assignedTo =
+      typeof task.assignedTo === "object"
+        ? task.assignedTo?._id
+        : task.assignedTo || "";
     setFormData({
       title: task.title,
       description: task.description || "",
       status: task.status,
       priority: task.priority,
-      dueDate: task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : "",
+      dueDate: task.dueDate
+        ? new Date(task.dueDate).toISOString().split("T")[0]
+        : "",
       projectId: projectId,
       assignedTo: assignedTo,
     });
@@ -182,7 +208,7 @@ export default function TasksPage() {
   };
 
   const handleSave = async () => {
-    if (!hasPermission('canCreateTasks') && !editingTask) {
+    if (!hasPermission("canCreateTasks") && !editingTask) {
       toast({
         title: "Access Denied",
         description: "You don't have permission to create tasks",
@@ -190,7 +216,7 @@ export default function TasksPage() {
       });
       return;
     }
-    if (editingTask && !hasPermission('canEditTasks')) {
+    if (editingTask && !hasPermission("canEditTasks")) {
       toast({
         title: "Access Denied",
         description: "You don't have permission to edit tasks",
@@ -198,7 +224,7 @@ export default function TasksPage() {
       });
       return;
     }
-    
+
     try {
       const payload: any = {
         title: formData.title,
@@ -206,7 +232,7 @@ export default function TasksPage() {
         status: formData.status,
         priority: formData.priority,
       };
-      
+
       if (formData.dueDate) payload.dueDate = formData.dueDate;
       if (formData.projectId) payload.projectId = formData.projectId;
       if (formData.assignedTo) payload.assignedTo = formData.assignedTo;
@@ -253,7 +279,7 @@ export default function TasksPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!hasPermission('canDeleteTasks')) {
+    if (!hasPermission("canDeleteTasks")) {
       toast({
         title: "Access Denied",
         description: "You don't have permission to delete tasks",
@@ -261,9 +287,9 @@ export default function TasksPage() {
       });
       return;
     }
-    
+
     if (!confirm("Are you sure you want to delete this task?")) return;
-    
+
     try {
       await taskAPI.delete(id);
       toast({
@@ -309,7 +335,8 @@ export default function TasksPage() {
   };
 
   const filteredTasks = tasks.filter((t) => {
-    const matchesSearch = t.title.toLowerCase().includes(search.toLowerCase()) ||
+    const matchesSearch =
+      t.title.toLowerCase().includes(search.toLowerCase()) ||
       t.description?.toLowerCase().includes(search.toLowerCase());
     const matchesStatus = statusFilter === "all" || t.status === statusFilter;
     return matchesSearch && matchesStatus;
@@ -320,11 +347,20 @@ export default function TasksPage() {
       <div className="p-8 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">{canSeeAll ? "All Tasks" : "My Tasks"}</h1>
-            <p className="text-muted-foreground mt-1">Manage and track your tasks</p>
+            <h1 className="text-3xl font-bold">
+              {canSeeAll ? "All Tasks" : "My Tasks"}
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Manage and track your tasks
+            </p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="icon" onClick={fetchTasks} title="Refresh">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={fetchTasks}
+              title="Refresh"
+            >
               <RefreshCw className="w-4 h-4" />
             </Button>
             {permissions.canCreateTasks && (
@@ -378,40 +414,53 @@ export default function TasksPage() {
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="font-semibold">{task.title}</h3>
-                        <Badge variant="outline" className={getStatusColor(task.status)}>
-                          {task.status.replace('_', ' ')}
+                        <Badge
+                          variant="outline"
+                          className={getStatusColor(task.status)}
+                        >
+                          {task.status.replace("_", " ")}
                         </Badge>
-                        <Badge variant="outline" className={getPriorityColor(task.priority)}>
+                        <Badge
+                          variant="outline"
+                          className={getPriorityColor(task.priority)}
+                        >
                           {task.priority}
                         </Badge>
                       </div>
                       {task.description && (
-                        <p className="text-sm text-muted-foreground mb-2">{task.description}</p>
+                        <p className="text-sm text-muted-foreground mb-2">
+                          {task.description}
+                        </p>
                       )}
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
                         {task.assignedTo && (
                           <div className="flex items-center gap-1">
-                            <User className="w-4 h-4" />
+                            <UserIcon className="w-4 h-4" />
                             <span>
-                              {typeof task.assignedTo === 'object' 
-                                ? (task.assignedTo?.name || task.assignedTo?.email || 'Unknown')
-                                : 'Assigned'}
+                              {typeof task.assignedTo === "object"
+                                ? task.assignedTo?.name ||
+                                  task.assignedTo?.email ||
+                                  "Unknown"
+                                : "Assigned"}
                             </span>
                           </div>
                         )}
                         {task.projectId && (
                           <div className="flex items-center gap-1">
                             <span>
-                              Project: {typeof task.projectId === 'object' 
-                                ? (task.projectId?.name || 'Unknown')
-                                : 'Unknown'}
+                              Project:{" "}
+                              {typeof task.projectId === "object"
+                                ? task.projectId?.name || "Unknown"
+                                : "Unknown"}
                             </span>
                           </div>
                         )}
                         {task.dueDate && (
                           <div className="flex items-center gap-1">
                             <Calendar className="w-4 h-4" />
-                            <span>{new Date(task.dueDate).toLocaleDateString()}</span>
+                            <span>
+                              {new Date(task.dueDate).toLocaleDateString()}
+                            </span>
                           </div>
                         )}
                       </div>
@@ -426,7 +475,9 @@ export default function TasksPage() {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="pending">Pending</SelectItem>
-                          <SelectItem value="in_progress">In Progress</SelectItem>
+                          <SelectItem value="in_progress">
+                            In Progress
+                          </SelectItem>
                           <SelectItem value="done">Done</SelectItem>
                           <SelectItem value="cancelled">Cancelled</SelectItem>
                         </SelectContent>
@@ -471,14 +522,18 @@ export default function TasksPage() {
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogContent className="sm:max-w-5xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
             <DialogHeader className="px-6 pt-6 pb-4 border-b">
-              <DialogTitle>{editingTask ? "Edit Task" : "Create Task"}</DialogTitle>
+              <DialogTitle>
+                {editingTask ? "Edit Task" : "Create Task"}
+              </DialogTitle>
             </DialogHeader>
             <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 min-h-0">
               <div className="space-y-2">
                 <Label>Task Title *</Label>
                 <Input
                   value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, title: e.target.value })
+                  }
                   placeholder="Enter task title"
                   required
                 />
@@ -487,7 +542,9 @@ export default function TasksPage() {
                 <Label>Description</Label>
                 <Textarea
                   value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
                   placeholder="Enter task description"
                   rows={3}
                 />
@@ -497,7 +554,9 @@ export default function TasksPage() {
                   <Label>Status</Label>
                   <Select
                     value={formData.status}
-                    onValueChange={(v: any) => setFormData({ ...formData, status: v })}
+                    onValueChange={(v: any) =>
+                      setFormData({ ...formData, status: v })
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -514,7 +573,9 @@ export default function TasksPage() {
                   <Label>Priority</Label>
                   <Select
                     value={formData.priority}
-                    onValueChange={(v: any) => setFormData({ ...formData, priority: v })}
+                    onValueChange={(v: any) =>
+                      setFormData({ ...formData, priority: v })
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -533,7 +594,9 @@ export default function TasksPage() {
                     <Label>Project (Optional)</Label>
                     <Select
                       value={formData.projectId}
-                      onValueChange={(v) => setFormData({ ...formData, projectId: v })}
+                      onValueChange={(v) =>
+                        setFormData({ ...formData, projectId: v })
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select a project" />
@@ -541,7 +604,9 @@ export default function TasksPage() {
                       <SelectContent>
                         <SelectItem value="unassigned">No Project</SelectItem>
                         {loadingProjects ? (
-                          <SelectItem value="loading" disabled>Loading projects...</SelectItem>
+                          <SelectItem value="loading" disabled>
+                            Loading projects...
+                          </SelectItem>
                         ) : (
                           projects.map((project) => (
                             <SelectItem key={project._id} value={project._id}>
@@ -556,14 +621,18 @@ export default function TasksPage() {
                     <Label>Assign To *</Label>
                     <Select
                       value={formData.assignedTo}
-                      onValueChange={(v) => setFormData({ ...formData, assignedTo: v })}
+                      onValueChange={(v) =>
+                        setFormData({ ...formData, assignedTo: v })
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select a user" />
                       </SelectTrigger>
                       <SelectContent>
                         {loadingUsers ? (
-                          <SelectItem value="loading" disabled>Loading users...</SelectItem>
+                          <SelectItem value="loading" disabled>
+                            Loading users...
+                          </SelectItem>
                         ) : (
                           availableUsers.map((user) => (
                             <SelectItem key={user._id} value={user._id}>
@@ -581,7 +650,9 @@ export default function TasksPage() {
                 <Input
                   type="date"
                   value={formData.dueDate}
-                  onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, dueDate: e.target.value })
+                  }
                 />
               </div>
             </div>
@@ -589,7 +660,13 @@ export default function TasksPage() {
               <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleSave} disabled={!formData.title.trim() || (permissions.canCreateTasks && !formData.assignedTo)}>
+              <Button
+                onClick={handleSave}
+                disabled={
+                  !formData.title.trim() ||
+                  (permissions.canCreateTasks && !formData.assignedTo)
+                }
+              >
                 Save
               </Button>
             </DialogFooter>

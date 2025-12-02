@@ -1,15 +1,15 @@
-"use client"
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/app/store/store';
-import { motion } from 'framer-motion';
-import { Users, UserPlus, Shield, TrendingUp, BarChart3 } from 'lucide-react';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { RoleGuard } from '@/components/guards/RoleGuard';
-import { usersAPI } from '@/app/services';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
+import { RootState } from "@/app/store/store";
+import { motion } from "framer-motion";
+import { Users, UserPlus, Shield, TrendingUp, BarChart3 } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { RoleGuard } from "@/components/guards/RoleGuard";
+import { usersAPI } from "@/app/services";
+import { useRouter } from "next/navigation";
 
 const AdminDashboard = () => {
   const router = useRouter();
@@ -27,10 +27,10 @@ const AdminDashboard = () => {
       try {
         const response = await usersAPI.getAllForAdmin({ limit: 1000 });
         const users = response.data?.data || [];
-        
-        const managers = users.filter((u: any) => u.role === 'manager');
-        const regularUsers = users.filter((u: any) => u.role === 'user');
-        
+
+        const managers = users.filter((u: any) => u.role === "manager");
+        const regularUsers = users.filter((u: any) => u.role === "user");
+
         setStats({
           totalUsers: users.length,
           totalManagers: managers.length,
@@ -43,7 +43,7 @@ const AdminDashboard = () => {
           }).length,
         });
       } catch (error) {
-        console.error('Failed to fetch stats:', error);
+        // Silently handle error - show empty state
       } finally {
         setLoading(false);
       }
@@ -53,7 +53,7 @@ const AdminDashboard = () => {
   }, []);
 
   return (
-    <RoleGuard allowedRoles={['admin', 'superadmin']}>
+    <RoleGuard allowedRoles={["admin", "superadmin"]}>
       <div className="space-y-8 max-w-7xl mx-auto">
         {/* Header */}
         <div>
@@ -75,8 +75,12 @@ const AdminDashboard = () => {
             <Card className="p-6 hover:shadow-xl transition-shadow">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Total Users</p>
-                  <p className="text-3xl font-bold text-foreground">{stats.totalUsers}</p>
+                  <p className="text-sm text-muted-foreground mb-1">
+                    Total Users
+                  </p>
+                  <p className="text-3xl font-bold text-foreground">
+                    {stats.totalUsers}
+                  </p>
                 </div>
                 <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
                   <Users className="w-6 h-6 text-primary" />
@@ -94,7 +98,9 @@ const AdminDashboard = () => {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">Managers</p>
-                  <p className="text-3xl font-bold text-foreground">{stats.totalManagers}</p>
+                  <p className="text-3xl font-bold text-foreground">
+                    {stats.totalManagers}
+                  </p>
                 </div>
                 <div className="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center">
                   <Shield className="w-6 h-6 text-blue-500" />
@@ -111,8 +117,12 @@ const AdminDashboard = () => {
             <Card className="p-6 hover:shadow-xl transition-shadow">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Regular Users</p>
-                  <p className="text-3xl font-bold text-foreground">{stats.totalRegularUsers}</p>
+                  <p className="text-sm text-muted-foreground mb-1">
+                    Regular Users
+                  </p>
+                  <p className="text-3xl font-bold text-foreground">
+                    {stats.totalRegularUsers}
+                  </p>
                 </div>
                 <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center">
                   <UserPlus className="w-6 h-6 text-green-500" />
@@ -129,8 +139,12 @@ const AdminDashboard = () => {
             <Card className="p-6 hover:shadow-xl transition-shadow">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">New This Week</p>
-                  <p className="text-3xl font-bold text-foreground">{stats.recentUsers}</p>
+                  <p className="text-sm text-muted-foreground mb-1">
+                    New This Week
+                  </p>
+                  <p className="text-3xl font-bold text-foreground">
+                    {stats.recentUsers}
+                  </p>
                 </div>
                 <div className="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center">
                   <TrendingUp className="w-6 h-6 text-purple-500" />
@@ -142,17 +156,19 @@ const AdminDashboard = () => {
 
         {/* Quick Actions */}
         <Card className="p-6">
-          <h2 className="text-xl font-semibold text-foreground mb-4">Quick Actions</h2>
+          <h2 className="text-xl font-semibold text-foreground mb-4">
+            Quick Actions
+          </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <Button
-              onClick={() => router.push('/users?create=manager')}
+              onClick={() => router.push("/users?create=manager")}
               className="w-full h-auto flex flex-col items-center justify-center py-6 gap-2"
             >
               <UserPlus className="w-6 h-6" />
               <span>Create Manager</span>
             </Button>
             <Button
-              onClick={() => router.push('/users')}
+              onClick={() => router.push("/users")}
               variant="outline"
               className="w-full h-auto flex flex-col items-center justify-center py-6 gap-2"
             >
@@ -160,7 +176,7 @@ const AdminDashboard = () => {
               <span>Manage Users</span>
             </Button>
             <Button
-              onClick={() => router.push('/analytics')}
+              onClick={() => router.push("/analytics")}
               variant="outline"
               className="w-full h-auto flex flex-col items-center justify-center py-6 gap-2"
             >
@@ -172,7 +188,9 @@ const AdminDashboard = () => {
 
         {/* Info Card */}
         <Card className="p-6 bg-muted/50">
-          <h3 className="text-lg font-semibold text-foreground mb-2">Admin Responsibilities</h3>
+          <h3 className="text-lg font-semibold text-foreground mb-2">
+            Admin Responsibilities
+          </h3>
           <ul className="space-y-2 text-sm text-muted-foreground">
             <li>• Create and manage Managers</li>
             <li>• View system-wide analytics and reports</li>
@@ -187,4 +205,3 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
-

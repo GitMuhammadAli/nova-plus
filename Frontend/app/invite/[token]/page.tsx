@@ -10,7 +10,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Zap, Mail, Lock, User, AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
+import {
+  Zap,
+  Mail,
+  Lock,
+  User,
+  AlertCircle,
+  CheckCircle2,
+  Loader2,
+} from "lucide-react";
 import { inviteAPI } from "@/app/services";
 
 export default function AcceptInvitePage() {
@@ -44,10 +52,11 @@ export default function AcceptInvitePage() {
       const response = await inviteAPI.getInvite(token);
       setInviteInfo(response.data.invite);
       if (response.data.invite?.email) {
-        setFormData(prev => ({ ...prev, email: response.data.invite.email }));
+        setFormData((prev) => ({ ...prev, email: response.data.invite.email }));
       }
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || "Invalid or expired invite";
+      const errorMessage =
+        err.response?.data?.message || "Invalid or expired invite";
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -90,8 +99,8 @@ export default function AcceptInvitePage() {
       if (response.data?.user || response.data?.success) {
         setSuccess(true);
         // Wait a bit to ensure cookies are set by the browser
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
         // Fetch the current user to verify authentication and get full user data
         try {
           const userResponse = await dispatch(fetchMe());
@@ -101,9 +110,9 @@ export default function AcceptInvitePage() {
             return; // Exit early
           }
         } catch (fetchError) {
-          console.error('Failed to fetch user:', fetchError);
+          // Silently handle - user will be redirected anyway
         }
-        
+
         // If fetchMe fails, still set the user from response and redirect
         if (response.data?.user) {
           dispatch(setUser(response.data.user));
@@ -113,8 +122,8 @@ export default function AcceptInvitePage() {
         }, 1000);
       }
     } catch (err: any) {
-      console.error('Invite acceptance error:', err);
-      const errorMessage = err.response?.data?.message || "Failed to accept invite";
+      const errorMessage =
+        err.response?.data?.message || "Failed to accept invite";
       setError(errorMessage);
       setSubmitting(false);
     }
@@ -173,7 +182,9 @@ export default function AcceptInvitePage() {
             Join {inviteInfo?.company?.name || "the team"}
           </h1>
           <p className="text-lg text-white/80 mb-8">
-            You've been invited to join {inviteInfo?.company?.name || "a company"}. Complete your registration to get started.
+            You've been invited to join{" "}
+            {inviteInfo?.company?.name || "a company"}. Complete your
+            registration to get started.
           </p>
         </div>
       </motion.div>
@@ -199,7 +210,8 @@ export default function AcceptInvitePage() {
               Accept Invitation
             </h2>
             <p className="mt-2 text-muted-foreground">
-              Complete your registration to join {inviteInfo?.company?.name || "the team"}
+              Complete your registration to join{" "}
+              {inviteInfo?.company?.name || "the team"}
             </p>
           </div>
 
@@ -208,7 +220,9 @@ export default function AcceptInvitePage() {
             <Alert>
               <CheckCircle2 className="h-4 w-4" />
               <AlertDescription>
-                <div className="font-semibold">Invite to {inviteInfo.company?.name || 'company'}</div>
+                <div className="font-semibold">
+                  Invite to {inviteInfo.company?.name || "company"}
+                </div>
                 <div className="text-sm text-muted-foreground mt-1">
                   Role: <span className="capitalize">{inviteInfo.role}</span>
                   {inviteInfo.email && ` • Email: ${inviteInfo.email}`}
@@ -248,7 +262,9 @@ export default function AcceptInvitePage() {
                   placeholder="John Doe"
                   className="pl-9"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                   required
                   disabled={submitting || success}
                 />
@@ -266,9 +282,13 @@ export default function AcceptInvitePage() {
                   placeholder="john@example.com"
                   className="pl-9"
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
                   required
-                  disabled={submitting || success || (inviteInfo?.email !== undefined)}
+                  disabled={
+                    submitting || success || inviteInfo?.email !== undefined
+                  }
                 />
               </div>
               {inviteInfo?.email && (
@@ -289,7 +309,9 @@ export default function AcceptInvitePage() {
                   placeholder="••••••••"
                   className="pl-9"
                   value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, password: e.target.value })
+                  }
                   required
                   disabled={submitting || success}
                 />
@@ -299,9 +321,9 @@ export default function AcceptInvitePage() {
               </p>
             </div>
 
-            <Button 
-              type="submit" 
-              className="w-full" 
+            <Button
+              type="submit"
+              className="w-full"
               size="lg"
               disabled={submitting || success || !inviteInfo}
             >
@@ -332,4 +354,3 @@ export default function AcceptInvitePage() {
     </div>
   );
 }
-

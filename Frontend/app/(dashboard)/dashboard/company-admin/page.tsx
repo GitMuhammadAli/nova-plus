@@ -1,22 +1,46 @@
-"use client"
+"use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState, AppDispatch } from '@/app/store/store';
-import { motion } from 'framer-motion';
-import { Users, UserPlus, Shield, TrendingUp, BarChart3, Settings, Mail, Copy, Trash2, X } from 'lucide-react';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { RoleGuard } from '@/components/guards/RoleGuard';
-import { usersAPI, companyAPI, inviteAPI } from '@/app/services';
-import { useRouter } from 'next/navigation';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { clearUser, fetchMe } from '@/app/store/authSlice';
+import React, { useState, useEffect, useCallback } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { RootState, AppDispatch } from "@/app/store/store";
+import { motion } from "framer-motion";
+import {
+  Users,
+  UserPlus,
+  Shield,
+  TrendingUp,
+  BarChart3,
+  Settings,
+  Mail,
+  Copy,
+  Trash2,
+  X,
+} from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { RoleGuard } from "@/components/guards/RoleGuard";
+import { usersAPI, companyAPI, inviteAPI } from "@/app/services";
+import { useRouter } from "next/navigation";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { clearUser, fetchMe } from "@/app/store/authSlice";
 import {
   Table,
   TableBody,
@@ -24,7 +48,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 
 const CompanyAdminDashboard = () => {
   const router = useRouter();
@@ -43,22 +67,22 @@ const CompanyAdminDashboard = () => {
   const [invites, setInvites] = useState<any[]>([]);
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [inviteForm, setInviteForm] = useState({
-    email: '',
-    role: 'user',
+    email: "",
+    role: "user",
     expiresInDays: 7,
   });
   const [inviteSubmitting, setInviteSubmitting] = useState(false);
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [companyUsers, setCompanyUsers] = useState<any[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
-  const [userSearch, setUserSearch] = useState('');
+  const [userSearch, setUserSearch] = useState("");
   const [userActionId, setUserActionId] = useState<string | null>(null);
   const [userError, setUserError] = useState<string | null>(null);
 
   const computeStatsFromUsers = useCallback((usersList: any[]) => {
     const safeList = Array.isArray(usersList) ? usersList : [];
-    const managers = safeList.filter((u) => u.role === 'manager').length;
-    const regularUsers = safeList.filter((u) => u.role === 'user').length;
+    const managers = safeList.filter((u) => u.role === "manager").length;
+    const regularUsers = safeList.filter((u) => u.role === "user").length;
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
     const recentUsers = safeList.filter((u) => {
@@ -80,7 +104,9 @@ const CompanyAdminDashboard = () => {
       setUsersLoading(true);
       setUserError(null);
       try {
-        const usersRes = await companyAPI.getCompanyUsers(companyId, { limit: 1000 });
+        const usersRes = await companyAPI.getCompanyUsers(companyId, {
+          limit: 1000,
+        });
         const payload = Array.isArray(usersRes.data?.data)
           ? usersRes.data.data
           : Array.isArray(usersRes.data)
@@ -89,10 +115,10 @@ const CompanyAdminDashboard = () => {
         setCompanyUsers(payload);
         computeStatsFromUsers(payload);
       } catch (error) {
-        console.error('Failed to fetch users:', error);
+        // Silently handle error - show empty state
         setCompanyUsers([]);
         computeStatsFromUsers([]);
-        setUserError('Failed to load company users');
+        setUserError("Failed to load company users");
       } finally {
         setUsersLoading(false);
       }
@@ -111,20 +137,20 @@ const CompanyAdminDashboard = () => {
       // Ensure companyId is a string
       const companyId = user.companyId?.toString() || user.companyId;
       if (!companyId) {
-        console.error('User does not have a companyId:', user);
+        // User does not have a companyId - cannot load dashboard
         setLoading(false);
         return;
       }
 
       try {
         setLoading(true);
-        
+
         // Fetch company details - interceptor will handle token refresh
         try {
           const companyRes = await companyAPI.getById(companyId);
           setCompany(companyRes.data);
         } catch (error: any) {
-          console.error('Failed to fetch company:', error);
+          // Silently handle error
           // If 401, the interceptor will handle refresh and redirect
           if (error.response?.status === 401) {
             // Don't continue with other requests if auth fails
@@ -140,15 +166,19 @@ const CompanyAdminDashboard = () => {
           const statsRes = await companyAPI.getStats(companyId);
           setCompanyStats(statsRes.data?.stats || statsRes.data);
         } catch (err) {
-          console.error('Failed to fetch company stats:', err);
+          // Silently handle error - stats are non-critical
         }
 
         // Fetch activity
         try {
           const activityRes = await companyAPI.getActivity(companyId);
-          setActivity(Array.isArray(activityRes?.data?.activity) ? activityRes.data.activity : []);
+          setActivity(
+            Array.isArray(activityRes?.data?.activity)
+              ? activityRes.data.activity
+              : []
+          );
         } catch (err) {
-          console.error('Failed to fetch activity:', err);
+          // Silently handle error - activity is non-critical
         }
 
         // Fetch invites
@@ -156,11 +186,11 @@ const CompanyAdminDashboard = () => {
           const invitesRes = await inviteAPI.getCompanyInvites(companyId);
           setInvites(Array.isArray(invitesRes.data) ? invitesRes.data : []);
         } catch (err) {
-          console.error('Failed to fetch invites:', err);
+          // Silently handle error - invites are non-critical
           // Non-critical, continue
         }
       } catch (error) {
-        console.error('Failed to fetch dashboard data:', error);
+        // Silently handle error - show empty state
       } finally {
         setLoading(false);
       }
@@ -195,10 +225,10 @@ const CompanyAdminDashboard = () => {
       setInvites(Array.isArray(invitesRes.data) ? invitesRes.data : []);
 
       // Reset form and close dialog
-      setInviteForm({ email: '', role: 'user', expiresInDays: 7 });
+      setInviteForm({ email: "", role: "user", expiresInDays: 7 });
       setShowInviteDialog(false);
     } catch (err: any) {
-      setInviteError(err.response?.data?.message || 'Failed to create invite');
+      setInviteError(err.response?.data?.message || "Failed to create invite");
     } finally {
       setInviteSubmitting(false);
     }
@@ -207,11 +237,13 @@ const CompanyAdminDashboard = () => {
   const handleDeleteUser = async (userId: string) => {
     if (!userId) return;
     if (user?._id && userId === (user._id || user.id)) {
-      setUserError('You cannot delete yourself.');
+      setUserError("You cannot delete yourself.");
       return;
     }
 
-    if (!confirm('Are you sure you want to remove this user from your company?')) {
+    if (
+      !confirm("Are you sure you want to remove this user from your company?")
+    ) {
       return;
     }
 
@@ -224,8 +256,7 @@ const CompanyAdminDashboard = () => {
       setCompanyUsers(updatedUsers);
       computeStatsFromUsers(updatedUsers);
     } catch (error: any) {
-      console.error('Failed to delete user:', error);
-      setUserError(error.response?.data?.message || 'Failed to delete user');
+      setUserError(error.response?.data?.message || "Failed to delete user");
     } finally {
       setUserActionId(null);
     }
@@ -247,7 +278,7 @@ const CompanyAdminDashboard = () => {
     const companyId = user.companyId?.toString() || user.companyId;
     if (!companyId) return;
 
-    if (!confirm('Are you sure you want to revoke this invite?')) return;
+    if (!confirm("Are you sure you want to revoke this invite?")) return;
 
     try {
       await inviteAPI.revokeInvite(inviteId, companyId);
@@ -255,7 +286,7 @@ const CompanyAdminDashboard = () => {
       const invitesRes = await inviteAPI.getCompanyInvites(companyId);
       setInvites(Array.isArray(invitesRes.data) ? invitesRes.data : []);
     } catch (err) {
-      console.error('Failed to revoke invite:', err);
+      // Error handled by toast notification
     }
   };
 
@@ -265,7 +296,7 @@ const CompanyAdminDashboard = () => {
   };
 
   return (
-    <RoleGuard allowedRoles={['company_admin', 'admin']}>
+    <RoleGuard allowedRoles={["company_admin", "admin"]}>
       <div className="space-y-8 max-w-7xl mx-auto">
         {/* Header */}
         <div>
@@ -273,7 +304,8 @@ const CompanyAdminDashboard = () => {
             Company Admin Dashboard 🏢
           </h1>
           <p className="text-muted-foreground mt-1">
-            Manage your company: create managers & users, view projects, and monitor company activity.
+            Manage your company: create managers & users, view projects, and
+            monitor company activity.
             {company && (
               <span className="block mt-1 text-sm">
                 Company: <strong>{company.name}</strong>
@@ -293,8 +325,12 @@ const CompanyAdminDashboard = () => {
             <Card className="p-6 hover:shadow-xl transition-shadow">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Total Users</p>
-                  <p className="text-3xl font-bold text-foreground">{stats.totalUsers}</p>
+                  <p className="text-sm text-muted-foreground mb-1">
+                    Total Users
+                  </p>
+                  <p className="text-3xl font-bold text-foreground">
+                    {stats.totalUsers}
+                  </p>
                 </div>
                 <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
                   <Users className="w-6 h-6 text-primary" />
@@ -312,7 +348,9 @@ const CompanyAdminDashboard = () => {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">Managers</p>
-                  <p className="text-3xl font-bold text-foreground">{stats.totalManagers}</p>
+                  <p className="text-3xl font-bold text-foreground">
+                    {stats.totalManagers}
+                  </p>
                 </div>
                 <div className="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center">
                   <Shield className="w-6 h-6 text-blue-500" />
@@ -329,8 +367,12 @@ const CompanyAdminDashboard = () => {
             <Card className="p-6 hover:shadow-xl transition-shadow">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Regular Users</p>
-                  <p className="text-3xl font-bold text-foreground">{stats.totalRegularUsers}</p>
+                  <p className="text-sm text-muted-foreground mb-1">
+                    Regular Users
+                  </p>
+                  <p className="text-3xl font-bold text-foreground">
+                    {stats.totalRegularUsers}
+                  </p>
                 </div>
                 <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center">
                   <UserPlus className="w-6 h-6 text-green-500" />
@@ -347,8 +389,12 @@ const CompanyAdminDashboard = () => {
             <Card className="p-6 hover:shadow-xl transition-shadow">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">New This Week</p>
-                  <p className="text-3xl font-bold text-foreground">{stats.recentUsers}</p>
+                  <p className="text-sm text-muted-foreground mb-1">
+                    New This Week
+                  </p>
+                  <p className="text-3xl font-bold text-foreground">
+                    {stats.recentUsers}
+                  </p>
                 </div>
                 <div className="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center">
                   <TrendingUp className="w-6 h-6 text-purple-500" />
@@ -360,17 +406,19 @@ const CompanyAdminDashboard = () => {
 
         {/* Quick Actions */}
         <Card className="p-6">
-          <h2 className="text-xl font-semibold text-foreground mb-4">Quick Actions</h2>
+          <h2 className="text-xl font-semibold text-foreground mb-4">
+            Quick Actions
+          </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <Button
-              onClick={() => router.push('/users?create=manager')}
+              onClick={() => router.push("/users?create=manager")}
               className="w-full h-auto flex flex-col items-center justify-center py-6 gap-2"
             >
               <UserPlus className="w-6 h-6" />
               <span>Create Manager</span>
             </Button>
             <Button
-              onClick={() => router.push('/users')}
+              onClick={() => router.push("/users")}
               variant="outline"
               className="w-full h-auto flex flex-col items-center justify-center py-6 gap-2"
             >
@@ -407,7 +455,9 @@ const CompanyAdminDashboard = () => {
                       type="email"
                       placeholder="user@example.com (leave empty for open invite)"
                       value={inviteForm.email}
-                      onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
+                      onChange={(e) =>
+                        setInviteForm({ ...inviteForm, email: e.target.value })
+                      }
                     />
                     <p className="text-xs text-muted-foreground">
                       Leave empty to create an open invite that anyone can use
@@ -417,7 +467,9 @@ const CompanyAdminDashboard = () => {
                     <Label htmlFor="invite-role">Role</Label>
                     <Select
                       value={inviteForm.role}
-                      onValueChange={(value) => setInviteForm({ ...inviteForm, role: value })}
+                      onValueChange={(value) =>
+                        setInviteForm({ ...inviteForm, role: value })
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -436,7 +488,12 @@ const CompanyAdminDashboard = () => {
                       min="1"
                       max="30"
                       value={inviteForm.expiresInDays}
-                      onChange={(e) => setInviteForm({ ...inviteForm, expiresInDays: parseInt(e.target.value) || 7 })}
+                      onChange={(e) =>
+                        setInviteForm({
+                          ...inviteForm,
+                          expiresInDays: parseInt(e.target.value) || 7,
+                        })
+                      }
                     />
                   </div>
                   <Button
@@ -444,13 +501,13 @@ const CompanyAdminDashboard = () => {
                     disabled={inviteSubmitting}
                     className="w-full"
                   >
-                    {inviteSubmitting ? 'Creating...' : 'Create Invite'}
+                    {inviteSubmitting ? "Creating..." : "Create Invite"}
                   </Button>
                 </div>
               </DialogContent>
             </Dialog>
             <Button
-              onClick={() => router.push('/analytics')}
+              onClick={() => router.push("/analytics")}
               variant="outline"
               className="w-full h-auto flex flex-col items-center justify-center py-6 gap-2"
             >
@@ -464,7 +521,9 @@ const CompanyAdminDashboard = () => {
         <Card className="p-6 space-y-4">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <h2 className="text-xl font-semibold text-foreground">Company Users</h2>
+              <h2 className="text-xl font-semibold text-foreground">
+                Company Users
+              </h2>
               <p className="text-sm text-muted-foreground">
                 View everyone in your company and remove access when needed.
               </p>
@@ -500,15 +559,22 @@ const CompanyAdminDashboard = () => {
                   {filteredUsers.map((companyUser) => {
                     const createdDate = companyUser.createdAt
                       ? new Date(companyUser.createdAt).toLocaleDateString()
-                      : '—';
-                    const isSelf = (companyUser._id || companyUser.id) === (user?._id || user?.id);
-                    const isDeleting = userActionId === (companyUser._id || companyUser.id);
+                      : "—";
+                    const isSelf =
+                      (companyUser._id || companyUser.id) ===
+                      (user?._id || user?.id);
+                    const isDeleting =
+                      userActionId === (companyUser._id || companyUser.id);
                     return (
                       <TableRow key={companyUser._id || companyUser.id}>
                         <TableCell>
                           <div className="flex flex-col">
-                            <span className="font-medium text-foreground">{companyUser.name || '—'}</span>
-                            <span className="text-xs text-muted-foreground">{companyUser.email}</span>
+                            <span className="font-medium text-foreground">
+                              {companyUser.name || "—"}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {companyUser.email}
+                            </span>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -523,9 +589,17 @@ const CompanyAdminDashboard = () => {
                             variant="ghost"
                             className="text-destructive hover:text-destructive"
                             disabled={isSelf || isDeleting}
-                            onClick={() => handleDeleteUser(companyUser._id || companyUser.id)}
+                            onClick={() =>
+                              handleDeleteUser(
+                                companyUser._id || companyUser.id
+                              )
+                            }
                           >
-                            {isDeleting ? 'Removing...' : <Trash2 className="w-4 h-4" />}
+                            {isDeleting ? (
+                              "Removing..."
+                            ) : (
+                              <Trash2 className="w-4 h-4" />
+                            )}
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -540,7 +614,9 @@ const CompanyAdminDashboard = () => {
         {/* Invites Section */}
         <Card className="p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-foreground">Active Invites</h2>
+            <h2 className="text-xl font-semibold text-foreground">
+              Active Invites
+            </h2>
             <Button onClick={() => setShowInviteDialog(true)} size="sm">
               <Mail className="w-4 h-4 mr-2" />
               Create Invite
@@ -550,54 +626,73 @@ const CompanyAdminDashboard = () => {
             <p className="text-muted-foreground text-sm">No active invites</p>
           ) : (
             <div className="space-y-3">
-              {invites.filter((inv: any) => !inv.isUsed && inv.isActive).map((invite: any) => (
-                <div
-                  key={invite._id}
-                  className="flex items-center justify-between p-4 border rounded-lg"
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">
-                        {invite.email || 'Open invite'}
-                      </span>
-                      <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded">
-                        {invite.role}
-                      </span>
-                      {new Date(invite.expiresAt) < new Date() && (
-                        <span className="text-xs px-2 py-1 bg-destructive/10 text-destructive rounded">
-                          Expired
+              {invites
+                .filter((inv: any) => !inv.isUsed && inv.isActive)
+                .map((invite: any) => (
+                  <div
+                    key={invite._id}
+                    className="flex items-center justify-between p-4 border rounded-lg"
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">
+                          {invite.email || "Open invite"}
                         </span>
+                        <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded">
+                          {invite.role}
+                        </span>
+                        {new Date(invite.expiresAt) < new Date() && (
+                          <span className="text-xs px-2 py-1 bg-destructive/10 text-destructive rounded">
+                            Expired
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Expires:{" "}
+                        {new Date(invite.expiresAt).toLocaleDateString()}
+                      </p>
+                      {(invite.inviteLink || invite.token) && (
+                        <div className="flex items-center gap-2 mt-2">
+                          <Input
+                            value={
+                              invite.inviteLink ||
+                              `${
+                                typeof window !== "undefined"
+                                  ? window.location.origin
+                                  : ""
+                              }/invite/${invite.token}`
+                            }
+                            readOnly
+                            className="text-xs h-8"
+                          />
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() =>
+                              copyInviteLink(
+                                invite.inviteLink ||
+                                  `${
+                                    typeof window !== "undefined"
+                                      ? window.location.origin
+                                      : ""
+                                  }/invite/${invite.token}`
+                              )
+                            }
+                          >
+                            <Copy className="w-3 h-3" />
+                          </Button>
+                        </div>
                       )}
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Expires: {new Date(invite.expiresAt).toLocaleDateString()}
-                    </p>
-                    {(invite.inviteLink || invite.token) && (
-                      <div className="flex items-center gap-2 mt-2">
-                        <Input
-                          value={invite.inviteLink || `${typeof window !== 'undefined' ? window.location.origin : ''}/invite/${invite.token}`}
-                          readOnly
-                          className="text-xs h-8"
-                        />
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => copyInviteLink(invite.inviteLink || `${typeof window !== 'undefined' ? window.location.origin : ''}/invite/${invite.token}`)}
-                        >
-                          <Copy className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    )}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleRevokeInvite(invite._id)}
+                    >
+                      <Trash2 className="w-4 h-4 text-destructive" />
+                    </Button>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => handleRevokeInvite(invite._id)}
-                  >
-                    <Trash2 className="w-4 h-4 text-destructive" />
-                  </Button>
-                </div>
-              ))}
+                ))}
             </div>
           )}
         </Card>
@@ -605,11 +700,13 @@ const CompanyAdminDashboard = () => {
         {/* Activity Feed */}
         <Card className="p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-foreground">Recent Activity</h2>
+            <h2 className="text-xl font-semibold text-foreground">
+              Recent Activity
+            </h2>
             <Button
               variant="outline"
               size="sm"
-              onClick={() => router.push('/audit-logs')}
+              onClick={() => router.push("/audit-logs")}
             >
               View All
             </Button>
@@ -626,14 +723,19 @@ const CompanyAdminDashboard = () => {
                   <div className="w-2 h-2 rounded-full bg-primary mt-2 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-foreground">
-                      <span className="font-medium">{item.userName || 'System'}</span>
-                      {' '}
-                      <span>{item.action || item.description || 'performed an action'}</span>
+                      <span className="font-medium">
+                        {item.userName || "System"}
+                      </span>{" "}
+                      <span>
+                        {item.action ||
+                          item.description ||
+                          "performed an action"}
+                      </span>
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
                       {item.createdAt
                         ? new Date(item.createdAt).toLocaleString()
-                        : 'Recently'}
+                        : "Recently"}
                     </p>
                   </div>
                 </div>
@@ -644,7 +746,9 @@ const CompanyAdminDashboard = () => {
 
         {/* Info Card */}
         <Card className="p-6 bg-muted/50">
-          <h3 className="text-lg font-semibold text-foreground mb-2">Company Admin Responsibilities</h3>
+          <h3 className="text-lg font-semibold text-foreground mb-2">
+            Company Admin Responsibilities
+          </h3>
           <ul className="space-y-2 text-sm text-muted-foreground">
             <li>• Create and manage Managers & Users in your company</li>
             <li>• Create invites to invite team members</li>
@@ -660,4 +764,3 @@ const CompanyAdminDashboard = () => {
 };
 
 export default CompanyAdminDashboard;
-

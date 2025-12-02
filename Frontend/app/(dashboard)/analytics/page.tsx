@@ -111,7 +111,7 @@ export default function Analytics() {
           });
         } catch (error) {
           // Silent fail - don't interrupt user experience
-          console.error("Failed to track visit:", error);
+          // Silently handle error - analytics tracking failure shouldn't break UI
         }
       };
       trackVisit();
@@ -121,7 +121,7 @@ export default function Analytics() {
   // Fetch analytics data
   useEffect(() => {
     const fetchAnalytics = async () => {
-      if (!user || !hasPermission('canViewAnalytics')) return;
+      if (!user || !hasPermission("canViewAnalytics")) return;
 
       setLoading(true);
       try {

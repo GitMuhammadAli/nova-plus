@@ -16,7 +16,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import {
   Bell,
@@ -42,8 +48,8 @@ export default function SettingsPage() {
 
   const isCompanyAdmin = user?.role?.toLowerCase() === "company_admin";
   const companyId = user?.companyId;
-  const canViewSettings = hasPermission('canViewSettings');
-  const canEditSettings = hasPermission('canEditSettings');
+  const canViewSettings = hasPermission("canViewSettings");
+  const canEditSettings = hasPermission("canEditSettings");
 
   const [companyForm, setCompanyForm] = useState({
     name: "",
@@ -64,7 +70,9 @@ export default function SettingsPage() {
     secondaryColor: "#8b5cf6",
     companyName: "",
   });
-  const [permissionsSettings, setPermissionsSettings] = useState<Record<string, any>>({});
+  const [permissionsSettings, setPermissionsSettings] = useState<
+    Record<string, any>
+  >({});
   const [savingBranding, setSavingBranding] = useState(false);
   const [savingPermissions, setSavingPermissions] = useState(false);
 
@@ -84,7 +92,7 @@ export default function SettingsPage() {
         });
         dispatch(fetchCompanyUsers({}));
       } catch (error: any) {
-        console.error("Failed to load company", error);
+        // Silently handle error
         toast({
           title: "Error",
           description: "Unable to load company information.",
@@ -116,7 +124,7 @@ export default function SettingsPage() {
         companyName: brandingObj.companyName || companyInfo?.name || "",
       });
     } catch (error) {
-      console.error("Failed to load branding:", error);
+      // Silently handle error
     }
   };
 
@@ -129,7 +137,7 @@ export default function SettingsPage() {
         setPermissionsSettings(permissionsData[0].value || {});
       }
     } catch (error) {
-      console.error("Failed to load permissions:", error);
+      // Silently handle error
     }
   };
 
@@ -144,7 +152,8 @@ export default function SettingsPage() {
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error?.response?.data?.message || "Failed to save branding",
+        description:
+          error?.response?.data?.message || "Failed to save branding",
         variant: "destructive",
       });
     } finally {
@@ -163,7 +172,8 @@ export default function SettingsPage() {
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error?.response?.data?.message || "Failed to save permissions",
+        description:
+          error?.response?.data?.message || "Failed to save permissions",
         variant: "destructive",
       });
     } finally {
@@ -498,7 +508,9 @@ export default function SettingsPage() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-4 border border-border rounded-lg">
                   <div>
-                    <Label className="text-sm font-medium">Email Notifications</Label>
+                    <Label className="text-sm font-medium">
+                      Email Notifications
+                    </Label>
                     <p className="text-sm text-muted-foreground">
                       Receive email notifications for important updates
                     </p>
@@ -513,7 +525,9 @@ export default function SettingsPage() {
                 </div>
                 <div className="flex items-center justify-between p-4 border border-border rounded-lg">
                   <div>
-                    <Label className="text-sm font-medium">Task Assignments</Label>
+                    <Label className="text-sm font-medium">
+                      Task Assignments
+                    </Label>
                     <p className="text-sm text-muted-foreground">
                       Get notified when tasks are assigned to you
                     </p>
@@ -528,7 +542,9 @@ export default function SettingsPage() {
                 </div>
                 <div className="flex items-center justify-between p-4 border border-border rounded-lg">
                   <div>
-                    <Label className="text-sm font-medium">Project Updates</Label>
+                    <Label className="text-sm font-medium">
+                      Project Updates
+                    </Label>
                     <p className="text-sm text-muted-foreground">
                       Receive updates about project changes
                     </p>
@@ -543,7 +559,9 @@ export default function SettingsPage() {
                 </div>
                 <div className="flex items-center justify-between p-4 border border-border rounded-lg">
                   <div>
-                    <Label className="text-sm font-medium">Team Invitations</Label>
+                    <Label className="text-sm font-medium">
+                      Team Invitations
+                    </Label>
                     <p className="text-sm text-muted-foreground">
                       Get notified when you're invited to join a team
                     </p>
@@ -558,7 +576,9 @@ export default function SettingsPage() {
                 </div>
                 <div className="flex items-center justify-between p-4 border border-border rounded-lg">
                   <div>
-                    <Label className="text-sm font-medium">Weekly Reports</Label>
+                    <Label className="text-sm font-medium">
+                      Weekly Reports
+                    </Label>
                     <p className="text-sm text-muted-foreground">
                       Receive weekly summary reports
                     </p>
@@ -727,14 +747,20 @@ export default function SettingsPage() {
                         type="color"
                         value={branding.primaryColor}
                         onChange={(e) =>
-                          setBranding({ ...branding, primaryColor: e.target.value })
+                          setBranding({
+                            ...branding,
+                            primaryColor: e.target.value,
+                          })
                         }
                         className="w-20 h-10"
                       />
                       <Input
                         value={branding.primaryColor}
                         onChange={(e) =>
-                          setBranding({ ...branding, primaryColor: e.target.value })
+                          setBranding({
+                            ...branding,
+                            primaryColor: e.target.value,
+                          })
                         }
                         placeholder="#3b82f6"
                         className="flex-1"
@@ -749,14 +775,20 @@ export default function SettingsPage() {
                         type="color"
                         value={branding.secondaryColor}
                         onChange={(e) =>
-                          setBranding({ ...branding, secondaryColor: e.target.value })
+                          setBranding({
+                            ...branding,
+                            secondaryColor: e.target.value,
+                          })
                         }
                         className="w-20 h-10"
                       />
                       <Input
                         value={branding.secondaryColor}
                         onChange={(e) =>
-                          setBranding({ ...branding, secondaryColor: e.target.value })
+                          setBranding({
+                            ...branding,
+                            secondaryColor: e.target.value,
+                          })
                         }
                         placeholder="#8b5cf6"
                         className="flex-1"
@@ -769,7 +801,10 @@ export default function SettingsPage() {
                       id="companyName"
                       value={branding.companyName}
                       onChange={(e) =>
-                        setBranding({ ...branding, companyName: e.target.value })
+                        setBranding({
+                          ...branding,
+                          companyName: e.target.value,
+                        })
                       }
                       placeholder="Your Company Name"
                       className="mt-2"
@@ -777,7 +812,10 @@ export default function SettingsPage() {
                   </div>
                 </div>
                 <div className="px-6 pb-6">
-                  <Button onClick={handleSaveBranding} disabled={savingBranding}>
+                  <Button
+                    onClick={handleSaveBranding}
+                    disabled={savingBranding}
+                  >
                     {savingBranding ? "Saving..." : "Save Branding"}
                   </Button>
                 </div>
@@ -792,7 +830,9 @@ export default function SettingsPage() {
                         {["user", "manager", "company_admin"].map((role) => (
                           <Card key={role} className="p-4">
                             <div className="flex items-center justify-between mb-3">
-                              <h5 className="font-medium capitalize">{role.replace("_", " ")}</h5>
+                              <h5 className="font-medium capitalize">
+                                {role.replace("_", " ")}
+                              </h5>
                               <Badge variant="outline">{role}</Badge>
                             </div>
                             <div className="space-y-2">
@@ -814,15 +854,16 @@ export default function SettingsPage() {
                                     htmlFor={`${role}-${permission}`}
                                     className="text-sm font-normal cursor-pointer"
                                   >
-                                    {permission.replace("_", " ").replace(/\b\w/g, (l) =>
-                                      l.toUpperCase()
-                                    )}
+                                    {permission
+                                      .replace("_", " ")
+                                      .replace(/\b\w/g, (l) => l.toUpperCase())}
                                   </Label>
                                   <input
                                     type="checkbox"
                                     id={`${role}-${permission}`}
                                     checked={
-                                      permissionsSettings[role]?.[permission] || false
+                                      permissionsSettings[role]?.[permission] ||
+                                      false
                                     }
                                     onChange={(e) => {
                                       setPermissionsSettings({
@@ -853,7 +894,7 @@ export default function SettingsPage() {
                   </Button>
                 </div>
               </TabsContent>
-              
+
               <TabsContent value="work-hours" className="space-y-6 mt-6">
                 <Card className="p-6">
                   <div className="flex items-center justify-between mb-6">
@@ -875,23 +916,51 @@ export default function SettingsPage() {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="UTC">UTC (Coordinated Universal Time)</SelectItem>
-                            <SelectItem value="America/New_York">Eastern Time (ET)</SelectItem>
-                            <SelectItem value="America/Chicago">Central Time (CT)</SelectItem>
-                            <SelectItem value="America/Denver">Mountain Time (MT)</SelectItem>
-                            <SelectItem value="America/Los_Angeles">Pacific Time (PT)</SelectItem>
-                            <SelectItem value="Europe/London">London (GMT)</SelectItem>
-                            <SelectItem value="Europe/Paris">Paris (CET)</SelectItem>
-                            <SelectItem value="Asia/Dubai">Dubai (GST)</SelectItem>
-                            <SelectItem value="Asia/Tokyo">Tokyo (JST)</SelectItem>
-                            <SelectItem value="Asia/Shanghai">Shanghai (CST)</SelectItem>
+                            <SelectItem value="UTC">
+                              UTC (Coordinated Universal Time)
+                            </SelectItem>
+                            <SelectItem value="America/New_York">
+                              Eastern Time (ET)
+                            </SelectItem>
+                            <SelectItem value="America/Chicago">
+                              Central Time (CT)
+                            </SelectItem>
+                            <SelectItem value="America/Denver">
+                              Mountain Time (MT)
+                            </SelectItem>
+                            <SelectItem value="America/Los_Angeles">
+                              Pacific Time (PT)
+                            </SelectItem>
+                            <SelectItem value="Europe/London">
+                              London (GMT)
+                            </SelectItem>
+                            <SelectItem value="Europe/Paris">
+                              Paris (CET)
+                            </SelectItem>
+                            <SelectItem value="Asia/Dubai">
+                              Dubai (GST)
+                            </SelectItem>
+                            <SelectItem value="Asia/Tokyo">
+                              Tokyo (JST)
+                            </SelectItem>
+                            <SelectItem value="Asia/Shanghai">
+                              Shanghai (CST)
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                       <div>
                         <Label htmlFor="work-days">Work Days</Label>
                         <div className="flex gap-2 mt-2">
-                          {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
+                          {[
+                            "Mon",
+                            "Tue",
+                            "Wed",
+                            "Thu",
+                            "Fri",
+                            "Sat",
+                            "Sun",
+                          ].map((day) => (
                             <Button
                               key={day}
                               variant="outline"
@@ -928,7 +997,12 @@ export default function SettingsPage() {
                       <Label className="text-sm font-medium">Lunch Break</Label>
                       <div className="grid gap-4 md:grid-cols-2 mt-2">
                         <div>
-                          <Label htmlFor="lunch-start" className="text-xs text-muted-foreground">Start</Label>
+                          <Label
+                            htmlFor="lunch-start"
+                            className="text-xs text-muted-foreground"
+                          >
+                            Start
+                          </Label>
                           <Input
                             id="lunch-start"
                             type="time"
@@ -937,7 +1011,12 @@ export default function SettingsPage() {
                           />
                         </div>
                         <div>
-                          <Label htmlFor="lunch-end" className="text-xs text-muted-foreground">End</Label>
+                          <Label
+                            htmlFor="lunch-end"
+                            className="text-xs text-muted-foreground"
+                          >
+                            End
+                          </Label>
                           <Input
                             id="lunch-end"
                             type="time"

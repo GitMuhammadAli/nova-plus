@@ -2,10 +2,20 @@
 
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchUsers, fetchMyUsers, fetchCompanyUsers, createUser, createUserByAdmin, createUserByManager, updateUser, deleteUser } from "@/app/store/usersSlice";
+import {
+  fetchUsers,
+  fetchMyUsers,
+  fetchCompanyUsers,
+  createUser,
+  createUserByAdmin,
+  createUserByManager,
+  updateUser,
+  deleteUser,
+} from "@/app/store/usersSlice";
 import { AppDispatch, RootState } from "@/app/store/store";
 import { useRolePermissions } from "@/hooks/useRolePermissions";
 import { normalizeRole as normalizeRoleUtil } from "@/lib/roles-config";
+import { User } from "@/types/user";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,30 +50,42 @@ import { DeleteUserDialog } from "@/components/ui/DeleteUserDialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Plus, Filter, Users, UserCheck, ShieldCheck, Clock, MoreHorizontal, RefreshCw, TrendingUp, UserX, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Search,
+  Plus,
+  Filter,
+  Users,
+  UserCheck,
+  ShieldCheck,
+  Clock,
+  MoreHorizontal,
+  RefreshCw,
+  TrendingUp,
+  UserX,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 
-type UserRoleFilter = "ADMIN" | "MANAGER" | "EDITOR" | "USER" | "VIEWER" | "COMPANY_ADMIN" | "SUPER_ADMIN" | "SUPERADMIN" | "all";
-
-interface User {
-  _id: string;
-  name?: string;
-  email: string;
-  role: string;
-  isActive?: boolean;
-  managerId?: any;
-  department?: string;
-  location?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  createdBy?: string;
-}
+type UserRoleFilter =
+  | "ADMIN"
+  | "MANAGER"
+  | "EDITOR"
+  | "USER"
+  | "VIEWER"
+  | "COMPANY_ADMIN"
+  | "SUPER_ADMIN"
+  | "SUPERADMIN"
+  | "all";
 
 export default function UsersPage() {
   const dispatch = useDispatch<AppDispatch>();
-  const { users, isLoading, error } = useSelector((state: RootState) => state.users);
+  const { users, isLoading, error } = useSelector(
+    (state: RootState) => state.users
+  );
   const { user: currentUser } = useSelector((state: RootState) => state.auth);
   const { toast } = useToast();
-  const { permissions, hasPermission, isAdmin, isManager } = useRolePermissions();
+  const { permissions, hasPermission, isAdmin, isManager } =
+    useRolePermissions();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState<UserRoleFilter>("all");
@@ -73,18 +95,23 @@ export default function UsersPage() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
-  const [activeTab, setActiveTab] = useState<"all" | "managers" | "employees" | "invited" | "disabled">("all");
+  const [activeTab, setActiveTab] = useState<
+    "all" | "managers" | "employees" | "invited" | "disabled"
+  >("all");
   const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  const currentUserRole = currentUser?.role || '';
+  const currentUserRole = currentUser?.role || "";
   const normalizedRole = normalizeRoleUtil(currentUserRole);
 
   useEffect(() => {
-    if (normalizedRole === 'company_admin' || normalizedRole === 'super_admin') {
+    if (
+      normalizedRole === "company_admin" ||
+      normalizedRole === "super_admin"
+    ) {
       dispatch(fetchCompanyUsers({}));
-    } else if (normalizedRole === 'manager') {
+    } else if (normalizedRole === "manager") {
       dispatch(fetchMyUsers({}));
     } else {
       dispatch(fetchUsers({}));
@@ -94,9 +121,12 @@ export default function UsersPage() {
   // Auto-refresh every 30 seconds for real-time updates
   useEffect(() => {
     const interval = setInterval(() => {
-      if (normalizedRole === 'company_admin' || normalizedRole === 'super_admin') {
+      if (
+        normalizedRole === "company_admin" ||
+        normalizedRole === "super_admin"
+      ) {
         dispatch(fetchCompanyUsers({}));
-      } else if (normalizedRole === 'manager') {
+      } else if (normalizedRole === "manager") {
         dispatch(fetchMyUsers({}));
       } else {
         dispatch(fetchUsers({}));
@@ -106,8 +136,12 @@ export default function UsersPage() {
     return () => clearInterval(interval);
   }, [normalizedRole, dispatch]);
 
-  const managersList = users.filter((user) => normalizeRoleUtil(user.role) === "manager");
-  const totalActiveUsers = users.filter((user) => user.isActive !== false).length;
+  const managersList = users.filter(
+    (user) => normalizeRoleUtil(user.role) === "manager"
+  );
+  const totalActiveUsers = users.filter(
+    (user) => user.isActive !== false
+  ).length;
   const inactiveUsers = users.filter((user) => user.isActive === false).length;
   const adminCountUsers = users.filter((user) => {
     const r = normalizeRoleUtil(user.role);
@@ -119,39 +153,42 @@ export default function UsersPage() {
   }).length;
   const recentUsersCount = users.filter((user) => {
     if (!user.createdAt) return false;
-    const daysDiff = (Date.now() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60 * 24);
+    const daysDiff =
+      (Date.now() - new Date(user.createdAt).getTime()) / (1000 * 60 * 60 * 24);
     return daysDiff <= 7;
   }).length;
-  
+
   // Calculate users with managers assigned
   const usersWithManagers = users.filter((u) => {
-    const managerId = typeof u.managerId === 'object' ? u.managerId?._id : u.managerId;
-    return managerId && managerId !== '';
+    const managerId =
+      typeof u.managerId === "object" ? u.managerId?._id : u.managerId;
+    return managerId && managerId !== "";
   }).length;
 
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
-      (user.name || "")
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase()) ||
+      (user.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.email.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesRole =
       roleFilter === "all" ||
       normalizeRoleUtil(user.role) === normalizeRoleUtil(roleFilter);
-    
+
     // Tab filtering
     let matchesTab = true;
     if (activeTab === "managers") {
       matchesTab = normalizeRoleUtil(user.role) === "manager";
     } else if (activeTab === "employees") {
-      matchesTab = normalizeRoleUtil(user.role) === "user" || normalizeRoleUtil(user.role) === "editor" || normalizeRoleUtil(user.role) === "viewer";
+      matchesTab =
+        normalizeRoleUtil(user.role) === "user" ||
+        normalizeRoleUtil(user.role) === "editor" ||
+        normalizeRoleUtil(user.role) === "viewer";
     } else if (activeTab === "disabled") {
       matchesTab = user.isActive === false;
     } else if (activeTab === "invited") {
       // Users created via invite (check if they have a createdBy field that's not themselves)
-      matchesTab = user.createdBy && user.createdBy !== user._id;
+      matchesTab = !!(user.createdBy && user.createdBy !== user._id);
     }
-    
+
     return matchesSearch && matchesRole && matchesTab;
   });
 
@@ -165,11 +202,11 @@ export default function UsersPage() {
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
       const newSelected = new Set(selectedUsers);
-      paginatedUsers.forEach(user => newSelected.add(user._id));
+      paginatedUsers.forEach((user) => newSelected.add(user._id));
       setSelectedUsers(newSelected);
     } else {
       const newSelected = new Set(selectedUsers);
-      paginatedUsers.forEach(user => newSelected.delete(user._id));
+      paginatedUsers.forEach((user) => newSelected.delete(user._id));
       setSelectedUsers(newSelected);
     }
   };
@@ -184,10 +221,13 @@ export default function UsersPage() {
       });
       return;
     }
-    if (!confirm(`Are you sure you want to delete ${selectedUsers.size} user(s)?`)) return;
+    if (
+      !confirm(`Are you sure you want to delete ${selectedUsers.size} user(s)?`)
+    )
+      return;
 
     try {
-      const deletePromises = Array.from(selectedUsers).map(userId => 
+      const deletePromises = Array.from(selectedUsers).map((userId) =>
         dispatch(deleteUser(userId)).unwrap()
       );
       await Promise.all(deletePromises);
@@ -217,10 +257,12 @@ export default function UsersPage() {
     }
 
     try {
-      const activatePromises = Array.from(selectedUsers).map(userId => {
-        const user = users.find(u => u._id === userId);
+      const activatePromises = Array.from(selectedUsers).map((userId) => {
+        const user = users.find((u) => u._id === userId);
         if (user) {
-          return dispatch(updateUser({ id: userId, data: { isActive: true } })).unwrap();
+          return dispatch(
+            updateUser({ id: userId, data: { isActive: true } })
+          ).unwrap();
         }
       });
       await Promise.all(activatePromises);
@@ -250,10 +292,12 @@ export default function UsersPage() {
     }
 
     try {
-      const deactivatePromises = Array.from(selectedUsers).map(userId => {
-        const user = users.find(u => u._id === userId);
+      const deactivatePromises = Array.from(selectedUsers).map((userId) => {
+        const user = users.find((u) => u._id === userId);
         if (user) {
-          return dispatch(updateUser({ id: userId, data: { isActive: false } })).unwrap();
+          return dispatch(
+            updateUser({ id: userId, data: { isActive: false } })
+          ).unwrap();
         }
       });
       await Promise.all(deactivatePromises);
@@ -276,14 +320,20 @@ export default function UsersPage() {
     // Type assertion for role compatibility
     const typedUser: User = {
       ...user,
-      role: user.role as "ADMIN" | "MANAGER" | "EDITOR" | "USER" | "VIEWER" | string,
+      role: user.role as
+        | "ADMIN"
+        | "MANAGER"
+        | "EDITOR"
+        | "USER"
+        | "VIEWER"
+        | string,
     };
     setSelectedUser(typedUser);
     setSheetOpen(true);
   };
 
   const handleAddUser = () => {
-    if (!hasPermission('canCreateUsers')) {
+    if (!hasPermission("canCreateUsers")) {
       toast({
         title: "Access Denied",
         description: "You don't have permission to create users",
@@ -296,7 +346,7 @@ export default function UsersPage() {
   };
 
   const handleEditUser = (user: User) => {
-    if (!hasPermission('canEditUsers')) {
+    if (!hasPermission("canEditUsers")) {
       toast({
         title: "Access Denied",
         description: "You don't have permission to edit users",
@@ -310,7 +360,7 @@ export default function UsersPage() {
   };
 
   const handleDeleteUser = (userId: string) => {
-    if (!hasPermission('canDeleteUsers')) {
+    if (!hasPermission("canDeleteUsers")) {
       toast({
         title: "Access Denied",
         description: "You don't have permission to delete users",
@@ -325,14 +375,21 @@ export default function UsersPage() {
     }
   };
 
-  const handlePromoteDemote = async (user: User, targetRole: "MANAGER" | "USER") => {
-    if (!user?._id || !hasPermission('canEditUsers')) return;
+  const handlePromoteDemote = async (
+    user: User,
+    targetRole: "MANAGER" | "USER"
+  ) => {
+    if (!user?._id || !hasPermission("canEditUsers")) return;
     if (normalizeRoleUtil(user.role) === normalizeRoleUtil(targetRole)) return;
     try {
-      await dispatch(updateUser({ id: user._id, data: { role: targetRole } })).unwrap();
+      await dispatch(
+        updateUser({ id: user._id, data: { role: targetRole } })
+      ).unwrap();
       toast({
         title: "Success",
-        description: `${user.name || user.email} is now ${targetRole === "MANAGER" ? "a manager" : "a user"}.`,
+        description: `${user.name || user.email} is now ${
+          targetRole === "MANAGER" ? "a manager" : "a user"
+        }.`,
       });
     } catch (error: any) {
       toast({
@@ -344,12 +401,19 @@ export default function UsersPage() {
   };
 
   const handleToggleActive = async (user: User) => {
-    if (!user?._id || !hasPermission('canEditUsers')) return;
+    if (!user?._id || !hasPermission("canEditUsers")) return;
     try {
-      await dispatch(updateUser({ id: user._id, data: { isActive: user.isActive === false } })).unwrap();
+      await dispatch(
+        updateUser({
+          id: user._id,
+          data: { isActive: user.isActive === false },
+        })
+      ).unwrap();
       toast({
         title: "Success",
-        description: `${user.name || user.email} has been ${user.isActive === false ? "activated" : "deactivated"}.`,
+        description: `${user.name || user.email} has been ${
+          user.isActive === false ? "activated" : "deactivated"
+        }.`,
       });
     } catch (error: any) {
       toast({
@@ -388,7 +452,10 @@ export default function UsersPage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", `company-users-${new Date().toISOString()}.csv`);
+    link.setAttribute(
+      "download",
+      `company-users-${new Date().toISOString()}.csv`
+    );
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -396,9 +463,12 @@ export default function UsersPage() {
   };
 
   const refreshUsersList = () => {
-    if (normalizedRole === 'company_admin' || normalizedRole === 'super_admin') {
+    if (
+      normalizedRole === "company_admin" ||
+      normalizedRole === "super_admin"
+    ) {
       dispatch(fetchCompanyUsers({}));
-    } else if (normalizedRole === 'manager') {
+    } else if (normalizedRole === "manager") {
       dispatch(fetchMyUsers({}));
     } else {
       dispatch(fetchUsers({}));
@@ -414,7 +484,7 @@ export default function UsersPage() {
         managerId: data.managerId || undefined,
         department: data.department || undefined,
         location: data.location || undefined,
-        isActive: data.status ? data.status === 'active' : undefined,
+        isActive: data.status ? data.status === "active" : undefined,
       };
 
       if (data._id) {
@@ -422,7 +492,9 @@ export default function UsersPage() {
         if (data.password) {
           updatePayload.password = data.password;
         }
-        await dispatch(updateUser({ id: data._id, data: updatePayload })).unwrap();
+        await dispatch(
+          updateUser({ id: data._id, data: updatePayload })
+        ).unwrap();
         toast({
           title: "User updated",
           description: `${data.name} has been updated successfully.`,
@@ -430,35 +502,44 @@ export default function UsersPage() {
       } else {
         if (permissions.canCreateUsers) {
           // Use the appropriate create method based on role
-          if (normalizedRole === 'company_admin' || normalizedRole === 'super_admin') {
-            await dispatch(createUserByAdmin({
-              name: basePayload.name,
-              email: basePayload.email,
-              password: data.password,
-              role: basePayload.role || 'USER',
-              managerId: basePayload.managerId,
-              department: basePayload.department,
-              location: basePayload.location,
-            })).unwrap();
+          if (
+            normalizedRole === "company_admin" ||
+            normalizedRole === "super_admin"
+          ) {
+            await dispatch(
+              createUserByAdmin({
+                name: basePayload.name,
+                email: basePayload.email,
+                password: data.password,
+                role: basePayload.role || "USER",
+                managerId: basePayload.managerId,
+                department: basePayload.department,
+                location: basePayload.location,
+              })
+            ).unwrap();
             toast({
               title: "User created",
               description: `${data.name} has been added successfully.`,
             });
-          } else if (normalizedRole === 'manager') {
-            await dispatch(createUserByManager({
-              name: basePayload.name,
-              email: basePayload.email,
-              password: data.password,
-              department: basePayload.department,
-              location: basePayload.location,
-            })).unwrap();
+          } else if (normalizedRole === "manager") {
+            await dispatch(
+              createUserByManager({
+                name: basePayload.name,
+                email: basePayload.email,
+                password: data.password,
+                department: basePayload.department,
+                location: basePayload.location,
+              })
+            ).unwrap();
             toast({
               title: "User created",
               description: `${data.name} has been added to your team.`,
             });
           } else {
             // Fallback for other roles with create permission
-            await dispatch(createUser({ ...basePayload, password: data.password })).unwrap();
+            await dispatch(
+              createUser({ ...basePayload, password: data.password })
+            ).unwrap();
             toast({
               title: "User created",
               description: `${data.name} has been added successfully.`,
@@ -477,12 +558,13 @@ export default function UsersPage() {
       refreshUsersList();
     } catch (error: any) {
       // Check if it's an authentication error (401 Unauthorized)
-      const isAuthError = error?.response?.status === 401 || 
-                         error?.message?.includes('token') || 
-                         error?.message?.includes('401') || 
-                         error?.message?.includes('Unauthorized') ||
-                         error?.message?.includes('Invalid or expired token');
-      
+      const isAuthError =
+        error?.response?.status === 401 ||
+        error?.message?.includes("token") ||
+        error?.message?.includes("401") ||
+        error?.message?.includes("Unauthorized") ||
+        error?.message?.includes("Invalid or expired token");
+
       if (isAuthError) {
         // Don't show error toast - API interceptor will handle redirect
         // Just clear the dialog
@@ -493,7 +575,8 @@ export default function UsersPage() {
       } else {
         toast({
           title: "Error",
-          description: error?.message || "Failed to save user. Please try again.",
+          description:
+            error?.message || "Failed to save user. Please try again.",
           variant: "destructive",
         });
       }
@@ -515,7 +598,8 @@ export default function UsersPage() {
       } catch (error: any) {
         toast({
           title: "Error",
-          description: error?.message || "Failed to delete user. Please try again.",
+          description:
+            error?.message || "Failed to delete user. Please try again.",
           variant: "destructive",
         });
       }
@@ -525,25 +609,27 @@ export default function UsersPage() {
   const getInitials = (name?: string) => {
     if (!name) return "NP";
     return name
-      .split(' ')
-      .map(n => n[0])
-      .join('')
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
       .toUpperCase()
       .slice(0, 2);
   };
 
   const formatDate = (dateString?: string) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
+    if (!dateString) return "N/A";
+    return new Date(dateString).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
     });
   };
 
   const getRoleCount = (roles: string[]) => {
     const normalizedTargets = roles.map((r) => normalizeRoleUtil(r));
-    return users.filter((u) => normalizedTargets.includes(normalizeRoleUtil(u.role))).length;
+    return users.filter((u) =>
+      normalizedTargets.includes(normalizeRoleUtil(u.role))
+    ).length;
   };
 
   const totalActive = totalActiveUsers;
@@ -571,7 +657,12 @@ export default function UsersPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" onClick={refreshUsersList} title="Refresh">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={refreshUsersList}
+            title="Refresh"
+          >
             <RefreshCw className="w-4 h-4" />
           </Button>
           {permissions.canCreateUsers && (
@@ -622,7 +713,9 @@ export default function UsersPage() {
                   {totalActive}
                 </p>
                 {inactiveUsers > 0 && (
-                  <p className="text-xs text-muted-foreground mt-0.5">{inactiveUsers} inactive</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {inactiveUsers} inactive
+                  </p>
                 )}
               </div>
             </div>
@@ -641,9 +734,7 @@ export default function UsersPage() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Managers</p>
-                <p className="text-2xl font-bold mt-1">
-                  {managersList.length}
-                </p>
+                <p className="text-2xl font-bold mt-1">{managersList.length}</p>
               </div>
             </div>
           </Card>
@@ -661,9 +752,7 @@ export default function UsersPage() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">With Managers</p>
-                <p className="text-2xl font-bold mt-1">
-                  {usersWithManagers}
-                </p>
+                <p className="text-2xl font-bold mt-1">{usersWithManagers}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   {users.length - usersWithManagers} unassigned
                 </p>
@@ -684,9 +773,7 @@ export default function UsersPage() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Recent (7d)</p>
-                <p className="text-2xl font-bold mt-1">
-                  {recentUsersCount}
-                </p>
+                <p className="text-2xl font-bold mt-1">{recentUsersCount}</p>
               </div>
             </div>
           </Card>
@@ -694,324 +781,381 @@ export default function UsersPage() {
       </div>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={(v) => {
-        setActiveTab(v as typeof activeTab);
-        setCurrentPage(1); // Reset to first page when changing tabs
-      }}>
+      <Tabs
+        value={activeTab}
+        onValueChange={(v) => {
+          setActiveTab(v as typeof activeTab);
+          setCurrentPage(1); // Reset to first page when changing tabs
+        }}
+      >
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="all">All ({users.length})</TabsTrigger>
-          <TabsTrigger value="managers">Managers ({managersList.length})</TabsTrigger>
-          <TabsTrigger value="employees">Employees ({regularUsersCount})</TabsTrigger>
-          <TabsTrigger value="invited">Invited ({users.filter(u => u.createdBy && u.createdBy !== u._id).length})</TabsTrigger>
+          <TabsTrigger value="managers">
+            Managers ({managersList.length})
+          </TabsTrigger>
+          <TabsTrigger value="employees">
+            Employees ({regularUsersCount})
+          </TabsTrigger>
+          <TabsTrigger value="invited">
+            Invited (
+            {users.filter((u) => u.createdBy && u.createdBy !== u._id).length})
+          </TabsTrigger>
           <TabsTrigger value="disabled">Disabled ({inactiveUsers})</TabsTrigger>
         </TabsList>
 
         <TabsContent value={activeTab} className="space-y-4 mt-4">
           {/* Filters and Bulk Actions */}
-      <Card className="p-4">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Search users by name or email..."
-              className="pl-9"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          <Select 
-            value={roleFilter} 
-            onValueChange={(v) => setRoleFilter(v as UserRoleFilter)}
-          >
-            <SelectTrigger className="w-full md:w-[180px]">
-              <Filter className="w-4 h-4 mr-2" />
-              <SelectValue placeholder="Filter by role" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Roles</SelectItem>
-              <SelectItem value="ADMIN">Admin</SelectItem>
-              <SelectItem value="COMPANY_ADMIN">Company Admin</SelectItem>
-              <SelectItem value="MANAGER">Manager</SelectItem>
-              <SelectItem value="EDITOR">Editor</SelectItem>
-              <SelectItem value="USER">User</SelectItem>
-              <SelectItem value="VIEWER">Viewer</SelectItem>
-            </SelectContent>
-          </Select>
+          <Card className="p-4">
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search users by name or email..."
+                  className="pl-9"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              <Select
+                value={roleFilter}
+                onValueChange={(v) => setRoleFilter(v as UserRoleFilter)}
+              >
+                <SelectTrigger className="w-full md:w-[180px]">
+                  <Filter className="w-4 h-4 mr-2" />
+                  <SelectValue placeholder="Filter by role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Roles</SelectItem>
+                  <SelectItem value="ADMIN">Admin</SelectItem>
+                  <SelectItem value="COMPANY_ADMIN">Company Admin</SelectItem>
+                  <SelectItem value="MANAGER">Manager</SelectItem>
+                  <SelectItem value="EDITOR">Editor</SelectItem>
+                  <SelectItem value="USER">User</SelectItem>
+                  <SelectItem value="VIEWER">Viewer</SelectItem>
+                </SelectContent>
+              </Select>
               {selectedUsers.size > 0 && permissions.canDeleteUsers && (
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={handleBulkActivate}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleBulkActivate}
+                  >
                     Activate ({selectedUsers.size})
                   </Button>
-                  <Button variant="outline" size="sm" onClick={handleBulkDeactivate}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleBulkDeactivate}
+                  >
                     Deactivate ({selectedUsers.size})
                   </Button>
-                  <Button variant="destructive" size="sm" onClick={handleBulkDelete}>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleBulkDelete}
+                  >
                     Delete ({selectedUsers.size})
                   </Button>
                 </div>
               )}
-        </div>
-      </Card>
+            </div>
+          </Card>
 
-      {/* Users Table */}
-      <Card>
-        <Table>
-          <TableHeader>
-            <TableRow>
+          {/* Users Table */}
+          <Card>
+            <Table>
+              <TableHeader>
+                <TableRow>
                   {permissions.canDeleteUsers && (
                     <TableHead className="w-12">
                       <Checkbox
-                        checked={paginatedUsers.length > 0 && paginatedUsers.every(u => selectedUsers.has(u._id))}
+                        checked={
+                          paginatedUsers.length > 0 &&
+                          paginatedUsers.every((u) => selectedUsers.has(u._id))
+                        }
                         onCheckedChange={handleSelectAll}
                       />
                     </TableHead>
                   )}
-              <TableHead>User</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Manager</TableHead>
-              <TableHead>Joined</TableHead>
-              <TableHead>Last Updated</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {(!users || users.length === 0) ? (
-              <TableRow>
-                    <TableCell colSpan={permissions.canDeleteUsers ? 8 : 7} className="text-center py-12">
-                  <div className="flex flex-col items-center gap-2">
-                    <Users className="w-12 h-12 text-muted-foreground" />
-                    <p className="text-muted-foreground">No users yet</p>
-                    <p className="text-sm text-muted-foreground">Users will appear here once they register</p>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ) : filteredUsers.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center py-12">
-                  <div className="flex flex-col items-center gap-2">
-                    <Users className="w-12 h-12 text-muted-foreground" />
-                    <p className="text-muted-foreground">No users match your filters</p>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => {
-                        setSearchQuery('');
-                        setRoleFilter('all');
-                      }}
+                  <TableHead>User</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Manager</TableHead>
+                  <TableHead>Joined</TableHead>
+                  <TableHead>Last Updated</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {!users || users.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={permissions.canDeleteUsers ? 8 : 7}
+                      className="text-center py-12"
                     >
-                      Clear Filters
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ) : (
-              paginatedUsers.map((user, index) => {
-                const managerLabel =
-                  typeof user.managerId === "object"
-                    ? user.managerId?.name || user.managerId?.email
-                    : "";
-                return (
-                  <motion.tr
-                    key={user._id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.2, delay: index * 0.05 }}
-                    className="cursor-pointer hover:bg-muted/50 transition-colors"
-                    onClick={() => handleUserClick(user)}
-                  >
-                    {permissions.canDeleteUsers && (
-                      <TableCell onClick={(e) => e.stopPropagation()}>
-                        <Checkbox
-                          checked={selectedUsers.has(user._id)}
-                          onCheckedChange={(checked) => {
-                            const newSelected = new Set(selectedUsers);
-                            if (checked) {
-                              newSelected.add(user._id);
-                            } else {
-                              newSelected.delete(user._id);
-                            }
-                            setSelectedUsers(newSelected);
-                          }}
-                        />
-                      </TableCell>
-                    )}
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white text-sm font-semibold">
-                          {getInitials(user.name)}
-                        </div>
-                        <div>
-                          <p className="font-medium">{user.name || "Unnamed User"}</p>
-                          <p className="text-sm text-muted-foreground">{user.email}</p>
-                        </div>
+                      <div className="flex flex-col items-center gap-2">
+                        <Users className="w-12 h-12 text-muted-foreground" />
+                        <p className="text-muted-foreground">No users yet</p>
+                        <p className="text-sm text-muted-foreground">
+                          Users will appear here once they register
+                        </p>
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <RoleBadge role={(user.role || "").toUpperCase()} />
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge isActive={user.isActive !== false} />
-                    </TableCell>
-                    <TableCell>
-                      {managerLabel ? (
-                        <span className="text-sm text-foreground">{managerLabel}</span>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {formatDate(user.createdAt)}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {formatDate(user.updatedAt)}
-                    </TableCell>
-                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                      {(permissions.canEditUsers || permissions.canDeleteUsers) && (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreHorizontal className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            {permissions.canEditUsers && (
-                            <DropdownMenuItem
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                handleEditUser(user);
-                              }}
-                            >
-                              Edit User
-                            </DropdownMenuItem>
-                            )}
-                            {normalizeRoleUtil(user.role) !== "manager" && (
-                              <DropdownMenuItem
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  handlePromoteDemote(user, "MANAGER");
-                                }}
-                              >
-                                Promote to Manager
-                              </DropdownMenuItem>
-                            )}
-                            {normalizeRoleUtil(user.role) === "manager" && (
-                              <DropdownMenuItem
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  handlePromoteDemote(user, "USER");
-                                }}
-                              >
-                                Demote to User
-                              </DropdownMenuItem>
-                            )}
-                            <DropdownMenuItem
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                handleToggleActive(user);
-                              }}
-                            >
-                              {user.isActive === false ? "Activate User" : "Deactivate User"}
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              className="text-destructive"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                handleDeleteUser(user._id);
-                              }}
-                            >
-                              Remove User
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      ) : (
+                  </TableRow>
+                ) : filteredUsers.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-12">
+                      <div className="flex flex-col items-center gap-2">
+                        <Users className="w-12 h-12 text-muted-foreground" />
+                        <p className="text-muted-foreground">
+                          No users match your filters
+                        </p>
                         <Button
-                          variant="ghost"
+                          variant="outline"
                           size="sm"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            handleUserClick(user);
+                          onClick={() => {
+                            setSearchQuery("");
+                            setRoleFilter("all");
                           }}
                         >
-                          View
+                          Clear Filters
                         </Button>
-                      )}
+                      </div>
                     </TableCell>
-                  </motion.tr>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
-        
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-6 py-4 border-t">
-            <div className="text-sm text-muted-foreground">
-              Showing {startIndex + 1} to {Math.min(endIndex, filteredUsers.length)} of {filteredUsers.length} users
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-              >
-                <ChevronLeft className="w-4 h-4" />
-                Previous
-              </Button>
-              <div className="flex items-center gap-1">
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  let pageNum;
-                  if (totalPages <= 5) {
-                    pageNum = i + 1;
-                  } else if (currentPage <= 3) {
-                    pageNum = i + 1;
-                  } else if (currentPage >= totalPages - 2) {
-                    pageNum = totalPages - 4 + i;
-                  } else {
-                    pageNum = currentPage - 2 + i;
-                  }
-                  return (
-                    <Button
-                      key={pageNum}
-                      variant={currentPage === pageNum ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setCurrentPage(pageNum)}
-                    >
-                      {pageNum}
-                    </Button>
-                  );
-                })}
+                  </TableRow>
+                ) : (
+                  paginatedUsers.map((user, index) => {
+                    const managerLabel =
+                      typeof user.managerId === "object"
+                        ? user.managerId?.name || user.managerId?.email
+                        : "";
+                    return (
+                      <motion.tr
+                        key={user._id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.2, delay: index * 0.05 }}
+                        className="cursor-pointer hover:bg-muted/50 transition-colors"
+                        onClick={() => handleUserClick(user)}
+                      >
+                        {permissions.canDeleteUsers && (
+                          <TableCell onClick={(e) => e.stopPropagation()}>
+                            <Checkbox
+                              checked={selectedUsers.has(user._id)}
+                              onCheckedChange={(checked) => {
+                                const newSelected = new Set(selectedUsers);
+                                if (checked) {
+                                  newSelected.add(user._id);
+                                } else {
+                                  newSelected.delete(user._id);
+                                }
+                                setSelectedUsers(newSelected);
+                              }}
+                            />
+                          </TableCell>
+                        )}
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white text-sm font-semibold">
+                              {getInitials(user.name)}
+                            </div>
+                            <div>
+                              <p className="font-medium">
+                                {user.name || "Unnamed User"}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {user.email}
+                              </p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <RoleBadge role={(user.role || "").toUpperCase()} />
+                        </TableCell>
+                        <TableCell>
+                          <StatusBadge isActive={user.isActive !== false} />
+                        </TableCell>
+                        <TableCell>
+                          {managerLabel ? (
+                            <span className="text-sm text-foreground">
+                              {managerLabel}
+                            </span>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">
+                              —
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {formatDate(user.createdAt)}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {formatDate(user.updatedAt)}
+                        </TableCell>
+                        <TableCell
+                          className="text-right"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {permissions.canEditUsers ||
+                          permissions.canDeleteUsers ? (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <MoreHorizontal className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                {permissions.canEditUsers && (
+                                  <DropdownMenuItem
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      handleEditUser(user);
+                                    }}
+                                  >
+                                    Edit User
+                                  </DropdownMenuItem>
+                                )}
+                                {normalizeRoleUtil(user.role) !== "manager" && (
+                                  <DropdownMenuItem
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      handlePromoteDemote(user, "MANAGER");
+                                    }}
+                                  >
+                                    Promote to Manager
+                                  </DropdownMenuItem>
+                                )}
+                                {normalizeRoleUtil(user.role) === "manager" && (
+                                  <DropdownMenuItem
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      handlePromoteDemote(user, "USER");
+                                    }}
+                                  >
+                                    Demote to User
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuItem
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    handleToggleActive(user);
+                                  }}
+                                >
+                                  {user.isActive === false
+                                    ? "Activate User"
+                                    : "Deactivate User"}
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  className="text-destructive"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    handleDeleteUser(user._id);
+                                  }}
+                                >
+                                  Remove User
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleUserClick(user);
+                              }}
+                            >
+                              View
+                            </Button>
+                          )}
+                        </TableCell>
+                      </motion.tr>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between px-6 py-4 border-t">
+                <div className="text-sm text-muted-foreground">
+                  Showing {startIndex + 1} to{" "}
+                  {Math.min(endIndex, filteredUsers.length)} of{" "}
+                  {filteredUsers.length} users
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(1, prev - 1))
+                    }
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                    Previous
+                  </Button>
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum;
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
+                      return (
+                        <Button
+                          key={pageNum}
+                          variant={
+                            currentPage === pageNum ? "default" : "outline"
+                          }
+                          size="sm"
+                          onClick={() => setCurrentPage(pageNum)}
+                        >
+                          {pageNum}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                    }
+                    disabled={currentPage === totalPages}
+                  >
+                    Next
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </div>
+                <Select
+                  value={itemsPerPage.toString()}
+                  onValueChange={(v) => {
+                    setItemsPerPage(Number(v));
+                    setCurrentPage(1);
+                  }}
+                >
+                  <SelectTrigger className="w-[100px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10 per page</SelectItem>
+                    <SelectItem value="25">25 per page</SelectItem>
+                    <SelectItem value="50">50 per page</SelectItem>
+                    <SelectItem value="100">100 per page</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                disabled={currentPage === totalPages}
-              >
-                Next
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-            </div>
-            <Select value={itemsPerPage.toString()} onValueChange={(v) => {
-              setItemsPerPage(Number(v));
-              setCurrentPage(1);
-            }}>
-              <SelectTrigger className="w-[100px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="10">10 per page</SelectItem>
-                <SelectItem value="25">25 per page</SelectItem>
-                <SelectItem value="50">50 per page</SelectItem>
-                <SelectItem value="100">100 per page</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-      </Card>
+            )}
+          </Card>
         </TabsContent>
       </Tabs>
 

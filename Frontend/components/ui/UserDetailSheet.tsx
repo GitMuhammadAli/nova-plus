@@ -22,18 +22,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 
-interface User {
-  _id: string;
-  name: string;
-  email: string;
-  role: "ADMIN" | "MANAGER" | "EDITOR" | "USER" | "VIEWER" | string;
-  managerId?: any;
-  isActive?: boolean;
-  department?: string;
-  location?: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
+import { User } from "@/types/user";
 
 interface UserDetailSheetProps {
   user: User | null;
@@ -131,7 +120,9 @@ export function UserDetailSheet({
               {getInitials(user.name)}
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold text-lg">{user.name}</h3>
+              <h3 className="font-semibold text-lg">
+                {user.name || user.email}
+              </h3>
               <p className="text-sm text-muted-foreground">{user.email}</p>
             </div>
           </div>
@@ -210,7 +201,13 @@ export function UserDetailSheet({
               variant="outline"
               className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
               onClick={() => {
-                if (confirm(`Are you sure you want to delete ${user.name}?`)) {
+                if (
+                  confirm(
+                    `Are you sure you want to delete ${
+                      user.name || user.email
+                    }?`
+                  )
+                ) {
                   onDelete && onDelete(user._id);
                   onOpenChange(false);
                 }
@@ -225,4 +222,3 @@ export function UserDetailSheet({
     </Sheet>
   );
 }
-

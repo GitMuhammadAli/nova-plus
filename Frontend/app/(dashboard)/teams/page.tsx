@@ -8,10 +8,32 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, Users, UserCog, Loader2, Trash2, UserPlus, RefreshCw, Edit } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Plus,
+  Search,
+  Users,
+  UserCog,
+  Loader2,
+  Trash2,
+  UserPlus,
+  RefreshCw,
+  Edit,
+} from "lucide-react";
 import { teamAPI, usersAPI } from "@/app/services";
 import { toast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
@@ -64,7 +86,11 @@ export default function TeamsPage() {
     memberIds: [] as string[],
   });
   const [transferDialogOpen, setTransferDialogOpen] = useState(false);
-  const [transferUser, setTransferUser] = useState<{ _id: string; name: string; email: string } | null>(null);
+  const [transferUser, setTransferUser] = useState<{
+    _id: string;
+    name: string;
+    email: string;
+  } | null>(null);
   const [transferToManagerId, setTransferToManagerId] = useState("");
 
   // Get managers from users
@@ -98,7 +124,6 @@ export default function TeamsPage() {
         : [];
       setTeams(teamsData);
     } catch (error: any) {
-      console.error("Failed to load teams:", error);
       toast({
         title: "Error",
         description: "Failed to load teams",
@@ -110,7 +135,7 @@ export default function TeamsPage() {
   };
 
   const handleCreateTeam = async () => {
-    if (!hasPermission('canCreateTeams')) {
+    if (!hasPermission("canCreateTeams")) {
       toast({
         title: "Access Denied",
         description: "You don't have permission to create teams",
@@ -177,14 +202,15 @@ export default function TeamsPage() {
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error?.response?.data?.message || "Failed to remove member",
+        description:
+          error?.response?.data?.message || "Failed to remove member",
         variant: "destructive",
       });
     }
   };
 
   const handleDeleteTeam = async (teamId: string) => {
-    if (!hasPermission('canDeleteTeams')) {
+    if (!hasPermission("canDeleteTeams")) {
       toast({
         title: "Access Denied",
         description: "You don't have permission to delete teams",
@@ -210,14 +236,16 @@ export default function TeamsPage() {
     }
   };
 
-  const filteredTeams = teams.filter((team) =>
-    team.name.toLowerCase().includes(search.toLowerCase()) ||
-    team.manager?.name?.toLowerCase().includes(search.toLowerCase())
+  const filteredTeams = teams.filter(
+    (team) =>
+      team.name.toLowerCase().includes(search.toLowerCase()) ||
+      team.manager?.name?.toLowerCase().includes(search.toLowerCase())
   );
 
   // Get available users (not already in team)
   const getAvailableUsers = (team: Team | null) => {
-    if (!team) return users.filter((u) => (u.role || "").toLowerCase() === "user");
+    if (!team)
+      return users.filter((u) => (u.role || "").toLowerCase() === "user");
     const memberIds = team.members?.map((m) => m._id) || [];
     return users.filter(
       (u) =>
@@ -237,7 +265,12 @@ export default function TeamsPage() {
             </p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="icon" onClick={loadTeams} title="Refresh">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={loadTeams}
+              title="Refresh"
+            >
               <RefreshCw className="w-4 h-4" />
             </Button>
             {permissions.canCreateTeams && (
@@ -292,12 +325,12 @@ export default function TeamsPage() {
                 <Card className="p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div>
-                      <h3 className="text-xl font-semibold mb-2">{team.name}</h3>
+                      <h3 className="text-xl font-semibold mb-2">
+                        {team.name}
+                      </h3>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <UserCog className="w-4 h-4" />
-                        <span>
-                          Manager: {team.manager?.name || "Unknown"}
-                        </span>
+                        <span>Manager: {team.manager?.name || "Unknown"}</span>
                         <span className="mx-2">•</span>
                         <Users className="w-4 h-4" />
                         <span>{team.members?.length || 0} members</span>
@@ -318,9 +351,13 @@ export default function TeamsPage() {
                   {/* Members Table */}
                   <div className="mt-4">
                     <div className="flex items-center justify-between mb-2">
-                      <Label className="text-sm font-medium">Team Members</Label>
+                      <Label className="text-sm font-medium">
+                        Team Members
+                      </Label>
                       <Select
-                        onValueChange={(userId) => handleAddMember(team._id, userId)}
+                        onValueChange={(userId) =>
+                          handleAddMember(team._id, userId)
+                        }
                       >
                         <SelectTrigger className="w-[200px]">
                           <SelectValue placeholder="Add member" />
@@ -437,7 +474,10 @@ export default function TeamsPage() {
               <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleCreateTeam} disabled={!formData.name.trim() || !formData.managerId}>
+              <Button
+                onClick={handleCreateTeam}
+                disabled={!formData.name.trim() || !formData.managerId}
+              >
                 Create Team
               </Button>
             </DialogFooter>
@@ -455,18 +495,23 @@ export default function TeamsPage() {
                 <div className="p-4 bg-muted rounded-lg">
                   <p className="text-sm text-muted-foreground">Transfer</p>
                   <p className="font-semibold">{transferUser.name}</p>
-                  <p className="text-sm text-muted-foreground">{transferUser.email}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {transferUser.email}
+                  </p>
                 </div>
               )}
               <div className="space-y-2">
                 <Label htmlFor="transfer-manager">To Manager</Label>
-                <Select value={transferToManagerId} onValueChange={setTransferToManagerId}>
+                <Select
+                  value={transferToManagerId}
+                  onValueChange={setTransferToManagerId}
+                >
                   <SelectTrigger id="transfer-manager">
                     <SelectValue placeholder="Select a manager" />
                   </SelectTrigger>
                   <SelectContent>
                     {managers
-                      .filter(m => m._id !== transferUser?._id)
+                      .filter((m) => m._id !== transferUser?._id)
                       .map((manager) => (
                         <SelectItem key={manager._id} value={manager._id}>
                           {manager.name} ({manager.email})
@@ -477,11 +522,14 @@ export default function TeamsPage() {
               </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => {
-                setTransferDialogOpen(false);
-                setTransferUser(null);
-                setTransferToManagerId("");
-              }}>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setTransferDialogOpen(false);
+                  setTransferUser(null);
+                  setTransferToManagerId("");
+                }}
+              >
                 Cancel
               </Button>
               <Button
@@ -496,7 +544,9 @@ export default function TeamsPage() {
                   }
                   try {
                     const { usersAPI } = await import("@/app/services");
-                    await usersAPI.update(transferUser._id, { managerId: transferToManagerId });
+                    await usersAPI.update(transferUser._id, {
+                      managerId: transferToManagerId,
+                    });
                     toast({
                       title: "Success",
                       description: "Employee transferred successfully",
@@ -509,7 +559,9 @@ export default function TeamsPage() {
                   } catch (error: any) {
                     toast({
                       title: "Error",
-                      description: error?.response?.data?.message || "Failed to transfer employee",
+                      description:
+                        error?.response?.data?.message ||
+                        "Failed to transfer employee",
                       variant: "destructive",
                     });
                   }
@@ -525,4 +577,3 @@ export default function TeamsPage() {
     </AppShell>
   );
 }
-

@@ -8,13 +8,34 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RoleGuard } from "@/components/guards/RoleGuard";
-import { Plus, Search, Edit, Trash2, Calendar, Users, Loader2, RefreshCw } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Edit,
+  Trash2,
+  Calendar,
+  Users,
+  Loader2,
+  RefreshCw,
+} from "lucide-react";
 import { projectAPI, usersAPI } from "@/app/services";
 import { toast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
@@ -30,11 +51,7 @@ interface Project {
   createdBy?: any;
 }
 
-interface User {
-  _id: string;
-  name?: string;
-  email: string;
-}
+import { User } from "@/types/user";
 
 export default function ProjectsPage() {
   const { user } = useSelector((state: RootState) => state.auth);
@@ -54,9 +71,13 @@ export default function ProjectsPage() {
     assignedUserIds: [] as string[],
   });
 
-  const currentUserRole = user?.role?.toLowerCase() || '';
-  const normalizedRole = currentUserRole === 'company_admin' ? 'admin' : currentUserRole;
-  const canCreateEdit = normalizedRole === 'admin' || normalizedRole === 'manager' || normalizedRole === 'superadmin';
+  const currentUserRole = user?.role?.toLowerCase() || "";
+  const normalizedRole =
+    currentUserRole === "company_admin" ? "admin" : currentUserRole;
+  const canCreateEdit =
+    normalizedRole === "admin" ||
+    normalizedRole === "manager" ||
+    normalizedRole === "superadmin";
 
   useEffect(() => {
     if (user) {
@@ -80,7 +101,7 @@ export default function ProjectsPage() {
     try {
       const response = await projectAPI.findAll();
       const data = response.data || response;
-      setProjects(Array.isArray(data) ? data : (data?.data || []));
+      setProjects(Array.isArray(data) ? data : data?.data || []);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -96,21 +117,21 @@ export default function ProjectsPage() {
     setLoadingUsers(true);
     try {
       let response;
-      if (currentUserRole === 'company_admin') {
+      if (currentUserRole === "company_admin") {
         response = await usersAPI.getCompanyUsers({ limit: 1000 });
-      } else if (normalizedRole === 'admin') {
+      } else if (normalizedRole === "admin") {
         response = await usersAPI.getAll({ limit: 1000 });
-      } else if (normalizedRole === 'manager') {
+      } else if (normalizedRole === "manager") {
         response = await usersAPI.getMyUsers({ limit: 1000 });
       } else {
         response = await usersAPI.getAll({ limit: 1000 });
       }
-      
+
       const data = response.data || response;
-      const usersList = Array.isArray(data) ? data : (data?.data || []);
+      const usersList = Array.isArray(data) ? data : data?.data || [];
       setAvailableUsers(usersList);
     } catch (error: any) {
-      console.error('Failed to load users:', error);
+      // Silently handle error - users will see empty state
     } finally {
       setLoadingUsers(false);
     }
@@ -147,15 +168,20 @@ export default function ProjectsPage() {
       return;
     }
     setEditingProject(project);
-    const assignedIds = project.assignedUsers?.map((u: any) => 
-      typeof u === 'object' ? u._id : u
-    ) || [];
+    const assignedIds =
+      project.assignedUsers?.map((u: any) =>
+        typeof u === "object" ? u._id : u
+      ) || [];
     setFormData({
       name: project.name,
       description: project.description || "",
       status: project.status,
-      startDate: project.startDate ? new Date(project.startDate).toISOString().split('T')[0] : "",
-      endDate: project.endDate ? new Date(project.endDate).toISOString().split('T')[0] : "",
+      startDate: project.startDate
+        ? new Date(project.startDate).toISOString().split("T")[0]
+        : "",
+      endDate: project.endDate
+        ? new Date(project.endDate).toISOString().split("T")[0]
+        : "",
       assignedUserIds: assignedIds,
     });
     setIsDialogOpen(true);
@@ -163,14 +189,14 @@ export default function ProjectsPage() {
 
   const handleSave = async () => {
     if (!canCreateEdit) return;
-    
+
     try {
       const payload: any = {
         name: formData.name,
         description: formData.description,
         status: formData.status,
       };
-      
+
       if (formData.startDate) payload.startDate = formData.startDate;
       if (formData.endDate) payload.endDate = formData.endDate;
       if (formData.assignedUserIds.length > 0) {
@@ -210,9 +236,9 @@ export default function ProjectsPage() {
       });
       return;
     }
-    
+
     if (!confirm("Are you sure you want to delete this project?")) return;
-    
+
     try {
       await projectAPI.delete(id);
       toast({
@@ -223,18 +249,19 @@ export default function ProjectsPage() {
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.response?.data?.message || "Failed to delete project",
+        description:
+          error.response?.data?.message || "Failed to delete project",
         variant: "destructive",
       });
     }
   };
 
   const toggleUserAssignment = (userId: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       assignedUserIds: prev.assignedUserIds.includes(userId)
-        ? prev.assignedUserIds.filter(id => id !== userId)
-        : [...prev.assignedUserIds, userId]
+        ? prev.assignedUserIds.filter((id) => id !== userId)
+        : [...prev.assignedUserIds, userId],
     }));
   };
 
@@ -253,9 +280,10 @@ export default function ProjectsPage() {
     }
   };
 
-  const filteredProjects = projects.filter((p) =>
-    p.name.toLowerCase().includes(search.toLowerCase()) ||
-    p.description?.toLowerCase().includes(search.toLowerCase())
+  const filteredProjects = projects.filter(
+    (p) =>
+      p.name.toLowerCase().includes(search.toLowerCase()) ||
+      p.description?.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -264,10 +292,17 @@ export default function ProjectsPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">Projects</h1>
-            <p className="text-muted-foreground mt-1">Manage your projects and track progress</p>
+            <p className="text-muted-foreground mt-1">
+              Manage your projects and track progress
+            </p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="icon" onClick={fetchProjects} title="Refresh">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={fetchProjects}
+              title="Refresh"
+            >
               <RefreshCw className="w-4 h-4" />
             </Button>
             {canCreateEdit && (
@@ -307,8 +342,13 @@ export default function ProjectsPage() {
                 <Card className="p-6 hover:shadow-md transition-shadow">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
-                      <h3 className="font-semibold text-lg mb-1">{project.name}</h3>
-                      <Badge variant="outline" className={getStatusColor(project.status)}>
+                      <h3 className="font-semibold text-lg mb-1">
+                        {project.name}
+                      </h3>
+                      <Badge
+                        variant="outline"
+                        className={getStatusColor(project.status)}
+                      >
                         {project.status}
                       </Badge>
                     </div>
@@ -331,7 +371,7 @@ export default function ProjectsPage() {
                       </div>
                     )}
                   </div>
-                  
+
                   {project.description && (
                     <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
                       {project.description}
@@ -339,16 +379,19 @@ export default function ProjectsPage() {
                   )}
 
                   <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    {project.assignedUsers && project.assignedUsers.length > 0 && (
-                      <div className="flex items-center gap-1">
-                        <Users className="w-4 h-4" />
-                        <span>{project.assignedUsers.length} assigned</span>
-                      </div>
-                    )}
+                    {project.assignedUsers &&
+                      project.assignedUsers.length > 0 && (
+                        <div className="flex items-center gap-1">
+                          <Users className="w-4 h-4" />
+                          <span>{project.assignedUsers.length} assigned</span>
+                        </div>
+                      )}
                     {project.startDate && (
                       <div className="flex items-center gap-1">
                         <Calendar className="w-4 h-4" />
-                        <span>{new Date(project.startDate).toLocaleDateString()}</span>
+                        <span>
+                          {new Date(project.startDate).toLocaleDateString()}
+                        </span>
                       </div>
                     )}
                   </div>
@@ -373,14 +416,18 @@ export default function ProjectsPage() {
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogContent className="sm:max-w-5xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
             <DialogHeader className="px-6 pt-6 pb-4 border-b">
-              <DialogTitle>{editingProject ? "Edit Project" : "Create Project"}</DialogTitle>
+              <DialogTitle>
+                {editingProject ? "Edit Project" : "Create Project"}
+              </DialogTitle>
             </DialogHeader>
             <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 min-h-0">
               <div className="space-y-2">
                 <Label>Project Name *</Label>
                 <Input
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                   placeholder="Enter project name"
                   required
                 />
@@ -389,7 +436,9 @@ export default function ProjectsPage() {
                 <Label>Description</Label>
                 <Textarea
                   value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
                   placeholder="Enter project description"
                   rows={3}
                 />
@@ -398,7 +447,9 @@ export default function ProjectsPage() {
                 <Label>Status</Label>
                 <Select
                   value={formData.status}
-                  onValueChange={(v: any) => setFormData({ ...formData, status: v })}
+                  onValueChange={(v: any) =>
+                    setFormData({ ...formData, status: v })
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -417,7 +468,9 @@ export default function ProjectsPage() {
                   <Input
                     type="date"
                     value={formData.startDate}
-                    onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, startDate: e.target.value })
+                    }
                   />
                 </div>
                 <div className="space-y-2">
@@ -425,7 +478,9 @@ export default function ProjectsPage() {
                   <Input
                     type="date"
                     value={formData.endDate}
-                    onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, endDate: e.target.value })
+                    }
                   />
                 </div>
               </div>
@@ -438,15 +493,24 @@ export default function ProjectsPage() {
                 ) : (
                   <div className="border rounded-md p-4 max-h-48 overflow-y-auto">
                     {availableUsers.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">No users available</p>
+                      <p className="text-sm text-muted-foreground">
+                        No users available
+                      </p>
                     ) : (
                       <div className="space-y-2">
                         {availableUsers.map((user) => (
-                          <div key={user._id} className="flex items-center space-x-2">
+                          <div
+                            key={user._id}
+                            className="flex items-center space-x-2"
+                          >
                             <Checkbox
                               id={`user-${user._id}`}
-                              checked={formData.assignedUserIds.includes(user._id)}
-                              onCheckedChange={() => toggleUserAssignment(user._id)}
+                              checked={formData.assignedUserIds.includes(
+                                user._id
+                              )}
+                              onCheckedChange={() =>
+                                toggleUserAssignment(user._id)
+                              }
                             />
                             <label
                               htmlFor={`user-${user._id}`}

@@ -11,14 +11,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-interface User {
-  _id: string;
-  name: string;
-  email: string;
-  role: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
+import { User } from "@/types/user";
 
 interface DeleteUserDialogProps {
   open: boolean;
@@ -46,8 +39,9 @@ export function DeleteUserDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Delete User</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to delete <strong>{user.name}</strong>? This action
-            cannot be undone and will permanently remove the user from the system.
+            Are you sure you want to delete{" "}
+            <strong>{user.name || user.email}</strong>? This action cannot be
+            undone and will permanently remove the user from the system.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -63,4 +57,3 @@ export function DeleteUserDialog({
     </AlertDialog>
   );
 }
-

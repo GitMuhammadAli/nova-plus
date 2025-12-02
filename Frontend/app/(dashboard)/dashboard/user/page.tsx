@@ -1,15 +1,22 @@
-"use client"
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/app/store/store';
-import { motion } from 'framer-motion';
-import { FileText, CheckCircle, Clock, AlertCircle, User, FolderKanban } from 'lucide-react';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { RoleGuard } from '@/components/guards/RoleGuard';
-import { useRouter } from 'next/navigation';
-import { taskAPI, projectAPI } from '@/app/services';
+import React, { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
+import { RootState } from "@/app/store/store";
+import { motion } from "framer-motion";
+import {
+  FileText,
+  CheckCircle,
+  Clock,
+  AlertCircle,
+  User,
+  FolderKanban,
+} from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { RoleGuard } from "@/components/guards/RoleGuard";
+import { useRouter } from "next/navigation";
+import { taskAPI, projectAPI } from "@/app/services";
 
 const UserDashboard = () => {
   const router = useRouter();
@@ -28,18 +35,22 @@ const UserDashboard = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        
+
         // Fetch user's tasks (only tasks assigned to them)
         const tasksRes = await taskAPI.getMyTasks();
         const tasks = Array.isArray(tasksRes.data) ? tasksRes.data : [];
-        
+
         // Fetch user's projects (only projects assigned to them)
         const projectsRes = await projectAPI.getMyProjects();
-        const projects = Array.isArray(projectsRes.data) ? projectsRes.data : [];
+        const projects = Array.isArray(projectsRes.data)
+          ? projectsRes.data
+          : [];
 
-        const inProgress = tasks.filter((t: any) => t.status === 'in_progress').length;
-        const completed = tasks.filter((t: any) => t.status === 'done').length;
-        const pending = tasks.filter((t: any) => t.status === 'pending').length;
+        const inProgress = tasks.filter(
+          (t: any) => t.status === "in_progress"
+        ).length;
+        const completed = tasks.filter((t: any) => t.status === "done").length;
+        const pending = tasks.filter((t: any) => t.status === "pending").length;
 
         setStats({
           assignedTasks: tasks.length,
@@ -52,7 +63,7 @@ const UserDashboard = () => {
         // Get recent tasks (last 5)
         setRecentTasks(tasks.slice(0, 5));
       } catch (error) {
-        console.error('Failed to fetch dashboard data:', error);
+        // Silently handle error - show empty state
       } finally {
         setLoading(false);
       }
@@ -64,7 +75,7 @@ const UserDashboard = () => {
   }, [user]);
 
   return (
-    <RoleGuard allowedRoles={['user']}>
+    <RoleGuard allowedRoles={["user"]}>
       <div className="space-y-8 max-w-7xl mx-auto">
         {/* Header */}
         <div>
@@ -86,8 +97,12 @@ const UserDashboard = () => {
             <Card className="p-6 hover:shadow-xl transition-shadow">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Assigned Tasks</p>
-                  <p className="text-3xl font-bold text-foreground">{stats.assignedTasks}</p>
+                  <p className="text-sm text-muted-foreground mb-1">
+                    Assigned Tasks
+                  </p>
+                  <p className="text-3xl font-bold text-foreground">
+                    {stats.assignedTasks}
+                  </p>
                 </div>
                 <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
                   <FileText className="w-6 h-6 text-primary" />
@@ -104,8 +119,12 @@ const UserDashboard = () => {
             <Card className="p-6 hover:shadow-xl transition-shadow">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">In Progress</p>
-                  <p className="text-3xl font-bold text-foreground">{stats.inProgress}</p>
+                  <p className="text-sm text-muted-foreground mb-1">
+                    In Progress
+                  </p>
+                  <p className="text-3xl font-bold text-foreground">
+                    {stats.inProgress}
+                  </p>
                 </div>
                 <div className="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center">
                   <Clock className="w-6 h-6 text-blue-500" />
@@ -122,8 +141,12 @@ const UserDashboard = () => {
             <Card className="p-6 hover:shadow-xl transition-shadow">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Completed</p>
-                  <p className="text-3xl font-bold text-foreground">{stats.completed}</p>
+                  <p className="text-sm text-muted-foreground mb-1">
+                    Completed
+                  </p>
+                  <p className="text-3xl font-bold text-foreground">
+                    {stats.completed}
+                  </p>
                 </div>
                 <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center">
                   <CheckCircle className="w-6 h-6 text-green-500" />
@@ -141,7 +164,9 @@ const UserDashboard = () => {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">Pending</p>
-                  <p className="text-3xl font-bold text-foreground">{stats.pending}</p>
+                  <p className="text-3xl font-bold text-foreground">
+                    {stats.pending}
+                  </p>
                 </div>
                 <div className="w-12 h-12 rounded-full bg-yellow-500/20 flex items-center justify-center">
                   <AlertCircle className="w-6 h-6 text-yellow-500" />
@@ -160,7 +185,9 @@ const UserDashboard = () => {
           </Card>
         ) : recentTasks.length > 0 ? (
           <Card className="p-6">
-            <h2 className="text-xl font-semibold text-foreground mb-4">Recent Tasks</h2>
+            <h2 className="text-xl font-semibold text-foreground mb-4">
+              Recent Tasks
+            </h2>
             <div className="space-y-3">
               {recentTasks.map((task: any, index: number) => (
                 <motion.div
@@ -174,18 +201,26 @@ const UserDashboard = () => {
                   <div className="flex-1">
                     <p className="font-medium text-foreground">{task.title}</p>
                     {task.description && (
-                      <p className="text-sm text-muted-foreground mt-1 line-clamp-1">{task.description}</p>
+                      <p className="text-sm text-muted-foreground mt-1 line-clamp-1">
+                        {task.description}
+                      </p>
                     )}
                     {task.projectId && (
-                      <p className="text-xs text-muted-foreground mt-1">Project: {task.projectId?.name || 'N/A'}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Project: {task.projectId?.name || "N/A"}
+                      </p>
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className={`text-xs px-2 py-1 rounded ${
-                      task.status === 'done' ? 'bg-green-500/10 text-green-500' :
-                      task.status === 'in_progress' ? 'bg-blue-500/10 text-blue-500' :
-                      'bg-yellow-500/10 text-yellow-500'
-                    }`}>
+                    <span
+                      className={`text-xs px-2 py-1 rounded ${
+                        task.status === "done"
+                          ? "bg-green-500/10 text-green-500"
+                          : task.status === "in_progress"
+                          ? "bg-blue-500/10 text-blue-500"
+                          : "bg-yellow-500/10 text-yellow-500"
+                      }`}
+                    >
                       {task.status}
                     </span>
                   </div>
@@ -197,17 +232,19 @@ const UserDashboard = () => {
 
         {/* Quick Actions */}
         <Card className="p-6">
-          <h2 className="text-xl font-semibold text-foreground mb-4">Quick Actions</h2>
+          <h2 className="text-xl font-semibold text-foreground mb-4">
+            Quick Actions
+          </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <Button
-              onClick={() => router.push('/dashboard/tasks')}
+              onClick={() => router.push("/dashboard/tasks")}
               className="w-full h-auto flex flex-col items-center justify-center py-6 gap-2"
             >
               <FileText className="w-6 h-6" />
               <span>My Tasks</span>
             </Button>
             <Button
-              onClick={() => router.push('/dashboard/projects')}
+              onClick={() => router.push("/dashboard/projects")}
               variant="outline"
               className="w-full h-auto flex flex-col items-center justify-center py-6 gap-2"
             >
@@ -215,7 +252,7 @@ const UserDashboard = () => {
               <span>My Projects</span>
             </Button>
             <Button
-              onClick={() => router.push('/dashboard/settings')}
+              onClick={() => router.push("/dashboard/settings")}
               variant="outline"
               className="w-full h-auto flex flex-col items-center justify-center py-6 gap-2"
             >
@@ -227,7 +264,9 @@ const UserDashboard = () => {
 
         {/* Info Card */}
         <Card className="p-6 bg-muted/50">
-          <h3 className="text-lg font-semibold text-foreground mb-2">User Responsibilities</h3>
+          <h3 className="text-lg font-semibold text-foreground mb-2">
+            User Responsibilities
+          </h3>
           <ul className="space-y-2 text-sm text-muted-foreground">
             <li>• View and complete assigned tasks</li>
             <li>• Update task progress and status</li>
@@ -242,4 +281,3 @@ const UserDashboard = () => {
 };
 
 export default UserDashboard;
-

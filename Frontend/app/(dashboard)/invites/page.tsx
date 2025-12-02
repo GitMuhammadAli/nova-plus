@@ -3,7 +3,13 @@
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/app/store/store";
-import { fetchCompanyInvites, createInvite, revokeInvite, clearError } from "@/app/store/invitesSlice";
+import {
+  fetchCompanyInvites,
+  createInvite,
+  revokeInvite,
+  resendInvite,
+  clearError,
+} from "@/app/store/invitesSlice";
 import { fetchUsers, deleteUser } from "@/app/store/usersSlice";
 import { useRolePermissions } from "@/hooks/useRolePermissions";
 import { motion } from "framer-motion";
@@ -85,14 +91,18 @@ interface Invite {
 
 export default function InvitesPage() {
   const dispatch = useDispatch<AppDispatch>();
-  const { invites, isLoading, error } = useSelector((state: RootState) => state.invites);
+  const { invites, isLoading, error } = useSelector(
+    (state: RootState) => state.invites
+  );
   const { users } = useSelector((state: RootState) => state.users);
   const { user: currentUser } = useSelector((state: RootState) => state.auth);
   const { toast } = useToast();
   const { permissions, hasPermission } = useRolePermissions();
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "used" | "unused" | "expired">("all");
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "used" | "unused" | "expired"
+  >("all");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteUserDialogOpen, setDeleteUserDialogOpen] = useState(false);
@@ -106,22 +116,44 @@ export default function InvitesPage() {
   });
 
   const companyId = currentUser?.companyId;
+  const canViewInvites = hasPermission("canViewInvites");
 
+  // Initial fetch - only on mount or when companyId changes
   useEffect(() => {
-    if (companyId && hasPermission('canViewInvites')) {
+    if (companyId && canViewInvites) {
       dispatch(fetchCompanyInvites(companyId));
-      dispatch(fetchUsers({}));
+      // Only fetch users if not already loaded
+      if (!users || users.length === 0) {
+        dispatch(fetchUsers({}));
+      }
     }
-  }, [dispatch, companyId, hasPermission]);
+  }, [dispatch, companyId]); // Removed hasPermission from deps
 
-  // Auto-refresh every 30 seconds
+  // Auto-refresh every 60 seconds (reduced from 30s) and only when tab is visible
   useEffect(() => {
-    if (!companyId || !hasPermission('canViewInvites')) return;
+    if (!companyId || !canViewInvites) return;
+
+    // Only refresh when tab is visible
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        dispatch(fetchCompanyInvites(companyId));
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
     const interval = setInterval(() => {
-      dispatch(fetchCompanyInvites(companyId));
-    }, 30000);
-    return () => clearInterval(interval);
-  }, [companyId, dispatch, hasPermission]);
+      // Only refresh if tab is visible
+      if (!document.hidden) {
+        dispatch(fetchCompanyInvites(companyId));
+      }
+    }, 60000); // Increased to 60 seconds
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [companyId, dispatch]); // Removed hasPermission from deps
 
   useEffect(() => {
     if (error) {
@@ -139,9 +171,10 @@ export default function InvitesPage() {
 
   const filteredInvites = invitesArray.filter((invite) => {
     const matchesSearch =
-      (invite.email?.toLowerCase().includes(searchQuery.toLowerCase()) || false) ||
+      invite.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      false ||
       invite.role.toLowerCase().includes(searchQuery.toLowerCase());
-    
+
     const now = new Date();
     const expiresAt = new Date(invite.expiresAt);
     const isExpired = expiresAt < now;
@@ -159,7 +192,7 @@ export default function InvitesPage() {
   });
 
   const handleCreateInvite = async () => {
-    if (!hasPermission('canCreateInvites')) {
+    if (!hasPermission("canCreateInvites")) {
       toast({
         title: "Access Denied",
         description: "You don't have permission to create invites",
@@ -193,11 +226,15 @@ export default function InvitesPage() {
 
       setCreateDialogOpen(false);
       setNewInvite({ email: "", role: "user", expiresInDays: 7 });
-      
-      // Refresh invites list
-      dispatch(fetchCompanyInvites(companyId));
+
+      // No need to refetch - optimistic update in Redux handles it
+      // Only refetch if optimistic update failed
+      if (companyId) {
+        setTimeout(() => {
+          dispatch(fetchCompanyInvites(companyId));
+        }, 1000);
+      }
     } catch (err: any) {
-      console.error("Create invite error:", err);
       toast({
         title: "Error",
         description: err || "Failed to create invite",
@@ -207,7 +244,7 @@ export default function InvitesPage() {
   };
 
   const handleDeleteInvite = async () => {
-    if (!hasPermission('canRevokeInvites')) {
+    if (!hasPermission("canRevokeInvites")) {
       toast({
         title: "Access Denied",
         description: "You don't have permission to revoke invites",
@@ -238,10 +275,10 @@ export default function InvitesPage() {
     }
 
     try {
-      console.log("Deleting invite:", { inviteId: selectedInvite._id, companyId });
-      const result = await dispatch(revokeInvite({ inviteId: selectedInvite._id, companyId })).unwrap();
-      console.log("Delete invite result:", result);
-      
+      await dispatch(
+        revokeInvite({ inviteId: selectedInvite._id, companyId })
+      ).unwrap();
+
       toast({
         title: "Success",
         description: "Invite deleted successfully",
@@ -249,14 +286,12 @@ export default function InvitesPage() {
 
       setDeleteDialogOpen(false);
       setSelectedInvite(null);
-      
-      // Refresh invites list to get updated data from server
-      setTimeout(() => {
-        dispatch(fetchCompanyInvites(companyId));
-      }, 500);
+
+      // Optimistic update in Redux handles the UI update
+      // Only refetch if needed (optimistic update already updated state)
     } catch (err: any) {
-      console.error("Delete invite error:", err);
-      const errorMessage = err?.response?.data?.message || err || "Failed to delete invite";
+      const errorMessage =
+        err?.response?.data?.message || err || "Failed to delete invite";
       toast({
         title: "Error",
         description: errorMessage,
@@ -280,10 +315,8 @@ export default function InvitesPage() {
     }
 
     try {
-      console.log("Deleting user:", selectedUser._id);
-      const result = await dispatch(deleteUser(selectedUser._id)).unwrap();
-      console.log("Delete user result:", result);
-      
+      await dispatch(deleteUser(selectedUser._id)).unwrap();
+
       toast({
         title: "Success",
         description: "User deleted successfully",
@@ -291,7 +324,7 @@ export default function InvitesPage() {
 
       setDeleteUserDialogOpen(false);
       setSelectedUser(null);
-      
+
       // Refresh users and invites
       if (companyId) {
         setTimeout(() => {
@@ -300,8 +333,8 @@ export default function InvitesPage() {
         }, 500);
       }
     } catch (err: any) {
-      console.error("Delete user error:", err);
-      const errorMessage = err?.response?.data?.message || err || "Failed to delete user";
+      const errorMessage =
+        err?.response?.data?.message || err || "Failed to delete user";
       toast({
         title: "Error",
         description: errorMessage,
@@ -311,7 +344,9 @@ export default function InvitesPage() {
   };
 
   const copyInviteLink = (invite: Invite) => {
-    const link = invite.inviteLink || `${window.location.origin}/register?token=${invite.token}`;
+    const link =
+      invite.inviteLink ||
+      `${window.location.origin}/register?token=${invite.token}`;
     navigator.clipboard.writeText(link);
     toast({
       title: "Copied!",
@@ -358,27 +393,25 @@ export default function InvitesPage() {
   const stats = {
     total: invitesArray.length,
     used: invitesArray.filter((i) => i.isUsed).length,
-    unused: invitesArray.filter((i) => !i.isUsed && new Date(i.expiresAt) > new Date() && i.isActive !== false).length,
-    expired: invitesArray.filter((i) => !i.isUsed && new Date(i.expiresAt) < new Date()).length,
+    unused: invitesArray.filter(
+      (i) =>
+        !i.isUsed && new Date(i.expiresAt) > new Date() && i.isActive !== false
+    ).length,
+    expired: invitesArray.filter(
+      (i) => !i.isUsed && new Date(i.expiresAt) < new Date()
+    ).length,
   };
 
-  // Debug: Log invites to console
-  useEffect(() => {
-    console.log('Invites page - Redux state:', { 
-      invitesCount: invitesArray.length, 
-      invites, 
-      isLoading, 
-      error,
-      companyId 
-    });
-  }, [invitesArray.length, invites, isLoading, error, companyId]);
+  // State tracking removed for production
 
   return (
     <div className="space-y-6 p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Invite Management</h1>
+          <h1 className="text-3xl font-bold text-foreground">
+            Invite Management
+          </h1>
           <p className="text-muted-foreground mt-1">
             Manage invites and users who joined via invites
           </p>
@@ -424,7 +457,9 @@ export default function InvitesPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-muted-foreground">Expired</p>
-              <p className="text-2xl font-bold text-orange-500">{stats.expired}</p>
+              <p className="text-2xl font-bold text-orange-500">
+                {stats.expired}
+              </p>
             </div>
             <XCircle className="w-8 h-8 text-orange-500" />
           </div>
@@ -445,7 +480,10 @@ export default function InvitesPage() {
               />
             </div>
           </div>
-          <Select value={statusFilter} onValueChange={(value: any) => setStatusFilter(value)}>
+          <Select
+            value={statusFilter}
+            onValueChange={(value: any) => setStatusFilter(value)}
+          >
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
@@ -482,7 +520,10 @@ export default function InvitesPage() {
               </TableRow>
             ) : filteredInvites.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                <TableCell
+                  colSpan={7}
+                  className="text-center py-8 text-muted-foreground"
+                >
                   No invites found
                 </TableCell>
               </TableRow>
@@ -491,7 +532,9 @@ export default function InvitesPage() {
                 <TableRow key={invite._id}>
                   <TableCell>
                     {invite.email || (
-                      <span className="text-muted-foreground italic">No email</span>
+                      <span className="text-muted-foreground italic">
+                        No email
+                      </span>
                     )}
                   </TableCell>
                   <TableCell>
@@ -514,7 +557,9 @@ export default function InvitesPage() {
                           variant="ghost"
                           size="sm"
                           onClick={() => {
-                            const user = users.find((u) => u._id === invite.usedBy?._id);
+                            const user = users.find(
+                              (u) => u._id === invite.usedBy?._id
+                            );
                             if (user) {
                               setSelectedUser(user);
                               setDeleteUserDialogOpen(true);
@@ -548,19 +593,18 @@ export default function InvitesPage() {
                               size="sm"
                               onClick={async () => {
                                 try {
-                                  const { inviteAPI } = await import("@/app/services");
-                                  await inviteAPI.resendInvite(invite._id);
+                                  await dispatch(
+                                    resendInvite(invite._id)
+                                  ).unwrap();
                                   toast({
                                     title: "Success",
                                     description: "Invite resent successfully",
                                   });
-                                  if (companyId) {
-                                    dispatch(fetchCompanyInvites(companyId));
-                                  }
                                 } catch (error: any) {
                                   toast({
                                     title: "Error",
-                                    description: error?.response?.data?.message || "Failed to resend invite",
+                                    description:
+                                      error || "Failed to resend invite",
                                     variant: "destructive",
                                   });
                                 }
@@ -613,7 +657,9 @@ export default function InvitesPage() {
                 type="email"
                 placeholder="user@example.com"
                 value={newInvite.email}
-                onChange={(e) => setNewInvite({ ...newInvite, email: e.target.value })}
+                onChange={(e) =>
+                  setNewInvite({ ...newInvite, email: e.target.value })
+                }
               />
               <p className="text-xs text-muted-foreground">
                 Leave empty for open invite (anyone with the link can join)
@@ -623,7 +669,9 @@ export default function InvitesPage() {
               <Label htmlFor="role">Role</Label>
               <Select
                 value={newInvite.role}
-                onValueChange={(value) => setNewInvite({ ...newInvite, role: value })}
+                onValueChange={(value) =>
+                  setNewInvite({ ...newInvite, role: value })
+                }
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -643,13 +691,19 @@ export default function InvitesPage() {
                 max="365"
                 value={newInvite.expiresInDays}
                 onChange={(e) =>
-                  setNewInvite({ ...newInvite, expiresInDays: parseInt(e.target.value) || 7 })
+                  setNewInvite({
+                    ...newInvite,
+                    expiresInDays: parseInt(e.target.value) || 7,
+                  })
                 }
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setCreateDialogOpen(false)}
+            >
               Cancel
             </Button>
             <Button onClick={handleCreateInvite}>Create Invite</Button>
@@ -663,17 +717,22 @@ export default function InvitesPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Invite</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this invite? This action cannot be undone.
+              Are you sure you want to delete this invite? This action cannot be
+              undone.
               {selectedInvite?.isUsed && (
                 <span className="block mt-2 text-destructive">
-                  Note: This invite has already been used. Deleting it will not remove the user.
+                  Note: This invite has already been used. Deleting it will not
+                  remove the user.
                 </span>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteInvite} className="bg-destructive">
+            <AlertDialogAction
+              onClick={handleDeleteInvite}
+              className="bg-destructive"
+            >
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -681,19 +740,25 @@ export default function InvitesPage() {
       </AlertDialog>
 
       {/* Delete User Dialog */}
-      <AlertDialog open={deleteUserDialogOpen} onOpenChange={setDeleteUserDialogOpen}>
+      <AlertDialog
+        open={deleteUserDialogOpen}
+        onOpenChange={setDeleteUserDialogOpen}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete User</AlertDialogTitle>
             <AlertDialogDescription>
               Are you sure you want to delete user{" "}
-              <strong>{selectedUser?.name || selectedUser?.email}</strong>? This action cannot be
-              undone.
+              <strong>{selectedUser?.name || selectedUser?.email}</strong>? This
+              action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteUser} className="bg-destructive">
+            <AlertDialogAction
+              onClick={handleDeleteUser}
+              className="bg-destructive"
+            >
               Delete User
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -702,4 +767,3 @@ export default function InvitesPage() {
     </div>
   );
 }
-
