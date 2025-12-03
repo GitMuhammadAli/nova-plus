@@ -36,6 +36,9 @@ export class Invite {
 
   @Prop({ default: true })
   isActive: boolean; // Whether the invite is still active
+
+  @Prop({ type: Types.ObjectId, ref: 'Department' })
+  departmentId?: Types.ObjectId; // Optional: department to assign on acceptance
 }
 
 export const InviteSchema = SchemaFactory.createForClass(Invite);

@@ -110,6 +110,49 @@ export class SettingsController {
     };
   }
 
+  @Patch('company')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.COMPANY_ADMIN, UserRole.SUPER_ADMIN)
+  async updateCompanySettings(@Body() settings: Record<string, any>, @Req() req) {
+    const companyId = req.user.companyId?.toString() || req.user.companyId;
+    if (!companyId) {
+      throw new Error('User must belong to a company');
+    }
+    const updated = await this.settingsService.updateCompanySettings(companyId, settings);
+    return {
+      success: true,
+      settings: updated,
+    };
+  }
+
+  @Get('working-hours')
+  async getWorkingHours(@Req() req) {
+    const companyId = req.user.companyId?.toString() || req.user.companyId;
+    if (!companyId) {
+      throw new Error('User must belong to a company');
+    }
+    const workingHours = await this.settingsService.getWorkingHours(companyId);
+    return {
+      success: true,
+      workingHours,
+    };
+  }
+
+  @Patch('working-hours')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.COMPANY_ADMIN, UserRole.SUPER_ADMIN)
+  async updateWorkingHours(@Body() workingHours: any, @Req() req) {
+    const companyId = req.user.companyId?.toString() || req.user.companyId;
+    if (!companyId) {
+      throw new Error('User must belong to a company');
+    }
+    const updated = await this.settingsService.updateWorkingHours(companyId, workingHours);
+    return {
+      success: true,
+      workingHours: updated,
+    };
+  }
+
   @Get(':id')
   async findOne(@Param('id') id: string, @Req() req) {
     const companyId = req.user.companyId?.toString() || req.user.companyId;

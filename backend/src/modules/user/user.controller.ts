@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards, Req, ForbiddenException } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards, Req, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
@@ -7,12 +7,20 @@ import { UsersService } from './user.service';
 import { CreateUserByAdminDto } from './dto/create-user-by-admin.dto';
 import { CreateUserByManagerDto } from './dto/create-user-by-manager.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UserTasksService } from './tasks/user-tasks.service';
+import { UserProjectsService } from './projects/user-projects.service';
+import { UserStatsService } from './stats/user-stats.service';
 import { Types } from 'mongoose';
 
 @Controller('user')
 @UseGuards(JwtAuthGuard)
 export class UserController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly userTasksService: UserTasksService,
+    private readonly userProjectsService: UserProjectsService,
+    private readonly userStatsService: UserStatsService,
+  ) {}
 
   /**
    * Get current logged-in user profile
@@ -152,12 +160,18 @@ export class UserController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('search') search?: string,
+    @Query('role') role?: UserRole,
+    @Query('department') department?: string,
+    @Query('status') status?: 'active' | 'inactive' | 'all',
   ) {
     const currentUser = req.user;
     const params = {
       page: page ? parseInt(page, 10) : undefined,
       limit: limit ? parseInt(limit, 10) : undefined,
       search,
+      role: role as UserRole,
+      department,
+      status: status || 'all',
     };
 
     // Company admin sees all users in their company
@@ -422,5 +436,366 @@ export class UserController {
     }
 
     return this.usersService.delete(id);
+  }
+
+  /**
+   * Bulk create users (CSV/JSON upload)
+   * POST /user/bulk
+   */
+  @Post('bulk')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.COMPANY_ADMIN, UserRole.SUPER_ADMIN)
+  async bulkCreateUsers(@Req() req, @Body() body: { users: Array<{ name: string; email: string; password: string; role?: UserRole; departmentId?: string }> }) {
+    const creatorId = req.user._id || req.user.id;
+    const companyId = req.user.companyId?.toString() || req.user.companyId;
+    if (!companyId) {
+      throw new ForbiddenException('User must belong to a company');
+    }
+    const result = await this.usersService.bulkCreate(creatorId, companyId, body.users);
+    return {
+      success: true,
+      created: result.created.length,
+      failed: result.failed.length,
+      results: result,
+    };
+  }
+
+  /**
+   * Get user statistics
+   * GET /user/stats
+   */
+  @Get('stats')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.COMPANY_ADMIN, UserRole.MANAGER, UserRole.SUPER_ADMIN)
+  async getUserStats(
+    @Req() req,
+    @Query('role') role?: UserRole,
+    @Query('department') department?: string,
+    @Query('status') status?: 'active' | 'inactive',
+  ) {
+    const companyId = req.user.companyId?.toString() || req.user.companyId;
+    if (!companyId) {
+      throw new ForbiddenException('User must belong to a company');
+    }
+    const stats = await this.usersService.getStats(companyId, { role, department, status });
+    return {
+      success: true,
+      stats,
+    };
+  }
+
+  /**
+   * Disable user
+   * PATCH /user/:id/disable
+   */
+  @Patch(':id/disable')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.COMPANY_ADMIN, UserRole.SUPER_ADMIN)
+  async disableUser(@Req() req, @Param('id') id: string) {
+    const companyId = req.user.companyId?.toString() || req.user.companyId;
+    if (!companyId) {
+      throw new ForbiddenException('User must belong to a company');
+    }
+
+    if ((req.user._id || req.user.id)?.toString() === id) {
+      throw new ForbiddenException('You cannot disable your own account');
+    }
+
+    const user = await this.usersService.disableUser(id, companyId);
+    const userObj: any = user.toObject ? user.toObject() : user;
+    delete userObj.password;
+    return {
+      success: true,
+      user: userObj,
+    };
+  }
+
+  /**
+   * Enable user
+   * PATCH /user/:id/enable
+   */
+  @Patch(':id/enable')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.COMPANY_ADMIN, UserRole.SUPER_ADMIN)
+  async enableUser(@Req() req, @Param('id') id: string) {
+    const companyId = req.user.companyId?.toString() || req.user.companyId;
+    if (!companyId) {
+      throw new ForbiddenException('User must belong to a company');
+    }
+
+    const user = await this.usersService.enableUser(id, companyId);
+    const userObj: any = user.toObject ? user.toObject() : user;
+    delete userObj.password;
+    return {
+      success: true,
+      user: userObj,
+    };
+  }
+
+  /**
+   * Assign department to user
+   * PATCH /user/:id/assign-department
+   */
+  @Patch(':id/assign-department')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.COMPANY_ADMIN, UserRole.MANAGER, UserRole.SUPER_ADMIN)
+  async assignDepartment(@Req() req, @Param('id') id: string, @Body() body: { departmentId?: string }) {
+    const companyId = req.user.companyId?.toString() || req.user.companyId;
+    if (!companyId) {
+      throw new ForbiddenException('User must belong to a company');
+    }
+
+    const user = await this.usersService.assignDepartment(id, body.departmentId, companyId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    const userObj: any = user.toObject ? user.toObject() : user;
+    delete userObj.password;
+    return {
+      success: true,
+      user: userObj,
+    };
+  }
+
+  /**
+   * Assign manager to user
+   * PATCH /user/:id/assign-manager
+   */
+  @Patch(':id/assign-manager')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.COMPANY_ADMIN, UserRole.SUPER_ADMIN)
+  async assignManager(@Req() req, @Param('id') id: string, @Body() body: { managerId?: string }) {
+    const companyId = req.user.companyId?.toString() || req.user.companyId;
+    if (!companyId) {
+      throw new ForbiddenException('User must belong to a company');
+    }
+
+    const user = await this.usersService.assignManager(id, body.managerId, companyId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    const userObj: any = user.toObject ? user.toObject() : user;
+    delete userObj.password;
+    return {
+      success: true,
+      user: userObj,
+    };
+  }
+
+  // ========== USER TASKS ==========
+  /**
+   * Get tasks assigned to the current user
+   * GET /user/tasks
+   */
+  @Get('tasks')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.USER, UserRole.EDITOR, UserRole.VIEWER)
+  async getMyTasks(
+    @Req() req,
+    @Query('status') status?: string,
+    @Query('projectId') projectId?: string,
+  ) {
+    const user = req.user;
+    const userId = user._id || user.id;
+    const companyId = user.companyId?.toString() || user.companyId;
+
+    if (!companyId) {
+      throw new ForbiddenException('User must belong to a company');
+    }
+
+    return {
+      success: true,
+      data: await this.userTasksService.getMyTasks(userId, companyId, { status, projectId }),
+    };
+  }
+
+  /**
+   * Get task details
+   * GET /user/tasks/:id
+   */
+  @Get('tasks/:id')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.USER, UserRole.EDITOR, UserRole.VIEWER)
+  async getMyTask(@Param('id') id: string, @Req() req) {
+    const user = req.user;
+    const userId = user._id || user.id;
+    const companyId = user.companyId?.toString() || user.companyId;
+
+    if (!companyId) {
+      throw new ForbiddenException('User must belong to a company');
+    }
+
+    return {
+      success: true,
+      data: await this.userTasksService.getTaskDetails(id, userId, companyId),
+    };
+  }
+
+  /**
+   * Update task status (user can only update their own tasks)
+   * PATCH /user/tasks/:id/status
+   */
+  @Patch('tasks/:id/status')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.USER, UserRole.EDITOR)
+  async updateTaskStatus(
+    @Param('id') id: string,
+    @Body() body: { status: string },
+    @Req() req,
+  ) {
+    const user = req.user;
+    const userId = user._id || user.id;
+    const companyId = user.companyId?.toString() || user.companyId;
+
+    if (!companyId) {
+      throw new ForbiddenException('User must belong to a company');
+    }
+
+    return {
+      success: true,
+      data: await this.userTasksService.updateTaskStatus(id, body.status, userId, companyId),
+    };
+  }
+
+  /**
+   * Add comment to task
+   * POST /user/tasks/:id/comment
+   */
+  @Post('tasks/:id/comment')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.USER, UserRole.EDITOR, UserRole.VIEWER)
+  async addTaskComment(
+    @Param('id') id: string,
+    @Body() body: { comment: string },
+    @Req() req,
+  ) {
+    const user = req.user;
+    const userId = user._id || user.id;
+    const companyId = user.companyId?.toString() || user.companyId;
+
+    if (!companyId) {
+      throw new ForbiddenException('User must belong to a company');
+    }
+
+    return {
+      success: true,
+      data: await this.userTasksService.addComment(id, userId, body.comment, companyId),
+    };
+  }
+
+  /**
+   * Add attachment to task
+   * POST /user/tasks/:id/attachment
+   */
+  @Post('tasks/:id/attachment')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.USER, UserRole.EDITOR)
+  async addTaskAttachment(
+    @Param('id') id: string,
+    @Body() body: { filename: string; url: string; size?: number; mimeType?: string },
+    @Req() req,
+  ) {
+    const user = req.user;
+    const userId = user._id || user.id;
+    const companyId = user.companyId?.toString() || user.companyId;
+
+    if (!companyId) {
+      throw new ForbiddenException('User must belong to a company');
+    }
+
+    return {
+      success: true,
+      data: await this.userTasksService.addAttachment(id, userId, body, companyId),
+    };
+  }
+
+  // ========== USER PROJECTS ==========
+  /**
+   * Get projects user is involved in
+   * GET /user/projects
+   */
+  @Get('projects')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.USER, UserRole.EDITOR, UserRole.VIEWER)
+  async getMyProjects(@Req() req) {
+    const user = req.user;
+    const userId = user._id || user.id;
+    const companyId = user.companyId?.toString() || user.companyId;
+
+    if (!companyId) {
+      throw new ForbiddenException('User must belong to a company');
+    }
+
+    return {
+      success: true,
+      data: await this.userProjectsService.getMyProjects(userId, companyId),
+    };
+  }
+
+  /**
+   * Get project details
+   * GET /user/projects/:id
+   */
+  @Get('projects/:id')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.USER, UserRole.EDITOR, UserRole.VIEWER)
+  async getMyProject(@Param('id') id: string, @Req() req) {
+    const user = req.user;
+    const userId = user._id || user.id;
+    const companyId = user.companyId?.toString() || user.companyId;
+
+    if (!companyId) {
+      throw new ForbiddenException('User must belong to a company');
+    }
+
+    return {
+      success: true,
+      data: await this.userProjectsService.getProjectDetails(id, userId, companyId),
+    };
+  }
+
+  // ========== USER STATS ==========
+  /**
+   * Get user stats overview
+   * GET /user/stats/overview
+   */
+  @Get('stats/overview')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.USER, UserRole.EDITOR, UserRole.VIEWER)
+  async getMyStatsOverview(@Req() req) {
+    const user = req.user;
+    const userId = user._id || user.id;
+    const companyId = user.companyId?.toString() || user.companyId;
+
+    if (!companyId) {
+      throw new ForbiddenException('User must belong to a company');
+    }
+
+    return {
+      success: true,
+      data: await this.userStatsService.getOverview(userId, companyId),
+    };
+  }
+
+  /**
+   * Get user productivity stats
+   * GET /user/stats/productivity
+   */
+  @Get('stats/productivity')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.USER, UserRole.EDITOR, UserRole.VIEWER)
+  async getMyProductivity(@Req() req) {
+    const user = req.user;
+    const userId = user._id || user.id;
+    const companyId = user.companyId?.toString() || user.companyId;
+
+    if (!companyId) {
+      throw new ForbiddenException('User must belong to a company');
+    }
+
+    return {
+      success: true,
+      data: await this.userStatsService.getProductivity(userId, companyId),
+    };
   }
 }

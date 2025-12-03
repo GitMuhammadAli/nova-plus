@@ -48,5 +48,9 @@ export class CreateInviteDto {
     return value;
   })
   expiresInDays?: number; // Optional: custom expiration (default 7 days)
+
+  @IsOptional()
+  @IsString()
+  departmentId?: string; // Optional: assign to department on invite acceptance
 }
 

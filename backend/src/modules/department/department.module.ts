@@ -4,6 +4,7 @@ import { Department, DepartmentSchema } from './entities/department.entity';
 import { DepartmentService } from './department.service';
 import { DepartmentController } from './department.controller';
 import { User, UserSchema } from '../user/entities/user.entity';
+import { AuditModule } from '../audit/audit.module';
 
 @Module({
   imports: [
@@ -11,6 +12,7 @@ import { User, UserSchema } from '../user/entities/user.entity';
       { name: Department.name, schema: DepartmentSchema },
       { name: User.name, schema: UserSchema },
     ]),
+    AuditModule,
   ],
   providers: [DepartmentService],
   controllers: [DepartmentController],

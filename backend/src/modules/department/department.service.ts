@@ -1,16 +1,20 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, Inject, forwardRef } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Department, DepartmentDocument } from './entities/department.entity';
 import { CreateDepartmentDto } from './dto/create-department.dto';
 import { UpdateDepartmentDto } from './dto/update-department.dto';
 import { User, UserDocument } from '../user/entities/user.entity';
+import { AuditService } from '../audit/audit.service';
+import { AuditAction, AuditResource } from '../audit/entities/audit-log.entity';
 
 @Injectable()
 export class DepartmentService {
   constructor(
     @InjectModel(Department.name) private departmentModel: Model<DepartmentDocument>,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
+    @Inject(forwardRef(() => AuditService))
+    private auditService: AuditService,
   ) {}
 
   async create(createDepartmentDto: CreateDepartmentDto, companyId: string, userId: string): Promise<DepartmentDocument> {
@@ -39,7 +43,23 @@ export class DepartmentService {
       members: createDepartmentDto.memberIds?.map(id => new Types.ObjectId(id)) || [],
     });
 
-    return department.save();
+    const saved = await department.save();
+
+    // Audit log
+    try {
+      await this.auditService.createLog({
+        action: AuditAction.DEPARTMENT_CREATED,
+        resource: AuditResource.DEPARTMENT,
+        userId: userId,
+        companyId: companyId,
+        resourceId: saved._id,
+        metadata: { name: saved.name, managerId: saved.managerId?.toString() },
+      });
+    } catch (error) {
+      console.error('Failed to create audit log:', error);
+    }
+
+    return saved;
   }
 
   async findAll(companyId: string): Promise<DepartmentDocument[]> {
@@ -84,18 +104,61 @@ export class DepartmentService {
       department.members = updateDepartmentDto.memberIds.map(id => new Types.ObjectId(id));
     }
 
+    const oldData = { ...department.toObject() };
     Object.assign(department, updateDepartmentDto);
-    return department.save();
+    const saved = await department.save();
+
+    // Audit log
+    try {
+      await this.auditService.createLog({
+        action: AuditAction.DEPARTMENT_UPDATED,
+        resource: AuditResource.DEPARTMENT,
+        userId: companyId, // Will be set from request context
+        companyId: companyId,
+        resourceId: saved._id,
+        metadata: { 
+          changes: updateDepartmentDto,
+          previous: oldData,
+        },
+      });
+    } catch (error) {
+      console.error('Failed to create audit log:', error);
+    }
+
+    return saved;
   }
 
-  async remove(id: string, companyId: string): Promise<void> {
+  async remove(id: string, companyId: string, userId?: string): Promise<void> {
+    const department = await this.departmentModel.findOne({
+      _id: id,
+      companyId: new Types.ObjectId(companyId),
+    }).exec();
+
+    if (!department) {
+      throw new NotFoundException('Department not found');
+    }
+
     const result = await this.departmentModel.deleteOne({
       _id: id,
       companyId: new Types.ObjectId(companyId),
-    });
+    }).exec();
 
     if (result.deletedCount === 0) {
       throw new NotFoundException('Department not found');
+    }
+
+    // Audit log
+    try {
+      await this.auditService.createLog({
+        action: AuditAction.DEPARTMENT_DELETED,
+        resource: AuditResource.DEPARTMENT,
+        userId: userId,
+        companyId: companyId,
+        resourceId: id,
+        metadata: { name: department.name },
+      });
+    } catch (error) {
+      console.error('Failed to create audit log:', error);
     }
   }
 
@@ -170,6 +233,43 @@ export class DepartmentService {
     }).select('name email role isActive').exec();
 
     return members;
+  }
+
+  async getStats(departmentId: string, companyId: string): Promise<any> {
+    const department = await this.departmentModel.findOne({
+      _id: departmentId,
+      companyId: new Types.ObjectId(companyId),
+    });
+
+    if (!department) {
+      throw new NotFoundException('Department not found');
+    }
+
+    const members = await this.userModel.find({
+      _id: { $in: department.members },
+      companyId: new Types.ObjectId(companyId),
+    });
+
+    const activeUsers = members.filter(m => m.isActive).length;
+    const totalUsers = members.length;
+
+    // Count by role
+    const roleCounts = members.reduce((acc, member) => {
+      const role = member.role || 'USER';
+      acc[role] = (acc[role] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return {
+      departmentId: department._id,
+      departmentName: department.name,
+      teamSize: totalUsers,
+      activeUsers,
+      inactiveUsers: totalUsers - activeUsers,
+      hasManager: !!department.managerId,
+      roleBreakdown: roleCounts,
+      memberCount: department.members.length,
+    };
   }
 }
 

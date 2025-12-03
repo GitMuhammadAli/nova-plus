@@ -101,6 +101,7 @@ export class InviteService {
       createdBy: new Types.ObjectId(creatorId),
       email: createInviteDto.email,
       role: createInviteDto.role,
+      departmentId: createInviteDto.departmentId ? new Types.ObjectId(createInviteDto.departmentId) : undefined,
       expiresAt,
       isUsed: false,
       isActive: true,
@@ -246,6 +247,7 @@ export class InviteService {
       companyId: invite.companyId.toString(),
       orgId: invite.companyId.toString(), // Backward compatibility
       createdBy: invite.createdBy,
+      department: invite.departmentId ? invite.departmentId.toString() : undefined,
       isActive: true,
     });
 
