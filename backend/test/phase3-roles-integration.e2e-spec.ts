@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { getModelToken } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -33,10 +33,25 @@ describe('Phase 3 - Complete Role Integration (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.setGlobalPrefix('api/v1');
     await app.init();
 
-    // Create test company
+    // Clean up any existing test data first
     const companyModel = app.get<Model<Company>>(getModelToken(Company.name));
+    const userModel = app.get<Model<User>>(getModelToken(User.name));
+    const departmentModel = app.get<Model<Department>>(getModelToken(Department.name));
+    const projectModel = app.get<Model<Project>>(getModelToken(Project.name));
+    const taskModel = app.get<Model<Task>>(getModelToken(Task.name));
+    
+    await userModel.deleteMany({ 
+      email: { $in: ['admin@test.com', 'manager@test.com', 'user@test.com', 'outside@test.com', 'other@test.com'] } 
+    }).exec();
+    await departmentModel.deleteMany({ name: { $in: ['Engineering', 'Sales'] } }).exec();
+    await projectModel.deleteMany({ name: { $in: ['Integration Project', 'Cross-Role Task'] } }).exec();
+    await taskModel.deleteMany({ title: { $in: ['Manager Created Task', 'Cross-Role Task', 'Invalid Task', 'Other Dept Task', 'Other User Task'] } }).exec();
+    await companyModel.deleteMany({ name: 'Integration Test Company' }).exec();
+
+    // Create test company
     const company = await companyModel.create({
       name: 'Integration Test Company',
       domain: 'integration-test.com',
@@ -45,7 +60,6 @@ describe('Phase 3 - Complete Role Integration (e2e)', () => {
     companyId = company._id.toString();
 
     // Create Company Admin
-    const userModel = app.get<Model<User>>(getModelToken(User.name));
     const admin = await userModel.create({
       email: 'admin@test.com',
       password: 'hashedpassword',
@@ -68,7 +82,6 @@ describe('Phase 3 - Complete Role Integration (e2e)', () => {
     managerId = manager._id.toString();
 
     // Create Department and assign manager
-    const departmentModel = app.get<Model<Department>>(getModelToken(Department.name));
     const department = await departmentModel.create({
       name: 'Engineering',
       companyId: company._id,
@@ -94,7 +107,6 @@ describe('Phase 3 - Complete Role Integration (e2e)', () => {
     await department.save();
 
     // Create project
-    const projectModel = app.get<Model<Project>>(getModelToken(Project.name));
     const project = await projectModel.create({
       name: 'Integration Project',
       companyId: company._id,
@@ -105,13 +117,34 @@ describe('Phase 3 - Complete Role Integration (e2e)', () => {
     });
     projectId = project._id.toString();
 
-    // Get tokens (simplified - in real test, use actual auth)
-    adminToken = 'admin-token-placeholder';
-    managerToken = 'manager-token-placeholder';
-    userToken = 'user-token-placeholder';
+    // For testing, we'll use placeholder tokens
+    // In real tests, you would login properly or generate JWT tokens
+    adminToken = 'test-admin-token-placeholder';
+    managerToken = 'test-manager-token-placeholder';
+    userToken = 'test-user-token-placeholder';
+    
+    // Note: In production tests, you would:
+    // 1. Hash passwords properly with bcrypt
+    // 2. Login via /api/v1/auth/login for each user
+    // 3. Extract tokens from responses
   });
 
   afterAll(async () => {
+    // Cleanup test data
+    const userModel = app.get<Model<User>>(getModelToken(User.name));
+    const companyModel = app.get<Model<Company>>(getModelToken(Company.name));
+    const departmentModel = app.get<Model<Department>>(getModelToken(Department.name));
+    const projectModel = app.get<Model<Project>>(getModelToken(Project.name));
+    const taskModel = app.get<Model<Task>>(getModelToken(Task.name));
+
+    await userModel.deleteMany({ 
+      email: { $in: ['admin@test.com', 'manager@test.com', 'user@test.com', 'outside@test.com', 'other@test.com'] } 
+    }).exec();
+    await departmentModel.deleteMany({ name: { $in: ['Engineering', 'Sales'] } }).exec();
+    await projectModel.deleteMany({ name: { $in: ['Integration Project', 'Cross-Role Task'] } }).exec();
+    await taskModel.deleteMany({ title: { $in: ['Manager Created Task', 'Cross-Role Task', 'Invalid Task', 'Other Dept Task', 'Other User Task'] } }).exec();
+    await companyModel.deleteMany({ name: 'Integration Test Company' }).exec();
+
     await app.close();
   });
 

@@ -1,8 +1,8 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards, Req, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from 'src/common/decorators/roles.decorator';
-import { UserRole } from "src/modules/user/entities/user.entity";
+import { Roles } from '../../common/decorators/roles.decorator';
+import { UserRole } from './entities/user.entity';
 import { UsersService } from './user.service';
 import { CreateUserByAdminDto } from './dto/create-user-by-admin.dto';
 import { CreateUserByManagerDto } from './dto/create-user-by-manager.dto';

@@ -128,10 +128,11 @@ export default function ProjectsPage() {
       }
 
       const data = response.data || response;
-      const usersList = Array.isArray(data) ? data : data?.data || [];
-      setAvailableUsers(usersList);
+      const usersList = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
+      setAvailableUsers(Array.isArray(usersList) ? usersList : []);
     } catch (error: any) {
       // Silently handle error - users will see empty state
+      setAvailableUsers([]); // Ensure it's always an array
     } finally {
       setLoadingUsers(false);
     }
@@ -492,7 +493,7 @@ export default function ProjectsPage() {
                   </div>
                 ) : (
                   <div className="border rounded-md p-4 max-h-48 overflow-y-auto">
-                    {availableUsers.length === 0 ? (
+                    {!Array.isArray(availableUsers) || availableUsers.length === 0 ? (
                       <p className="text-sm text-muted-foreground">
                         No users available
                       </p>
