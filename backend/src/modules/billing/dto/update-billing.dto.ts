@@ -1,4 +1,7 @@
-import { PartialType } from '@nestjs/mapped-types';
-import { CreateBillingDto } from './create-billing.dto';
+import { IsOptional, IsBoolean } from 'class-validator';
 
-export class UpdateBillingDto extends PartialType(CreateBillingDto) {}
+export class CancelSubscriptionDto {
+  @IsOptional()
+  @IsBoolean()
+  immediately?: boolean; // If true, cancel immediately; if false, cancel at period end
+}

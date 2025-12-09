@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
+import { billingAPI } from "@/app/services";
 
 interface Invoice {
   _id: string;
@@ -64,14 +65,30 @@ export default function BillingPage() {
   const loadBillingData = async () => {
     setLoading(true);
     try {
-      // Simulate API calls
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      setInvoices([]);
+      const response = await billingAPI.getBillingInfo();
+      const data = response.data || response;
+      if (data.subscription) {
+        setCurrentPlan({
+          name: data.subscription.planName || "Professional",
+          price: 99,
+          billingCycle: "monthly",
+          features: ["Unlimited users", "Advanced analytics", "Priority support"],
+        });
+      }
+      setInvoices((data.invoices || []).map((inv: any) => ({
+        _id: inv._id,
+        invoiceNumber: inv.stripeInvoiceId,
+        amount: inv.amount / 100, // Convert from cents
+        status: inv.status === "paid" ? "paid" : inv.status === "open" ? "pending" : "overdue",
+        dueDate: inv.dueDate || inv.createdAt,
+        issueDate: inv.createdAt,
+        description: "Subscription payment",
+      })));
       setPaymentMethods([]);
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to load billing data",
+        description: error.response?.data?.message || "Failed to load billing data",
         variant: "destructive",
       });
     } finally {
@@ -172,8 +189,44 @@ export default function BillingPage() {
                   </div>
                 </div>
                 <div className="mt-6 flex gap-2">
-                  <Button>Upgrade Plan</Button>
-                  <Button variant="outline">Change Plan</Button>
+                  <Button onClick={async () => {
+                    try {
+                      const plansResponse = await billingAPI.getPlans();
+                      const plans = plansResponse.data || plansResponse;
+                      if (plans.length > 0) {
+                        const checkoutResponse = await billingAPI.createCheckoutSession({
+                          priceId: plans[0].id,
+                        });
+                        if (checkoutResponse.data?.url) {
+                          window.location.href = checkoutResponse.data.url;
+                        }
+                      }
+                    } catch (error: any) {
+                      toast({
+                        title: "Error",
+                        description: error.response?.data?.message || "Failed to create checkout session",
+                        variant: "destructive",
+                      });
+                    }
+                  }}>Upgrade Plan</Button>
+                  <Button variant="outline" onClick={async () => {
+                    if (confirm("Are you sure you want to cancel your subscription?")) {
+                      try {
+                        await billingAPI.cancelSubscription({ immediately: false });
+                        toast({
+                          title: "Success",
+                          description: "Subscription will be canceled at the end of the billing period",
+                        });
+                        loadBillingData();
+                      } catch (error: any) {
+                        toast({
+                          title: "Error",
+                          description: error.response?.data?.message || "Failed to cancel subscription",
+                          variant: "destructive",
+                        });
+                      }
+                    }
+                  }}>Cancel Subscription</Button>
                 </div>
               </CardContent>
             </Card>

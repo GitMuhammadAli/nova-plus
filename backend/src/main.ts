@@ -11,6 +11,8 @@ import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import compression from 'compression';
 import * as tracing from './common/tracing/opentelemetry';
+import { RawBodyMiddleware } from './common/middleware/raw-body.middleware';
+import { NestExpressApplication } from '@nestjs/platform-express';
 
 async function bootstrap() {
   // Initialize OpenTelemetry tracing
@@ -18,8 +20,13 @@ async function bootstrap() {
   const serviceName = configService.get<string>('SERVICE_NAME') || 'novapulse-api';
   tracing.initializeTracing(serviceName);
 
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    rawBody: true, // Enable raw body for webhooks
+  });
   const appConfigService = app.get(ConfigService);
+  
+  // Apply raw body middleware for webhook routes
+  app.use(new RawBodyMiddleware().use.bind(new RawBodyMiddleware()));
   
   // Security Headers
   app.use(helmet({

@@ -1,4 +1,15 @@
-import { PartialType } from '@nestjs/mapped-types';
-import { CreateUploadDto } from './create-upload.dto';
+import { IsOptional, IsBoolean, IsString } from 'class-validator';
 
-export class UpdateUploadDto extends PartialType(CreateUploadDto) {}
+export class UpdateUploadDto {
+  @IsOptional()
+  @IsString()
+  filename?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isPublic?: boolean;
+
+  @IsOptional()
+  @IsString()
+  category?: string;
+}

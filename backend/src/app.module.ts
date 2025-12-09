@@ -23,6 +23,9 @@ import { WorkflowModule } from './modules/workflow/workflow.module';
 import { ManagerModule } from './modules/manager/manager.module';
 import { QueueModule } from './providers/queue/queue.module';
 import { WebhookModule } from './modules/webhook/webhook.module';
+import { UploadsModule } from './modules/uploads/uploads.module';
+import { BillingModule } from './modules/billing/billing.module';
+import { IntegrationsModule } from './modules/integrations/integrations.module';
 import { CommonModule } from './common/common.module';
 import { PrometheusService } from './common/metrics/prom-client';
 import { MetricsController } from './common/controllers/metrics.controller';
@@ -77,6 +80,9 @@ import { MetricsController } from './common/controllers/metrics.controller';
     ManagerModule,
     QueueModule,
     WebhookModule,
+    UploadsModule,
+    BillingModule,
+    IntegrationsModule,
     CommonModule,
   ],
   controllers: [],

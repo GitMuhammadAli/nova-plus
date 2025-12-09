@@ -22,18 +22,21 @@ export class QueueService {
   private webhookQueue: Queue;
   private workflowQueue: Queue;
   private reportQueue: Queue;
+  private uploadCleanupQueue: Queue;
 
   constructor(
     @InjectQueue('nova-email') emailQueue: Queue,
     @InjectQueue('nova-webhook') webhookQueue: Queue,
     @InjectQueue('nova-workflow') workflowQueue: Queue,
     @InjectQueue('nova-report') reportQueue: Queue,
+    @InjectQueue('nova-upload-cleanup') uploadCleanupQueue: Queue,
     @Inject(REDIS_CLIENT) private readonly redisClient: Redis,
   ) {
     this.emailQueue = emailQueue;
     this.webhookQueue = webhookQueue;
     this.workflowQueue = workflowQueue;
     this.reportQueue = reportQueue;
+    this.uploadCleanupQueue = uploadCleanupQueue;
   }
 
   /**
@@ -159,6 +162,9 @@ export class QueueService {
           case 'nova-report':
             queue = this.reportQueue;
             break;
+          case 'nova-upload-cleanup':
+            queue = this.uploadCleanupQueue;
+            break;
       default:
         throw new Error(`Unknown queue: ${queueName}`);
     }
@@ -169,14 +175,32 @@ export class QueueService {
   }
 
   /**
+   * Add upload cleanup job to queue
+   */
+  async addUploadCleanupJob(options?: JobOptions) {
+    const jobOptions = {
+      attempts: options?.attempts || 1,
+      repeat: {
+        pattern: '0 2 * * *', // Daily at 2 AM
+      },
+      ...options,
+    };
+
+    const job = await this.uploadCleanupQueue.add('cleanupExpiredUploads', {}, jobOptions);
+    logger.info('Upload cleanup job enqueued', { jobId: job.id });
+    return job;
+  }
+
+  /**
    * Get queue statistics
    */
   async getQueueStats() {
-    const [emailStats, webhookStats, workflowStats, reportStats] = await Promise.all([
+    const [emailStats, webhookStats, workflowStats, reportStats, uploadCleanupStats] = await Promise.all([
       this.emailQueue.getJobCounts(),
       this.webhookQueue.getJobCounts(),
       this.workflowQueue.getJobCounts(),
       this.reportQueue.getJobCounts(),
+      this.uploadCleanupQueue.getJobCounts(),
     ]);
 
     return {
@@ -184,6 +208,7 @@ export class QueueService {
       webhook: webhookStats,
       workflow: workflowStats,
       report: reportStats,
+      uploadCleanup: uploadCleanupStats,
     };
   }
 

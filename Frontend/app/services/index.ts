@@ -194,6 +194,13 @@ export const uploadsAPI = {
     }),
   
   delete: (id: string) => api.delete(`/uploads/${id}`),
+  
+  update: (id: string, data: any) => api.patch(`/uploads/${id}`, data),
+  
+  makePublic: (id: string) => api.post(`/uploads/${id}/make-public`),
+  
+  getSignedUrl: (data?: { folder?: string; expiresIn?: number }) => 
+    api.post('/uploads/signed-url', data),
 };
 
 // ============================================
@@ -348,4 +355,42 @@ export const inviteAPI = {
   cancelInvite: (inviteId: string) => api.post(`/invite/${inviteId}/cancel`),
   bulkCreateInvites: (data: { companyId: string; invites: Array<{ email?: string; role: string; expiresInDays?: number }> }) => 
     api.post(`/invite/bulk`, data),
+};
+
+// ============================================
+// BILLING API
+// ============================================
+export const billingAPI = {
+  createCheckoutSession: (data: { priceId: string; successUrl?: string; cancelUrl?: string }) =>
+    api.post('/billing/create-checkout-session', data),
+  
+  getPlans: () => api.get('/billing/plans'),
+  
+  getBillingInfo: () => api.get('/billing/me'),
+  
+  updateUsage: (data: { subscriptionItemId: string; quantity: number }) =>
+    api.post('/billing/usage', data),
+  
+  cancelSubscription: (data: { immediately?: boolean }) =>
+    api.post('/billing/cancel', data),
+};
+
+// ============================================
+// INTEGRATIONS API
+// ============================================
+export const integrationsAPI = {
+  getAll: () => api.get('/integrations'),
+  
+  testEmail: (data: { smtpHost: string; smtpPort: number; username: string; password: string; to: string }) =>
+    api.post('/integrations/email/test', data),
+  
+  testSlack: (data: { webhookUrl: string }) =>
+    api.post('/integrations/slack/test', data),
+  
+  startGoogleOAuth: () => api.get('/integrations/oauth/google/start'),
+  
+  handleGoogleOAuthCallback: (code: string, state: string) =>
+    api.get('/integrations/oauth/google/callback', { params: { code, state } }),
+  
+  delete: (id: string) => api.delete(`/integrations/${id}`),
 };

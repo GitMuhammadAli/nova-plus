@@ -25,6 +25,7 @@ import { REDIS_CLIENT, redisProvider } from '../redis/redis.provider';
       { name: 'nova-webhook' },
       { name: 'nova-workflow' },
       { name: 'nova-report' },
+      { name: 'nova-upload-cleanup' },
     ),
   ],
   controllers: [QueueController],
