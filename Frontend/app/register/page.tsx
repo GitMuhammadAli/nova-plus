@@ -4,7 +4,12 @@ import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
-import { clearError, fetchMe, resetLoading, setUser } from "@/app/store/authSlice";
+import {
+  clearError,
+  fetchMe,
+  resetLoading,
+  setUser,
+} from "@/app/store/authSlice";
 import { registerCompany } from "@/app/store/companySlice";
 import { AppDispatch, RootState } from "@/app/store/store";
 import Link from "next/link";
@@ -13,19 +18,36 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Zap, Mail, Lock, User, Building2, AlertCircle, CheckCircle2, Users } from "lucide-react";
+import {
+  Zap,
+  Mail,
+  Lock,
+  User,
+  Building2,
+  AlertCircle,
+  CheckCircle2,
+  Users,
+} from "lucide-react";
 
 export default function Register() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const dispatch = useDispatch<AppDispatch>();
-  const { isLoading: authLoading, error: authError, isAuthenticated } = useSelector((state: RootState) => state.auth);
-  const { isLoading: companyLoading, error: companyError } = useSelector((state: RootState) => state.company);
+  const {
+    isLoading: authLoading,
+    error: authError,
+    isAuthenticated,
+  } = useSelector((state: RootState) => state.auth);
+  const { isLoading: companyLoading, error: companyError } = useSelector(
+    (state: RootState) => state.company
+  );
 
   const [activeTab, setActiveTab] = useState<string>("create");
   const [validationError, setValidationError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("Registration successful! Redirecting...");
+  const [successMessage, setSuccessMessage] = useState(
+    "Registration successful! Redirecting..."
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Create Company form data
@@ -55,10 +77,10 @@ export default function Register() {
     dispatch(clearError());
     dispatch(resetLoading());
     // Check if there's an invite token in URL
-    const token = searchParams.get('token');
+    const token = searchParams.get("token");
     if (token) {
       setActiveTab("join");
-      setJoinCompanyData(prev => ({ ...prev, inviteToken: token }));
+      setJoinCompanyData((prev) => ({ ...prev, inviteToken: token }));
       validateInviteToken(token);
     }
   }, [dispatch, searchParams]);
@@ -71,17 +93,21 @@ export default function Register() {
 
   const validateInviteToken = async (token: string) => {
     if (!token) return;
-    
+
     setLoadingInvite(true);
     try {
       const { inviteAPI } = await import("@/app/services");
       const response = await inviteAPI.getInvite(token);
       setInviteInfo(response.data.invite);
       if (response.data.invite?.email) {
-        setJoinCompanyData(prev => ({ ...prev, email: response.data.invite.email }));
+        setJoinCompanyData((prev) => ({
+          ...prev,
+          email: response.data.invite.email,
+        }));
       }
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || "Invalid or expired invite";
+      const errorMessage =
+        err.response?.data?.message || "Invalid or expired invite";
       setValidationError(errorMessage);
     } finally {
       setLoadingInvite(false);
@@ -111,17 +137,21 @@ export default function Register() {
     setIsSubmitting(true);
 
     try {
-      const result = await dispatch(registerCompany({
-        companyName: createCompanyData.companyName,
-        domain: createCompanyData.domain || undefined,
-        adminName: createCompanyData.adminName,
-        email: createCompanyData.email,
-        password: createCompanyData.password,
-      }));
+      const result = await dispatch(
+        registerCompany({
+          companyName: createCompanyData.companyName,
+          domain: createCompanyData.domain || undefined,
+          adminName: createCompanyData.adminName,
+          email: createCompanyData.email,
+          password: createCompanyData.password,
+        })
+      );
 
       if (registerCompany.fulfilled.match(result)) {
         setSuccess(true);
-        setSuccessMessage("Company created successfully! Redirecting to your dashboard...");
+        setSuccessMessage(
+          "Company created successfully! Redirecting to your dashboard..."
+        );
         // Fetch the complete user data from backend (cookies are set by backend)
         try {
           await dispatch(fetchMe()).unwrap();
@@ -129,14 +159,14 @@ export default function Register() {
             router.replace("/dashboard");
           }, 500);
         } catch (error) {
-          console.error('Failed to fetch user after registration:', error);
+          // Silently handle - user will be redirected anyway
           setTimeout(() => {
             router.replace("/dashboard");
           }, 1000);
         }
       }
     } catch (error) {
-      console.error('Registration error:', error);
+      // Error handled by UI state
     } finally {
       setIsSubmitting(false);
     }
@@ -177,22 +207,27 @@ export default function Register() {
 
     try {
       const { inviteAPI } = await import("@/app/services");
-      const response = await inviteAPI.acceptInvite(joinCompanyData.inviteToken, {
-        name: joinCompanyData.name.trim(),
-        email: joinCompanyData.email.trim(),
-        password: joinCompanyData.password,
-      });
+      const response = await inviteAPI.acceptInvite(
+        joinCompanyData.inviteToken,
+        {
+          name: joinCompanyData.name.trim(),
+          email: joinCompanyData.email.trim(),
+          password: joinCompanyData.password,
+        }
+      );
 
       if (response.data?.user || response.data?.success) {
         setSuccess(true);
-        setSuccessMessage("Account created successfully! Redirecting to your dashboard...");
-        
+        setSuccessMessage(
+          "Account created successfully! Redirecting to your dashboard..."
+        );
+
         // Disable form to prevent re-submission
         // Keep isSubmitting true to prevent button clicks
-        
+
         // Wait a bit to ensure cookies are set by the browser
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
         // Fetch the complete user data from backend (cookies are set by backend)
         try {
           const userResult = await dispatch(fetchMe()).unwrap();
@@ -202,13 +237,13 @@ export default function Register() {
             return; // Exit early
           }
         } catch (error) {
-          console.error('Failed to fetch user after invite acceptance:', error);
+          // Silently handle - user will be redirected anyway
           // Set user from response if available
           if (response.data?.user) {
             dispatch(setUser(response.data.user));
           }
         }
-        
+
         // Fallback redirect (cookies should be set by backend)
         setTimeout(() => {
           router.push("/dashboard");
@@ -217,8 +252,9 @@ export default function Register() {
         throw new Error("Invalid response from server");
       }
     } catch (err: any) {
-      console.error('Invite acceptance error:', err);
-      const errorMessage = err.response?.data?.message || err.message || "Failed to accept invite";
+      // Error handled by UI state
+      const errorMessage =
+        err.response?.data?.message || err.message || "Failed to accept invite";
       setValidationError(errorMessage);
       setIsSubmitting(false);
     }
@@ -226,7 +262,7 @@ export default function Register() {
   };
 
   const handleInviteTokenChange = (token: string) => {
-    setJoinCompanyData(prev => ({ ...prev, inviteToken: token }));
+    setJoinCompanyData((prev) => ({ ...prev, inviteToken: token }));
     if (token.length > 20) {
       validateInviteToken(token);
     } else {
@@ -270,10 +306,15 @@ export default function Register() {
           className="w-full max-w-md space-y-6"
         >
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-2">Get Started</h1>
+            <h1 className="text-3xl font-bold text-foreground mb-2">
+              Get Started
+            </h1>
             <p className="text-muted-foreground">
               Already have an account?{" "}
-              <Link href="/login" className="text-primary hover:underline font-medium">
+              <Link
+                href="/login"
+                className="text-primary hover:underline font-medium"
+              >
                 Sign in
               </Link>
             </p>
@@ -295,14 +336,22 @@ export default function Register() {
             </Alert>
           )}
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="w-full"
+          >
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="create">Create Company</TabsTrigger>
               <TabsTrigger value="join">Join Company</TabsTrigger>
             </TabsList>
 
             <TabsContent value="create" className="space-y-4 mt-6">
-              <form onSubmit={handleCreateCompany} className="space-y-4" noValidate>
+              <form
+                onSubmit={handleCreateCompany}
+                className="space-y-4"
+                noValidate
+              >
                 <div className="space-y-2">
                   <Label htmlFor="companyName">Company Name *</Label>
                   <div className="relative">
@@ -313,7 +362,12 @@ export default function Register() {
                       placeholder="Acme Inc."
                       className="pl-9"
                       value={createCompanyData.companyName}
-                      onChange={(e) => setCreateCompanyData({ ...createCompanyData, companyName: e.target.value })}
+                      onChange={(e) =>
+                        setCreateCompanyData({
+                          ...createCompanyData,
+                          companyName: e.target.value,
+                        })
+                      }
                       required
                       disabled={isLoading}
                     />
@@ -327,7 +381,12 @@ export default function Register() {
                     type="text"
                     placeholder="acme.com"
                     value={createCompanyData.domain}
-                    onChange={(e) => setCreateCompanyData({ ...createCompanyData, domain: e.target.value })}
+                    onChange={(e) =>
+                      setCreateCompanyData({
+                        ...createCompanyData,
+                        domain: e.target.value,
+                      })
+                    }
                     disabled={isLoading}
                   />
                 </div>
@@ -342,7 +401,12 @@ export default function Register() {
                       placeholder="John Doe"
                       className="pl-9"
                       value={createCompanyData.adminName}
-                      onChange={(e) => setCreateCompanyData({ ...createCompanyData, adminName: e.target.value })}
+                      onChange={(e) =>
+                        setCreateCompanyData({
+                          ...createCompanyData,
+                          adminName: e.target.value,
+                        })
+                      }
                       required
                       disabled={isLoading}
                     />
@@ -359,7 +423,12 @@ export default function Register() {
                       placeholder="admin@company.com"
                       className="pl-9"
                       value={createCompanyData.email}
-                      onChange={(e) => setCreateCompanyData({ ...createCompanyData, email: e.target.value })}
+                      onChange={(e) =>
+                        setCreateCompanyData({
+                          ...createCompanyData,
+                          email: e.target.value,
+                        })
+                      }
                       required
                       disabled={isLoading}
                     />
@@ -376,13 +445,20 @@ export default function Register() {
                       placeholder="••••••••"
                       className="pl-9"
                       value={createCompanyData.password}
-                      onChange={(e) => setCreateCompanyData({ ...createCompanyData, password: e.target.value })}
+                      onChange={(e) =>
+                        setCreateCompanyData({
+                          ...createCompanyData,
+                          password: e.target.value,
+                        })
+                      }
                       required
                       minLength={6}
                       disabled={isLoading}
                     />
                   </div>
-                  <p className="text-xs text-muted-foreground">Minimum 6 characters</p>
+                  <p className="text-xs text-muted-foreground">
+                    Minimum 6 characters
+                  </p>
                 </div>
 
                 <Button type="submit" className="w-full" disabled={isLoading}>
@@ -392,26 +468,38 @@ export default function Register() {
             </TabsContent>
 
             <TabsContent value="join" className="space-y-4 mt-6">
-              <form onSubmit={handleJoinCompany} className="space-y-4" noValidate>
+              <form
+                onSubmit={handleJoinCompany}
+                className="space-y-4"
+                noValidate
+              >
                 <div className="space-y-2">
                   <Label htmlFor="inviteToken">Invite Token *</Label>
-                    <Input
-                      id="inviteToken"
-                      type="text"
-                      placeholder="Enter invite token"
-                      value={joinCompanyData.inviteToken}
-                      onChange={(e) => handleInviteTokenChange(e.target.value)}
-                      required
-                      disabled={isLoading || loadingInvite || isSubmitting || success}
-                    />
+                  <Input
+                    id="inviteToken"
+                    type="text"
+                    placeholder="Enter invite token"
+                    value={joinCompanyData.inviteToken}
+                    onChange={(e) => handleInviteTokenChange(e.target.value)}
+                    required
+                    disabled={
+                      isLoading || loadingInvite || isSubmitting || success
+                    }
+                  />
                   {loadingInvite && (
-                    <p className="text-xs text-muted-foreground">Validating invite...</p>
+                    <p className="text-xs text-muted-foreground">
+                      Validating invite...
+                    </p>
                   )}
                   {inviteInfo && (
                     <div className="p-3 bg-muted rounded-md text-sm">
                       <p className="font-medium">Invite Details:</p>
-                      <p className="text-muted-foreground">Company: {inviteInfo.companyName}</p>
-                      <p className="text-muted-foreground">Role: {inviteInfo.role}</p>
+                      <p className="text-muted-foreground">
+                        Company: {inviteInfo.companyName}
+                      </p>
+                      <p className="text-muted-foreground">
+                        Role: {inviteInfo.role}
+                      </p>
                     </div>
                   )}
                 </div>
@@ -426,7 +514,12 @@ export default function Register() {
                       placeholder="John Doe"
                       className="pl-9"
                       value={joinCompanyData.name}
-                      onChange={(e) => setJoinCompanyData({ ...joinCompanyData, name: e.target.value })}
+                      onChange={(e) =>
+                        setJoinCompanyData({
+                          ...joinCompanyData,
+                          name: e.target.value,
+                        })
+                      }
                       required
                       disabled={isLoading || isSubmitting || success}
                     />
@@ -443,7 +536,12 @@ export default function Register() {
                       placeholder="you@example.com"
                       className="pl-9"
                       value={joinCompanyData.email}
-                      onChange={(e) => setJoinCompanyData({ ...joinCompanyData, email: e.target.value })}
+                      onChange={(e) =>
+                        setJoinCompanyData({
+                          ...joinCompanyData,
+                          email: e.target.value,
+                        })
+                      }
                       required
                       disabled={isLoading || isSubmitting || success}
                     />
@@ -460,16 +558,27 @@ export default function Register() {
                       placeholder="••••••••"
                       className="pl-9"
                       value={joinCompanyData.password}
-                      onChange={(e) => setJoinCompanyData({ ...joinCompanyData, password: e.target.value })}
+                      onChange={(e) =>
+                        setJoinCompanyData({
+                          ...joinCompanyData,
+                          password: e.target.value,
+                        })
+                      }
                       required
                       minLength={6}
                       disabled={isLoading || isSubmitting || success}
                     />
                   </div>
-                  <p className="text-xs text-muted-foreground">Minimum 6 characters</p>
+                  <p className="text-xs text-muted-foreground">
+                    Minimum 6 characters
+                  </p>
                 </div>
 
-                <Button type="submit" className="w-full" disabled={isLoading || isSubmitting || success}>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={isLoading || isSubmitting || success}
+                >
                   {success ? (
                     <>
                       <CheckCircle2 className="w-4 h-4 mr-2" />

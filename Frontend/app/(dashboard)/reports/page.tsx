@@ -34,6 +34,7 @@ import { fetchUsers } from "@/app/store/usersSlice";
 import { fetchDepartments } from "@/app/store/departmentsSlice";
 import { fetchProjects } from "@/app/store/projectsSlice";
 import { fetchTasks } from "@/app/store/tasksSlice";
+import { useRolePermissions } from "@/hooks/useRolePermissions";
 
 export default function ReportsPage() {
   const dispatch = useDispatch<AppDispatch>();
@@ -43,16 +44,17 @@ export default function ReportsPage() {
   const { departments } = useSelector((state: RootState) => state.departments);
   const { projects } = useSelector((state: RootState) => state.projects);
   const { tasks } = useSelector((state: RootState) => state.tasks);
+  const { permissions, hasPermission } = useRolePermissions();
 
   const [loading, setLoading] = useState(true);
   const [reportType, setReportType] = useState("summary");
   const [dateRange, setDateRange] = useState("30d");
 
   useEffect(() => {
-    if (user) {
+    if (user && hasPermission('canViewReports')) {
       loadReportData();
     }
-  }, [user, dateRange]);
+  }, [user, dateRange, hasPermission]);
 
   const loadReportData = async () => {
     setLoading(true);

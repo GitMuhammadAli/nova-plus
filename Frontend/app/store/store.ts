@@ -12,6 +12,7 @@ import analyticsReducer from "./analyticsSlice";
 import auditReducer from "./auditSlice";
 import workflowReducer from "./workflowSlice";
 import dashboardReducer from "./dashboardSlice";
+import { requestDeduplicationMiddleware } from "./middleware/requestDeduplication";
 
 const createNoopStorage = () => {
   return {
@@ -60,7 +61,7 @@ export const store = configureStore({
       serializableCheck: {
         ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
       },
-    }),
+    }).concat(requestDeduplicationMiddleware),
 });
 
 export const persistor = persistStore(store);

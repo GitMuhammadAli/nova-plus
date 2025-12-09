@@ -174,4 +174,80 @@ export class SettingsService {
       }, companyId);
     }
   }
+
+  /**
+   * Update company settings (general)
+   */
+  async updateCompanySettings(companyId: string, settings: Record<string, any>) {
+    const updated: any[] = [];
+    
+    for (const [key, value] of Object.entries(settings)) {
+      const existing = await this.findByKey(key, companyId);
+      if (existing) {
+        await this.updateByKey(key, value, companyId);
+      } else {
+        await this.create({
+          key,
+          value,
+          type: SettingType.COMPANY,
+        }, companyId);
+      }
+      updated.push({ key, value });
+    }
+
+    return this.getCompanySettings(companyId);
+  }
+
+  /**
+   * Get working hours settings
+   */
+  async getWorkingHours(companyId: string) {
+    const setting = await this.findByKey('workingHours', companyId);
+    if (!setting) {
+      // Return default working hours
+      return {
+        key: 'workingHours',
+        value: {
+          monday: { start: '09:00', end: '17:00', enabled: true },
+          tuesday: { start: '09:00', end: '17:00', enabled: true },
+          wednesday: { start: '09:00', end: '17:00', enabled: true },
+          thursday: { start: '09:00', end: '17:00', enabled: true },
+          friday: { start: '09:00', end: '17:00', enabled: true },
+          saturday: { start: '09:00', end: '17:00', enabled: false },
+          sunday: { start: '09:00', end: '17:00', enabled: false },
+          timezone: 'UTC',
+        },
+        type: SettingType.WORK_HOURS,
+      };
+    }
+    return setting;
+  }
+
+  /**
+   * Update working hours settings
+   */
+  async updateWorkingHours(companyId: string, workingHours: {
+    monday?: { start: string; end: string; enabled: boolean };
+    tuesday?: { start: string; end: string; enabled: boolean };
+    wednesday?: { start: string; end: string; enabled: boolean };
+    thursday?: { start: string; end: string; enabled: boolean };
+    friday?: { start: string; end: string; enabled: boolean };
+    saturday?: { start: string; end: string; enabled: boolean };
+    sunday?: { start: string; end: string; enabled: boolean };
+    timezone?: string;
+  }) {
+    const existing = await this.findByKey('workingHours', companyId);
+    const current = existing ? existing.value : {};
+    const updated = { ...current, ...workingHours };
+
+    if (existing) {
+      return this.updateByKey('workingHours', updated, companyId);
+    } else {
+      return this.create({
+        key: 'workingHours',
+        value: updated,
+        type: SettingType.WORK_HOURS,
+      }, companyId);
+    }
+  }
 }

@@ -3,8 +3,8 @@ import { OrganizationService } from './organization.service';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from 'src/common/decorators/roles.decorator';
-import { UserRole } from 'src/modules/user/entities/user.entity';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { UserRole } from '../user/entities/user.entity';
 
 @Controller('organizations')
 export class OrganizationController {

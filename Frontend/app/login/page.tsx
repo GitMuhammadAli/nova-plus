@@ -88,7 +88,7 @@ const LoginPage = () => {
         router.replace("/dashboard");
       }
     } catch (error) {
-      console.error("Login error:", error);
+      // Error handled by Redux and UI state
     } finally {
       setIsSubmitting(false);
     }

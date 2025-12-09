@@ -1,27 +1,14 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { usersAPI } from '../services';
-
-interface User {
-  _id: string;
-  email: string;
-  name?: string;
-  role: string;
-  companyId?: string;
-  orgId?: string;
-  createdBy?: string;
-  managerId?: any;
-  department?: string;
-  location?: string;
-  isActive?: boolean;
-  createdAt?: string;
-  updatedAt?: string;
-}
+import { User } from '@/types/user';
 
 interface UsersState {
   users: User[];
   currentUser: User | null;
   isLoading: boolean;
   error: string | null;
+  lastFetched: number | null;
+  lastFetchedParams: string | null; // Stringified params for cache key
   pagination: {
     page: number;
     limit: number;
@@ -34,6 +21,8 @@ const initialState: UsersState = {
   currentUser: null,
   isLoading: false,
   error: null,
+  lastFetched: null,
+  lastFetchedParams: null,
   pagination: {
     page: 1,
     limit: 10,
@@ -43,12 +32,27 @@ const initialState: UsersState = {
 
 export const fetchUsers = createAsyncThunk(
   'users/fetchAll',
-  async (params: { page?: number; limit?: number; search?: string } = {}, { rejectWithValue }) => {
+  async (params: { page?: number; limit?: number; search?: string } = {}, { rejectWithValue, getState }) => {
     try {
+      // Check cache (5 second window)
+      const state = getState() as any;
+      const usersState = state.users as UsersState;
+      const paramsKey = JSON.stringify(params);
+      const now = Date.now();
+      const CACHE_DURATION = 5000;
+
+      if (
+        usersState.lastFetched &&
+        usersState.lastFetchedParams === paramsKey &&
+        (now - usersState.lastFetched) < CACHE_DURATION &&
+        usersState.users.length > 0
+      ) {
+        return { users: usersState.users, fromCache: true, params };
+      }
+
       const response = await usersAPI.getAll(params || {});
-      // TransformInterceptor wraps in { success: true, data: ... }
       const data = response.data?.data || response.data?.users || response.data || [];
-      return Array.isArray(data) ? data : [];
+      return { users: Array.isArray(data) ? data : [], params, fromCache: false };
     } catch (error: any) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch users');
     }
@@ -174,15 +178,19 @@ const usersSlice = createSlice({
       })
       .addCase(fetchUsers.fulfilled, (state, action) => {
         state.isLoading = false;
-        const payload = action.payload?.data || action.payload || [];
-        state.users = Array.isArray(payload) ? payload : [];
-        state.pagination = action.payload?.pagination
-          ? action.payload.pagination
-          : {
-              page: 1,
-              limit: state.users.length || 10,
-              total: state.users.length,
-            };
+        // Handle cached responses
+        if (action.payload.fromCache) {
+          return; // Don't update if from cache
+        }
+        const users = Array.isArray(action.payload.users) ? action.payload.users : [];
+        state.users = users;
+        state.lastFetched = Date.now();
+        state.lastFetchedParams = action.payload.params ? JSON.stringify(action.payload.params) : null;
+        state.pagination = {
+          page: 1,
+          limit: users.length || 10,
+          total: users.length,
+        };
       })
       .addCase(fetchUsers.rejected, (state, action) => {
         state.isLoading = false;

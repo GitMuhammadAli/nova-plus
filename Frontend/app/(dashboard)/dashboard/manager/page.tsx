@@ -1,15 +1,21 @@
-"use client"
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
-import { RootState } from '@/app/store/store';
-import { motion } from 'framer-motion';
-import { Users, UserPlus, FolderKanban, FileText, TrendingUp } from 'lucide-react';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { RoleGuard } from '@/components/guards/RoleGuard';
-import { usersAPI, projectAPI, taskAPI } from '@/app/services';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
+import { RootState } from "@/app/store/store";
+import { motion } from "framer-motion";
+import {
+  Users,
+  UserPlus,
+  FolderKanban,
+  FileText,
+  TrendingUp,
+} from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { RoleGuard } from "@/components/guards/RoleGuard";
+import { usersAPI, projectAPI, taskAPI } from "@/app/services";
+import { useRouter } from "next/navigation";
 
 const ManagerDashboard = () => {
   const router = useRouter();
@@ -26,22 +32,30 @@ const ManagerDashboard = () => {
     const fetchStats = async () => {
       try {
         setLoading(true);
-        
+
         // Fetch team users
         const usersRes = await usersAPI.getMyUsers({ limit: 1000 });
         const teamUsers = usersRes.data?.data || [];
-        
+
         // Fetch projects
         const projectsRes = await projectAPI.findAll();
-        const projects = Array.isArray(projectsRes.data) ? projectsRes.data : [];
-        const activeProjects = projects.filter((p: any) => p.status === 'active').length;
-        
+        const projects = Array.isArray(projectsRes.data)
+          ? projectsRes.data
+          : [];
+        const activeProjects = projects.filter(
+          (p: any) => p.status === "active"
+        ).length;
+
         // Fetch tasks
         const tasksRes = await taskAPI.getAll();
         const tasks = Array.isArray(tasksRes.data) ? tasksRes.data : [];
-        const pendingTasks = tasks.filter((t: any) => t.status === 'pending').length;
-        const completedTasks = tasks.filter((t: any) => t.status === 'done').length;
-        
+        const pendingTasks = tasks.filter(
+          (t: any) => t.status === "pending"
+        ).length;
+        const completedTasks = tasks.filter(
+          (t: any) => t.status === "done"
+        ).length;
+
         setStats({
           teamSize: teamUsers.length,
           activeProjects,
@@ -49,7 +63,7 @@ const ManagerDashboard = () => {
           completedTasks,
         });
       } catch (error) {
-        console.error('Failed to fetch stats:', error);
+        // Silently handle error - show empty state
       } finally {
         setLoading(false);
       }
@@ -61,7 +75,7 @@ const ManagerDashboard = () => {
   }, [user]);
 
   return (
-    <RoleGuard allowedRoles={['manager']}>
+    <RoleGuard allowedRoles={["manager"]}>
       <div className="space-y-8 max-w-7xl mx-auto">
         {/* Header */}
         <div>
@@ -83,8 +97,12 @@ const ManagerDashboard = () => {
             <Card className="p-6 hover:shadow-xl transition-shadow">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Team Size</p>
-                  <p className="text-3xl font-bold text-foreground">{stats.teamSize}</p>
+                  <p className="text-sm text-muted-foreground mb-1">
+                    Team Size
+                  </p>
+                  <p className="text-3xl font-bold text-foreground">
+                    {stats.teamSize}
+                  </p>
                 </div>
                 <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
                   <Users className="w-6 h-6 text-primary" />
@@ -101,8 +119,12 @@ const ManagerDashboard = () => {
             <Card className="p-6 hover:shadow-xl transition-shadow">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Active Projects</p>
-                  <p className="text-3xl font-bold text-foreground">{stats.activeProjects}</p>
+                  <p className="text-sm text-muted-foreground mb-1">
+                    Active Projects
+                  </p>
+                  <p className="text-3xl font-bold text-foreground">
+                    {stats.activeProjects}
+                  </p>
                 </div>
                 <div className="w-12 h-12 rounded-full bg-blue-500/20 flex items-center justify-center">
                   <FolderKanban className="w-6 h-6 text-blue-500" />
@@ -119,8 +141,12 @@ const ManagerDashboard = () => {
             <Card className="p-6 hover:shadow-xl transition-shadow">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Pending Tasks</p>
-                  <p className="text-3xl font-bold text-foreground">{stats.pendingTasks}</p>
+                  <p className="text-sm text-muted-foreground mb-1">
+                    Pending Tasks
+                  </p>
+                  <p className="text-3xl font-bold text-foreground">
+                    {stats.pendingTasks}
+                  </p>
                 </div>
                 <div className="w-12 h-12 rounded-full bg-yellow-500/20 flex items-center justify-center">
                   <FileText className="w-6 h-6 text-yellow-500" />
@@ -137,8 +163,12 @@ const ManagerDashboard = () => {
             <Card className="p-6 hover:shadow-xl transition-shadow">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-1">Completed Tasks</p>
-                  <p className="text-3xl font-bold text-foreground">{stats.completedTasks}</p>
+                  <p className="text-sm text-muted-foreground mb-1">
+                    Completed Tasks
+                  </p>
+                  <p className="text-3xl font-bold text-foreground">
+                    {stats.completedTasks}
+                  </p>
                 </div>
                 <div className="w-12 h-12 rounded-full bg-green-500/20 flex items-center justify-center">
                   <TrendingUp className="w-6 h-6 text-green-500" />
@@ -150,17 +180,19 @@ const ManagerDashboard = () => {
 
         {/* Quick Actions */}
         <Card className="p-6">
-          <h2 className="text-xl font-semibold text-foreground mb-4">Quick Actions</h2>
+          <h2 className="text-xl font-semibold text-foreground mb-4">
+            Quick Actions
+          </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <Button
-              onClick={() => router.push('/users?create=user')}
+              onClick={() => router.push("/users?create=user")}
               className="w-full h-auto flex flex-col items-center justify-center py-6 gap-2"
             >
               <UserPlus className="w-6 h-6" />
               <span>Add Team Member</span>
             </Button>
             <Button
-              onClick={() => router.push('/users')}
+              onClick={() => router.push("/users")}
               variant="outline"
               className="w-full h-auto flex flex-col items-center justify-center py-6 gap-2"
             >
@@ -168,7 +200,7 @@ const ManagerDashboard = () => {
               <span>View My Team</span>
             </Button>
             <Button
-              onClick={() => router.push('/analytics')}
+              onClick={() => router.push("/analytics")}
               variant="outline"
               className="w-full h-auto flex flex-col items-center justify-center py-6 gap-2"
             >
@@ -180,7 +212,9 @@ const ManagerDashboard = () => {
 
         {/* Info Card */}
         <Card className="p-6 bg-muted/50">
-          <h3 className="text-lg font-semibold text-foreground mb-2">Manager Responsibilities</h3>
+          <h3 className="text-lg font-semibold text-foreground mb-2">
+            Manager Responsibilities
+          </h3>
           <ul className="space-y-2 text-sm text-muted-foreground">
             <li>• Create and manage Users under your team</li>
             <li>• Create and manage Projects</li>
@@ -195,4 +229,3 @@ const ManagerDashboard = () => {
 };
 
 export default ManagerDashboard;
-

@@ -4,7 +4,7 @@ import { Model, Types } from 'mongoose';
 import { Team, TeamDocument } from './entities/team.entity';
 import { CreateTeamDto } from './dto/create-team.dto';
 import { AddMemberDto } from './dto/add-member.dto';
-import { UserDocument } from 'src/modules/user/entities/user.entity';
+import { UserDocument } from '../user/entities/user.entity';
 
 @Injectable()
 export class TeamsService {

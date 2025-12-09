@@ -10,6 +10,7 @@ import { getJwtSecret } from '../auth/utils/jwt-secret.util';
 import { CompanyModule } from '../company/company.module';
 import { EmailModule } from '../email/email.module';
 import { CommonModule } from '../../common/common.module';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { CommonModule } from '../../common/common.module';
       signOptions: { expiresIn: '15m' },
     }),
     forwardRef(() => CompanyModule),
+    forwardRef(() => AuthModule),
     EmailModule,
     CommonModule,
   ],

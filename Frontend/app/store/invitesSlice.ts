@@ -28,19 +28,39 @@ interface InvitesState {
   invites: Invite[];
   isLoading: boolean;
   error: string | null;
+  lastFetched: number | null; // Timestamp of last successful fetch
+  lastFetchedCompanyId: string | null; // Track which company's invites we have
 }
 
 const initialState: InvitesState = {
   invites: [],
   isLoading: false,
   error: null,
+  lastFetched: null,
+  lastFetchedCompanyId: null,
 };
 
 // Fetch company invites
 export const fetchCompanyInvites = createAsyncThunk(
   'invites/fetchCompanyInvites',
-  async (companyId: string, { rejectWithValue }) => {
+  async (companyId: string, { rejectWithValue, getState }) => {
     try {
+      // Check if we have fresh data (less than 5 seconds old) for this company
+      const state = getState() as any;
+      const invitesState = state.invites as InvitesState;
+      const now = Date.now();
+      const CACHE_DURATION = 5000; // 5 seconds
+      
+      if (
+        invitesState.lastFetched &&
+        invitesState.lastFetchedCompanyId === companyId &&
+        (now - invitesState.lastFetched) < CACHE_DURATION &&
+        invitesState.invites.length > 0
+      ) {
+        // Return cached data
+        return { invites: invitesState.invites, fromCache: true };
+      }
+
       const response = await inviteAPI.getCompanyInvites(companyId);
       // TransformInterceptor wraps in { success: true, data: [...] }
       // Handle different response structures
@@ -53,10 +73,8 @@ export const fetchCompanyInvites = createAsyncThunk(
         : Array.isArray(response)
         ? response
         : [];
-      console.log('Fetched invites:', invites.length, invites);
-      return invites;
+      return { invites, companyId, fromCache: false };
     } catch (error: any) {
-      console.error('Failed to fetch invites:', error);
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch invites');
     }
   }
@@ -165,8 +183,20 @@ const invitesSlice = createSlice({
       })
       .addCase(fetchCompanyInvites.fulfilled, (state, action) => {
         state.isLoading = false;
+        // Handle both cached and fresh data
+        if (action.payload.fromCache) {
+          // Don't update if from cache, but don't set loading to false either
+          return;
+        }
         // Ensure payload is always an array
-        state.invites = Array.isArray(action.payload) ? action.payload : [];
+        const invites = Array.isArray(action.payload.invites) 
+          ? action.payload.invites 
+          : Array.isArray(action.payload) 
+          ? action.payload 
+          : [];
+        state.invites = invites;
+        state.lastFetched = Date.now();
+        state.lastFetchedCompanyId = action.payload.companyId || null;
       })
       .addCase(fetchCompanyInvites.rejected, (state, action) => {
         state.isLoading = false;
@@ -181,8 +211,15 @@ const invitesSlice = createSlice({
       })
       .addCase(createInvite.fulfilled, (state, action) => {
         state.isLoading = false;
-        // Refresh invites list instead of manually adding
-        // The component will refetch after creation
+        // Optimistically add the new invite to the list
+        if (action.payload) {
+          const newInvite = action.payload.invite || action.payload;
+          if (newInvite && newInvite._id) {
+            const invitesArray = Array.isArray(state.invites) ? state.invites : [];
+            state.invites = [...invitesArray, newInvite];
+            state.lastFetched = Date.now();
+          }
+        }
       })
       .addCase(createInvite.rejected, (state, action) => {
         state.isLoading = false;
@@ -204,6 +241,8 @@ const invitesSlice = createSlice({
             ? { ...invite, isActive: false }
             : invite
         );
+        // Invalidate cache to force refresh on next fetch
+        state.lastFetched = null;
       })
       .addCase(revokeInvite.rejected, (state, action) => {
         state.isLoading = false;
@@ -216,8 +255,13 @@ const invitesSlice = createSlice({
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(resendInvite.fulfilled, (state) => {
+      .addCase(resendInvite.fulfilled, (state, action) => {
         state.isLoading = false;
+        // Update invites if provided
+        if (action.payload.invites) {
+          state.invites = action.payload.invites;
+          state.lastFetched = Date.now();
+        }
       })
       .addCase(resendInvite.rejected, (state, action) => {
         state.isLoading = false;
@@ -238,6 +282,8 @@ const invitesSlice = createSlice({
             ? { ...invite, isActive: false }
             : invite
         );
+        // Invalidate cache to force refresh on next fetch
+        state.lastFetched = null;
       })
       .addCase(cancelInvite.rejected, (state, action) => {
         state.isLoading = false;
@@ -252,6 +298,8 @@ const invitesSlice = createSlice({
       })
       .addCase(bulkCreateInvites.fulfilled, (state) => {
         state.isLoading = false;
+        // Invalidate cache to force refresh on next fetch
+        state.lastFetched = null;
       })
       .addCase(bulkCreateInvites.rejected, (state, action) => {
         state.isLoading = false;

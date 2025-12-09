@@ -52,8 +52,7 @@ export function LoginForm() {
         }, 100);
       }
     } catch (error) {
-      // Error is handled by Redux
-      console.error('Login error:', error);
+      // Error is handled by Redux and UI state
     }
   };
 

@@ -28,8 +28,7 @@ export function usePageTracking() {
                  /Tablet|iPad/.test(navigator.userAgent) ? 'tablet' : 'desktop',
         });
       } catch (error) {
-        // Silent fail - don't interrupt user experience
-        console.error('Failed to track page visit:', error);
+        // Silent fail - analytics tracking should never interrupt user experience
       }
     };
 

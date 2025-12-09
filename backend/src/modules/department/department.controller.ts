@@ -91,8 +91,9 @@ export class DepartmentController {
   async remove(@Param('id') id: string, @Req() req) {
     const user = req.user;
     const companyId = user.companyId?.toString() || user.companyId;
+    const userId = user._id || user.id;
 
-    await this.departmentService.remove(id, companyId);
+    await this.departmentService.remove(id, companyId, userId);
 
     return {
       success: true,
@@ -171,6 +172,20 @@ export class DepartmentController {
         description: department.description,
       },
       members,
+    };
+  }
+
+  @Get(':id/stats')
+  @Roles(UserRole.COMPANY_ADMIN, UserRole.MANAGER, UserRole.SUPER_ADMIN)
+  async getStats(@Param('id') id: string, @Req() req) {
+    const user = req.user;
+    const companyId = user.companyId?.toString() || user.companyId;
+
+    const stats = await this.departmentService.getStats(id, companyId);
+
+    return {
+      success: true,
+      stats,
     };
   }
 }

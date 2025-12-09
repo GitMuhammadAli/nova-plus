@@ -101,6 +101,7 @@ export class InviteService {
       createdBy: new Types.ObjectId(creatorId),
       email: createInviteDto.email,
       role: createInviteDto.role,
+      departmentId: createInviteDto.departmentId ? new Types.ObjectId(createInviteDto.departmentId) : undefined,
       expiresAt,
       isUsed: false,
       isActive: true,
@@ -149,10 +150,13 @@ export class InviteService {
    * Get invite details by token (for validation)
    */
   async getInviteByToken(token: string) {
-    // Check if invite exists and is active
-    // Note: Used invites are deleted, so if invite exists, it's available
+    // Check if invite exists, is active, and not used
     const invite = await this.inviteModel
-      .findOne({ token, isActive: true })
+      .findOne({ 
+        token, 
+        isActive: true,
+        isUsed: false 
+      })
       .populate('companyId', 'name domain')
       .populate('createdBy', 'name email')
       .exec();
@@ -173,16 +177,15 @@ export class InviteService {
    * Accept an invite and create user account
    */
   async acceptInvite(token: string, acceptInviteDto: AcceptInviteDto) {
-    // Get invite (check all invites first to provide better error messages)
-    const invite = await this.inviteModel.findOne({ token, isActive: true }).exec();
+    // Get invite - check for active, unused invites
+    const invite = await this.inviteModel.findOne({ 
+      token, 
+      isActive: true,
+      isUsed: false 
+    }).exec();
 
     if (!invite) {
       throw new NotFoundException('Invite not found or has been revoked');
-    }
-
-    // Check if already used
-    if (invite.isUsed) {
-      throw new BadRequestException('This invite has already been used. Please contact your administrator for a new invite.');
     }
 
     // Check if expired
@@ -244,6 +247,7 @@ export class InviteService {
       companyId: invite.companyId.toString(),
       orgId: invite.companyId.toString(), // Backward compatibility
       createdBy: invite.createdBy,
+      department: invite.departmentId ? invite.departmentId.toString() : undefined,
       isActive: true,
     });
 

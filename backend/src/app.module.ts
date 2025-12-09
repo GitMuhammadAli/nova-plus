@@ -20,6 +20,7 @@ import { AuditModule } from './modules/audit/audit.module';
 import { DepartmentModule } from './modules/department/department.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { WorkflowModule } from './modules/workflow/workflow.module';
+import { ManagerModule } from './modules/manager/manager.module';
 import { QueueModule } from './providers/queue/queue.module';
 import { WebhookModule } from './modules/webhook/webhook.module';
 import { CommonModule } from './common/common.module';
@@ -73,6 +74,7 @@ import { MetricsController } from './common/controllers/metrics.controller';
     DepartmentModule,
     AnalyticsModule,
     WorkflowModule,
+    ManagerModule,
     QueueModule,
     WebhookModule,
     CommonModule,

@@ -1,11 +1,12 @@
-"use client"
-
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { FadeIn, StaggerContainer } from "@/components/motion"
 import { ArrowRight, Zap, BarChart3, Users, Workflow, Shield } from "lucide-react"
 import Link from "next/link"
+
+// ISR: Revalidate every hour (3600 seconds)
+export const revalidate = 3600;
 
 export default function LandingPage() {
   const features = [

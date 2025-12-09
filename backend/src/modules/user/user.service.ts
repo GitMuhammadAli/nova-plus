@@ -224,7 +224,17 @@ export class UsersService {
   /**
    * Company Admin: Get all users in the company
    */
-  async findAllForCompany(companyId: string, params?: { page?: number; limit?: number; search?: string }) {
+  async findAllForCompany(
+    companyId: string,
+    params?: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      role?: UserRole;
+      department?: string;
+      status?: 'active' | 'inactive' | 'all';
+    },
+  ) {
     const page = params?.page || 1;
     const limit = params?.limit || 100;
     const skip = (page - 1) * limit;
@@ -248,6 +258,21 @@ export class UsersService {
           ],
         },
       ];
+    }
+
+    // Add role filter
+    if (params?.role) {
+      query.role = params.role;
+    }
+
+    // Add department filter
+    if (params?.department) {
+      query.department = params.department;
+    }
+
+    // Add status filter
+    if (params?.status && params.status !== 'all') {
+      query.isActive = params.status === 'active';
     }
 
     // Get users (excluding password)
@@ -487,14 +512,44 @@ export class UsersService {
   /**
    * Get user statistics for company
    */
-  async getStats(companyId: string) {
+  async getStats(companyId: string, filters?: { role?: UserRole; department?: string; status?: 'active' | 'inactive' }) {
+    const baseQuery: any = {
+      $or: [{ companyId }, { orgId: companyId }],
+    };
+
+    if (filters?.role) {
+      baseQuery.role = filters.role;
+    }
+
+    if (filters?.department) {
+      baseQuery.department = filters.department;
+    }
+
+    if (filters?.status) {
+      baseQuery.isActive = filters.status === 'active';
+    }
+
     const [totalUsers, activeUsers, inactiveUsers, managers, users, admins] = await Promise.all([
-      this.userModel.countDocuments({ $or: [{ companyId }, { orgId: companyId }] }).exec(),
-      this.userModel.countDocuments({ $or: [{ companyId }, { orgId: companyId }], isActive: true }).exec(),
-      this.userModel.countDocuments({ $or: [{ companyId }, { orgId: companyId }], isActive: false }).exec(),
-      this.userModel.countDocuments({ $or: [{ companyId }, { orgId: companyId }], role: UserRole.MANAGER }).exec(),
-      this.userModel.countDocuments({ $or: [{ companyId }, { orgId: companyId }], role: UserRole.USER }).exec(),
-      this.userModel.countDocuments({ $or: [{ companyId }, { orgId: companyId }], role: UserRole.COMPANY_ADMIN }).exec(),
+      this.userModel.countDocuments(baseQuery).exec(),
+      this.userModel.countDocuments({ ...baseQuery, isActive: true }).exec(),
+      this.userModel.countDocuments({ ...baseQuery, isActive: false }).exec(),
+      this.userModel.countDocuments({ ...baseQuery, role: UserRole.MANAGER }).exec(),
+      this.userModel.countDocuments({ ...baseQuery, role: UserRole.USER }).exec(),
+      this.userModel.countDocuments({ ...baseQuery, role: UserRole.COMPANY_ADMIN }).exec(),
+    ]);
+
+    // Get department breakdown
+    const departmentBreakdown = await this.userModel.aggregate([
+      { $match: baseQuery },
+      { $group: { _id: '$department', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+    ]);
+
+    // Get role breakdown
+    const roleBreakdown = await this.userModel.aggregate([
+      { $match: baseQuery },
+      { $group: { _id: '$role', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
     ]);
 
     return {
@@ -504,6 +559,46 @@ export class UsersService {
       managers,
       users,
       admins,
+      departmentBreakdown: departmentBreakdown.map(d => ({ department: d._id || 'Unassigned', count: d.count })),
+      roleBreakdown: roleBreakdown.map(r => ({ role: r._id, count: r.count })),
     };
+  }
+
+  /**
+   * Disable user
+   */
+  async disableUser(userId: string, companyId: string) {
+    const user = await this.userModel.findOne({
+      _id: userId,
+      $or: [{ companyId }, { orgId: companyId }],
+    }).exec();
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (user.role === UserRole.COMPANY_ADMIN || user.role === UserRole.SUPER_ADMIN) {
+      throw new ForbiddenException('Cannot disable admin users');
+    }
+
+    user.isActive = false;
+    return user.save();
+  }
+
+  /**
+   * Enable user
+   */
+  async enableUser(userId: string, companyId: string) {
+    const user = await this.userModel.findOne({
+      _id: userId,
+      $or: [{ companyId }, { orgId: companyId }],
+    }).exec();
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    user.isActive = true;
+    return user.save();
   }
 }
