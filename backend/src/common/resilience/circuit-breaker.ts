@@ -28,19 +28,19 @@ export class CircuitBreaker {
   private halfOpenCalls: number = 0;
   private successCount: number = 0;
 
+  private options: CircuitBreakerOptions;
+
   constructor(
     private readonly name: string,
-    private readonly options?: CircuitBreakerOptions,
+    options?: CircuitBreakerOptions,
   ) {
     // Use provided options or defaults from config
-    if (!this.options) {
-      this.options = {
-        failureThreshold: 5,
-        resetTimeout: 60000,
-        monitoringPeriod: 60000,
-        halfOpenMaxCalls: 3,
-      };
-    }
+    this.options = options || {
+      failureThreshold: 5,
+      resetTimeout: 60000,
+      monitoringPeriod: 60000,
+      halfOpenMaxCalls: 3,
+    };
   }
 
   /**

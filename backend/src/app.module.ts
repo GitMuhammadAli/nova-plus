@@ -3,10 +3,12 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
 import configuration from './config/configuration';
 import { validationSchema } from './config/validation';
 import { HealthModule } from './modules/health/health.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { AIModule } from './modules/ai/ai.module';
 import { TasksModule } from './modules/task/task.module';
 import { TeamsModule } from './modules/team/team.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
@@ -38,6 +40,8 @@ import { MetricsController } from './common/controllers/metrics.controller';
       load: [configuration],
       validationSchema,
     }),
+    // Scheduling
+    ScheduleModule.forRoot(),
     // Rate Limiting
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],
@@ -86,6 +90,7 @@ import { MetricsController } from './common/controllers/metrics.controller';
     IntegrationsModule,
     CommonModule,
     CacheModule,
+    AIModule,
   ],
   controllers: [],
   providers: [

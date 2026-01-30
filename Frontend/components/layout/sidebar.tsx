@@ -18,6 +18,9 @@ import {
   Building2,
   Webhook,
   Activity,
+  MessageSquare,
+  Brain,
+  FileBarChart,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -85,6 +88,24 @@ const allNavItems = [
     icon: Activity,
     label: "Jobs",
     path: "/jobs",
+    roles: ["admin", "manager"],
+  },
+  {
+    icon: MessageSquare,
+    label: "AI Chat",
+    path: "/ai-chat",
+    roles: ["admin", "manager", "user"],
+  },
+  {
+    icon: Brain,
+    label: "AI Insights",
+    path: "/ai-insights",
+    roles: ["admin", "manager"],
+  },
+  {
+    icon: FileBarChart,
+    label: "AI Reports",
+    path: "/ai-reports",
     roles: ["admin", "manager"],
   },
   {

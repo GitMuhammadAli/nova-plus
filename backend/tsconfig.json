@@ -18,6 +18,9 @@
     "skipLibCheck": true,
     "strictNullChecks": true,
     "forceConsistentCasingInFileNames": true,
+    "paths": {
+      "@pinecone-database/pinecone": ["./node_modules/@pinecone-database/pinecone"]
+    },
     "noImplicitAny": false,
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false

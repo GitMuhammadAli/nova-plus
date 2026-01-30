@@ -138,4 +138,21 @@ export default () => ({
   encryptEnvVars: process.env.ENCRYPT_ENV_VARS === 'true',
   kmsKeyId: process.env.KMS_KEY_ID,
   sessionSecret: process.env.SESSION_SECRET || 'your-session-secret-change-in-production',
+
+  // AI Configuration
+  ai: {
+    openaiApiKey: process.env.OPENAI_API_KEY,
+    openaiModel: process.env.OPENAI_MODEL || 'gpt-4o-mini',
+    pineconeApiKey: process.env.PINECONE_API_KEY,
+    pineconeEnvironment: process.env.PINECONE_ENVIRONMENT || 'us-east-1',
+    pineconeIndexName: process.env.PINECONE_INDEX_NAME || 'novapulse',
+    embeddingModel: process.env.EMBEDDING_MODEL || 'text-embedding-3-small',
+    embeddingDimensions: parseInt(process.env.EMBEDDING_DIMENSIONS ?? '1536', 10),
+    chunkSize: parseInt(process.env.AI_CHUNK_SIZE ?? '1000', 10),
+    chunkOverlap: parseInt(process.env.AI_CHUNK_OVERLAP ?? '200', 10),
+    maxTokens: parseInt(process.env.AI_MAX_TOKENS ?? '500', 10),
+    temperature: parseFloat(process.env.AI_TEMPERATURE ?? '0.7'),
+    usageLimit: parseInt(process.env.AI_USAGE_LIMIT ?? '1000', 10),
+    enableAI: process.env.ENABLE_AI !== 'false',
+  },
 });
