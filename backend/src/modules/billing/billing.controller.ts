@@ -11,6 +11,7 @@ import {
   RawBodyRequest,
 } from '@nestjs/common';
 import { BillingService } from './billing.service';
+import { PlanLimitsService } from './plan-limits.service';
 import { CreateCheckoutSessionDto, UpdateUsageDto } from './dto/create-billing.dto';
 import { CancelSubscriptionDto } from './dto/update-billing.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -19,11 +20,13 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { UserRole } from '../user/entities/user.entity';
 import Stripe from 'stripe';
 import { ConfigService } from '@nestjs/config';
+import { PLAN_LIMITS } from './plan-limits.config';
 
 @Controller('billing')
 export class BillingController {
   constructor(
     private readonly billingService: BillingService,
+    private readonly planLimitsService: PlanLimitsService,
     private readonly configService: ConfigService,
   ) {}
 
@@ -83,6 +86,58 @@ export class BillingController {
     return {
       success: true,
       data: billingInfo,
+    };
+  }
+
+  /**
+   * Get plan info with usage stats
+   * GET /billing/plan-info
+   */
+  @Get('plan-info')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  async getPlanInfo(@Req() req: any) {
+    const companyId = req.user.companyId?.toString() || req.user.companyId;
+    
+    if (!companyId) {
+      throw new Error('Company ID not found in user session');
+    }
+
+    const planInfo = await this.planLimitsService.getPlanInfo(companyId);
+    return {
+      success: true,
+      data: planInfo,
+    };
+  }
+
+  /**
+   * Get usage stats only
+   * GET /billing/usage
+   */
+  @Get('usage')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  async getUsageStats(@Req() req: any) {
+    const companyId = req.user.companyId?.toString() || req.user.companyId;
+    
+    if (!companyId) {
+      throw new Error('Company ID not found in user session');
+    }
+
+    const usage = await this.planLimitsService.getUsageStats(companyId);
+    return {
+      success: true,
+      data: usage,
+    };
+  }
+
+  /**
+   * Get all plan limits (public info about what each plan offers)
+   * GET /billing/plan-limits
+   */
+  @Get('plan-limits')
+  async getAllPlanLimits() {
+    return {
+      success: true,
+      data: PLAN_LIMITS,
     };
   }
 

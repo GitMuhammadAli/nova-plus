@@ -4,9 +4,13 @@
   "private": true,
   "scripts": {
     "build": "next build",
-    "dev": "  next dev -p 3100",
+    "dev": "next dev -p 3100",
     "lint": "eslint .",
-    "start": "next start -p 3100"
+    "start": "next start -p 3100",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:debug": "playwright test --debug"
   },
   "dependencies": {
     "@emotion/is-prop-valid": "latest",

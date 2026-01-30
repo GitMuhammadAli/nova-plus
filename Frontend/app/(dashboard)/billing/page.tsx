@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
 import { 
   CreditCard, 
   Download, 
@@ -18,7 +19,13 @@ import {
   Clock,
   DollarSign,
   TrendingUp,
-  Receipt
+  Receipt,
+  Users,
+  FolderTree,
+  Briefcase,
+  HardDrive,
+  UsersRound,
+  Workflow
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
@@ -44,16 +51,60 @@ interface PaymentMethod {
   isDefault: boolean;
 }
 
+interface UsageStat {
+  current: number;
+  max: number;
+  percentage: number;
+  currentGB?: number;
+  maxGB?: number;
+}
+
+interface UsageStats {
+  users: UsageStat;
+  departments: UsageStat;
+  projects: UsageStat;
+  storage: UsageStat & { currentGB: number; maxGB: number };
+  teams: UsageStat;
+  workflows: UsageStat;
+}
+
+interface PlanFeatures {
+  analytics: boolean;
+  advancedReports: boolean;
+  apiAccess: boolean;
+  webhooks: boolean;
+  customBranding: boolean;
+  sso: boolean;
+  auditLogs: boolean;
+  prioritySupport: boolean;
+}
+
+interface PlanInfo {
+  planName: string;
+  limits: {
+    maxUsers: number;
+    maxDepartments: number;
+    maxProjects: number;
+    maxStorageGB: number;
+    maxTeams: number;
+    maxWorkflows: number;
+    features: PlanFeatures;
+  };
+  usage: UsageStats;
+  features: PlanFeatures;
+}
+
 export default function BillingPage() {
   const { user } = useSelector((state: RootState) => state.auth);
   const [loading, setLoading] = useState(true);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  const [planInfo, setPlanInfo] = useState<PlanInfo | null>(null);
   const [currentPlan, setCurrentPlan] = useState({
-    name: "Professional",
-    price: 99,
+    name: "Free",
+    price: 0,
     billingCycle: "monthly",
-    features: ["Unlimited users", "Advanced analytics", "Priority support"],
+    features: ["5 users", "Basic features"],
   });
 
   useEffect(() => {
@@ -65,25 +116,50 @@ export default function BillingPage() {
   const loadBillingData = async () => {
     setLoading(true);
     try {
-      const response = await billingAPI.getBillingInfo();
-      const data = response.data || response;
-      if (data.subscription) {
+      // Load billing info and plan info in parallel
+      const [billingResponse, planResponse] = await Promise.all([
+        billingAPI.getBillingInfo().catch(() => ({ data: { data: {} } })),
+        billingAPI.getPlanInfo().catch(() => ({ data: { data: null } })),
+      ]);
+
+      const billingData = billingResponse.data?.data || billingResponse.data || {};
+      const planData = planResponse.data?.data || planResponse.data || null;
+
+      // Set plan info
+      if (planData) {
+        setPlanInfo(planData);
+        const planPrices: Record<string, number> = {
+          free: 0,
+          starter: 29,
+          pro: 99,
+          enterprise: 299,
+        };
+        const planFeaturesList: Record<string, string[]> = {
+          free: ['5 users', '2 departments', '5 projects', '1 GB storage'],
+          starter: ['25 users', '10 departments', '25 projects', '10 GB storage', 'Analytics', 'API Access'],
+          pro: ['100 users', '50 departments', '100 projects', '100 GB storage', 'Advanced Reports', 'Custom Branding'],
+          enterprise: ['Unlimited users', 'Unlimited departments', 'Unlimited projects', 'Unlimited storage', 'SSO', 'Priority Support'],
+        };
         setCurrentPlan({
-          name: data.subscription.planName || "Professional",
-          price: 99,
+          name: planData.planName.charAt(0).toUpperCase() + planData.planName.slice(1),
+          price: planPrices[planData.planName] || 0,
           billingCycle: "monthly",
-          features: ["Unlimited users", "Advanced analytics", "Priority support"],
+          features: planFeaturesList[planData.planName] || planFeaturesList.free,
         });
       }
-      setInvoices((data.invoices || []).map((inv: any) => ({
-        _id: inv._id,
-        invoiceNumber: inv.stripeInvoiceId,
-        amount: inv.amount / 100, // Convert from cents
-        status: inv.status === "paid" ? "paid" : inv.status === "open" ? "pending" : "overdue",
-        dueDate: inv.dueDate || inv.createdAt,
-        issueDate: inv.createdAt,
-        description: "Subscription payment",
-      })));
+
+      // Set invoices
+      if (billingData.invoices) {
+        setInvoices((billingData.invoices || []).map((inv: any) => ({
+          _id: inv._id,
+          invoiceNumber: inv.stripeInvoiceId,
+          amount: inv.amount / 100,
+          status: inv.status === "paid" ? "paid" : inv.status === "open" ? "pending" : "overdue",
+          dueDate: inv.dueDate || inv.createdAt,
+          issueDate: inv.createdAt,
+          description: "Subscription payment",
+        })));
+      }
       setPaymentMethods([]);
     } catch (error: any) {
       toast({
@@ -374,51 +450,186 @@ export default function BillingPage() {
               </TabsContent>
 
               <TabsContent value="usage" className="space-y-6">
-                <div className="grid gap-4 md:grid-cols-3">
+                {planInfo?.usage ? (
+                  <div className="grid gap-4 md:grid-cols-3">
+                    {/* Users */}
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <div className="flex items-center gap-2">
+                          <Users className="w-4 h-4 text-primary" />
+                          <CardTitle className="text-base">Users</CardTitle>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-3xl font-bold">{planInfo.usage.users.current}</div>
+                        <div className="text-sm text-muted-foreground mt-1">
+                          of {planInfo.usage.users.max === -1 ? 'unlimited' : planInfo.usage.users.max}
+                        </div>
+                        {planInfo.usage.users.max !== -1 ? (
+                          <Progress value={planInfo.usage.users.percentage} className="mt-2" />
+                        ) : (
+                          <div className="mt-2 flex items-center gap-1 text-success">
+                            <TrendingUp className="w-4 h-4" />
+                            <span className="text-sm">No limit</span>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    {/* Departments */}
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <div className="flex items-center gap-2">
+                          <FolderTree className="w-4 h-4 text-primary" />
+                          <CardTitle className="text-base">Departments</CardTitle>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-3xl font-bold">{planInfo.usage.departments.current}</div>
+                        <div className="text-sm text-muted-foreground mt-1">
+                          of {planInfo.usage.departments.max === -1 ? 'unlimited' : planInfo.usage.departments.max}
+                        </div>
+                        {planInfo.usage.departments.max !== -1 ? (
+                          <Progress value={planInfo.usage.departments.percentage} className="mt-2" />
+                        ) : (
+                          <div className="mt-2 flex items-center gap-1 text-success">
+                            <TrendingUp className="w-4 h-4" />
+                            <span className="text-sm">No limit</span>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    {/* Projects */}
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <div className="flex items-center gap-2">
+                          <Briefcase className="w-4 h-4 text-primary" />
+                          <CardTitle className="text-base">Projects</CardTitle>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-3xl font-bold">{planInfo.usage.projects.current}</div>
+                        <div className="text-sm text-muted-foreground mt-1">
+                          of {planInfo.usage.projects.max === -1 ? 'unlimited' : planInfo.usage.projects.max}
+                        </div>
+                        {planInfo.usage.projects.max !== -1 ? (
+                          <Progress value={planInfo.usage.projects.percentage} className="mt-2" />
+                        ) : (
+                          <div className="mt-2 flex items-center gap-1 text-success">
+                            <TrendingUp className="w-4 h-4" />
+                            <span className="text-sm">No limit</span>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    {/* Storage */}
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <div className="flex items-center gap-2">
+                          <HardDrive className="w-4 h-4 text-primary" />
+                          <CardTitle className="text-base">Storage</CardTitle>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-3xl font-bold">{planInfo.usage.storage.currentGB} GB</div>
+                        <div className="text-sm text-muted-foreground mt-1">
+                          of {planInfo.usage.storage.maxGB === -1 ? 'unlimited' : `${planInfo.usage.storage.maxGB} GB`}
+                        </div>
+                        {planInfo.usage.storage.maxGB !== -1 ? (
+                          <Progress value={planInfo.usage.storage.percentage} className="mt-2" />
+                        ) : (
+                          <div className="mt-2 flex items-center gap-1 text-success">
+                            <TrendingUp className="w-4 h-4" />
+                            <span className="text-sm">No limit</span>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    {/* Teams */}
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <div className="flex items-center gap-2">
+                          <UsersRound className="w-4 h-4 text-primary" />
+                          <CardTitle className="text-base">Teams</CardTitle>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-3xl font-bold">{planInfo.usage.teams.current}</div>
+                        <div className="text-sm text-muted-foreground mt-1">
+                          of {planInfo.usage.teams.max === -1 ? 'unlimited' : planInfo.usage.teams.max}
+                        </div>
+                        {planInfo.usage.teams.max !== -1 ? (
+                          <Progress value={planInfo.usage.teams.percentage} className="mt-2" />
+                        ) : (
+                          <div className="mt-2 flex items-center gap-1 text-success">
+                            <TrendingUp className="w-4 h-4" />
+                            <span className="text-sm">No limit</span>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    {/* Workflows */}
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <div className="flex items-center gap-2">
+                          <Workflow className="w-4 h-4 text-primary" />
+                          <CardTitle className="text-base">Workflows</CardTitle>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-3xl font-bold">{planInfo.usage.workflows.current}</div>
+                        <div className="text-sm text-muted-foreground mt-1">
+                          of {planInfo.usage.workflows.max === -1 ? 'unlimited' : planInfo.usage.workflows.max}
+                        </div>
+                        {planInfo.usage.workflows.max !== -1 ? (
+                          <Progress value={planInfo.usage.workflows.percentage} className="mt-2" />
+                        ) : (
+                          <div className="mt-2 flex items-center gap-1 text-success">
+                            <TrendingUp className="w-4 h-4" />
+                            <span className="text-sm">No limit</span>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+                ) : (
+                  <Card>
+                    <CardContent className="p-12 text-center">
+                      <HardDrive className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                      <p className="text-muted-foreground">Usage data not available</p>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Features included in current plan */}
+                {planInfo?.features && (
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-base">API Calls</CardTitle>
+                      <CardTitle>Features Included</CardTitle>
+                      <CardDescription>Features available on your {currentPlan.name} plan</CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div className="text-3xl font-bold">12,345</div>
-                      <div className="text-sm text-muted-foreground mt-1">
-                        of 50,000 this month
-                      </div>
-                      <div className="mt-2 h-2 bg-muted rounded-full overflow-hidden">
-                        <div className="h-full bg-primary" style={{ width: "25%" }} />
+                      <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-4">
+                        {Object.entries(planInfo.features).map(([feature, enabled]) => (
+                          <div key={feature} className="flex items-center gap-2">
+                            {enabled ? (
+                              <CheckCircle2 className="w-4 h-4 text-success" />
+                            ) : (
+                              <XCircle className="w-4 h-4 text-muted-foreground" />
+                            )}
+                            <span className={enabled ? '' : 'text-muted-foreground'}>
+                              {feature.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                            </span>
+                          </div>
+                        ))}
                       </div>
                     </CardContent>
                   </Card>
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-base">Storage</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-3xl font-bold">2.5 GB</div>
-                      <div className="text-sm text-muted-foreground mt-1">
-                        of 10 GB used
-                      </div>
-                      <div className="mt-2 h-2 bg-muted rounded-full overflow-hidden">
-                        <div className="h-full bg-success" style={{ width: "25%" }} />
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-base">Users</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-3xl font-bold">25</div>
-                      <div className="text-sm text-muted-foreground mt-1">
-                        of unlimited
-                      </div>
-                      <div className="mt-2 flex items-center gap-1 text-success">
-                        <TrendingUp className="w-4 h-4" />
-                        <span className="text-sm">No limit</span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
+                )}
               </TabsContent>
             </Tabs>
           </>

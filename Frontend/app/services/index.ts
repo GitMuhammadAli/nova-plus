@@ -368,6 +368,12 @@ export const billingAPI = {
   
   getBillingInfo: () => api.get('/billing/me'),
   
+  getPlanInfo: () => api.get('/billing/plan-info'),
+  
+  getUsageStats: () => api.get('/billing/usage'),
+  
+  getPlanLimits: () => api.get('/billing/plan-limits'),
+  
   updateUsage: (data: { subscriptionItemId: string; quantity: number }) =>
     api.post('/billing/usage', data),
   

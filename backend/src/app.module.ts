@@ -27,6 +27,7 @@ import { UploadsModule } from './modules/uploads/uploads.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { IntegrationsModule } from './modules/integrations/integrations.module';
 import { CommonModule } from './common/common.module';
+import { CacheModule } from './providers/cache/cache.module';
 import { PrometheusService } from './common/metrics/prom-client';
 import { MetricsController } from './common/controllers/metrics.controller';
 
@@ -84,6 +85,7 @@ import { MetricsController } from './common/controllers/metrics.controller';
     BillingModule,
     IntegrationsModule,
     CommonModule,
+    CacheModule,
   ],
   controllers: [],
   providers: [
