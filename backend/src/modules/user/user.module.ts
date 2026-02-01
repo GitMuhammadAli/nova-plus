@@ -1,7 +1,10 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from './entities/user.entity';
-import { Organization, OrganizationSchema } from '../organization/entities/organization.entity';
+import {
+  Organization,
+  OrganizationSchema,
+} from '../organization/entities/organization.entity';
 import { Company, CompanySchema } from '../company/entities/company.entity';
 import { Task, TaskSchema } from '../task/entities/task.entity';
 import { Project, ProjectSchema } from '../project/entities/project.entity';
@@ -14,7 +17,10 @@ import { UserStatsService } from './stats/user-stats.service';
 import { TestDataSeed } from './seed/test-data.seed';
 import { BulkSeedService } from './seed/bulk-seed.service';
 import { AuditModule } from '../audit/audit.module';
-import { Department, DepartmentSchema } from '../department/entities/department.entity';
+import {
+  Department,
+  DepartmentSchema,
+} from '../department/entities/department.entity';
 import { Team, TeamSchema } from '../team/entities/team.entity';
 import { Workflow, WorkflowSchema } from '../workflow/entities/workflow.entity';
 
@@ -41,6 +47,11 @@ import { Workflow, WorkflowSchema } from '../workflow/entities/workflow.entity';
     BulkSeedService,
   ],
   controllers: [UserController, UsersController],
-  exports: [UsersService, UserTasksService, UserProjectsService, UserStatsService],
+  exports: [
+    UsersService,
+    UserTasksService,
+    UserProjectsService,
+    UserStatsService,
+  ],
 })
 export class UsersModule {}

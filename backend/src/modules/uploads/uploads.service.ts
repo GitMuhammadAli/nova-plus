@@ -50,13 +50,17 @@ export class UploadsService {
 
     try {
       // Upload to Cloudinary
-      const folder = createUploadDto?.folder || `companies/${companyId}/uploads`;
-      const uploadResult = await cloudinary.uploader.upload(file.buffer.toString('base64'), {
-        folder,
-        resource_type: 'auto',
-        use_filename: true,
-        unique_filename: true,
-      });
+      const folder =
+        createUploadDto?.folder || `companies/${companyId}/uploads`;
+      const uploadResult = await cloudinary.uploader.upload(
+        file.buffer.toString('base64'),
+        {
+          folder,
+          resource_type: 'auto',
+          use_filename: true,
+          unique_filename: true,
+        },
+      );
 
       // Generate thumbnail for images
       let thumbnailUrl: string | undefined;
@@ -100,7 +104,8 @@ export class UploadsService {
       await this.auditService.createLog({
         action: AuditAction.CREATE,
         resource: AuditResource.TASK,
-        resourceId: (savedUpload._id as any)?.toString() || String(savedUpload._id),
+        resourceId:
+          (savedUpload._id as any)?.toString() || String(savedUpload._id),
         userId,
         companyId,
         metadata: {
@@ -128,7 +133,12 @@ export class UploadsService {
       limit?: number;
       page?: number;
     },
-  ): Promise<{ uploads: UploadDocument[]; total: number; page: number; limit: number }> {
+  ): Promise<{
+    uploads: UploadDocument[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
     const query: any = {
       companyId: new Types.ObjectId(companyId),
       isActive: true,
@@ -202,7 +212,9 @@ export class UploadsService {
     // You might want to check if user is admin here
 
     if (!isOwner) {
-      throw new ForbiddenException('You do not have permission to update this upload');
+      throw new ForbiddenException(
+        'You do not have permission to update this upload',
+      );
     }
 
     Object.assign(upload, updateUploadDto);
@@ -232,7 +244,9 @@ export class UploadsService {
     // You might want to check if user is admin here
 
     if (!isOwner) {
-      throw new ForbiddenException('You do not have permission to delete this upload');
+      throw new ForbiddenException(
+        'You do not have permission to delete this upload',
+      );
     }
 
     try {
@@ -256,14 +270,20 @@ export class UploadsService {
         },
       });
     } catch (error) {
-      throw new BadRequestException(`Failed to delete upload: ${error.message}`);
+      throw new BadRequestException(
+        `Failed to delete upload: ${error.message}`,
+      );
     }
   }
 
   /**
    * Make upload public
    */
-  async makePublic(id: string, companyId: string, userId: string): Promise<UploadDocument> {
+  async makePublic(
+    id: string,
+    companyId: string,
+    userId: string,
+  ): Promise<UploadDocument> {
     const upload = await this.findOne(id, companyId);
     upload.isPublic = true;
     const updated = await upload.save();
@@ -287,7 +307,12 @@ export class UploadsService {
     companyId: string,
     folder?: string,
     expiresIn?: number,
-  ): Promise<{ url: string; signature: string; timestamp: number; publicId: string }> {
+  ): Promise<{
+    url: string;
+    signature: string;
+    timestamp: number;
+    publicId: string;
+  }> {
     const timestamp = Math.round(new Date().getTime() / 1000);
     const publicId = `companies/${companyId}/uploads/${Date.now()}`;
     const uploadFolder = folder || `companies/${companyId}/uploads`;

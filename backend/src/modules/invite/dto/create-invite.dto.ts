@@ -1,4 +1,12 @@
-import { IsEmail, IsString, IsOptional, IsIn, IsNumber, Min, Max } from 'class-validator';
+import {
+  IsEmail,
+  IsString,
+  IsOptional,
+  IsIn,
+  IsNumber,
+  Min,
+  Max,
+} from 'class-validator';
 import { Transform } from 'class-transformer';
 import { UserRole } from '../../user/entities/user.entity';
 
@@ -15,12 +23,18 @@ export class CreateInviteDto {
     // Normalize role to lowercase enum value
     if (typeof value === 'string') {
       const normalized = value.toLowerCase().trim();
-      
+
       // Reject admin roles
-      if (normalized === 'company_admin' || normalized === 'admin' || normalized === 'super_admin') {
-        throw new Error('Cannot invite users as admin. Use "user" or "manager"');
+      if (
+        normalized === 'company_admin' ||
+        normalized === 'admin' ||
+        normalized === 'super_admin'
+      ) {
+        throw new Error(
+          'Cannot invite users as admin. Use "user" or "manager"',
+        );
       }
-      
+
       // Map to enum values
       if (normalized === 'user') {
         return UserRole.USER; // Returns 'user'
@@ -28,7 +42,7 @@ export class CreateInviteDto {
       if (normalized === 'manager') {
         return UserRole.MANAGER; // Returns 'manager'
       }
-      
+
       return value;
     }
     return value;
@@ -53,4 +67,3 @@ export class CreateInviteDto {
   @IsString()
   departmentId?: string; // Optional: assign to department on invite acceptance
 }
-

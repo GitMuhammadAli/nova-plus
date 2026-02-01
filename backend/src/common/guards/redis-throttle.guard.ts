@@ -1,4 +1,10 @@
-import { Injectable, ExecutionContext, HttpException, HttpStatus, CanActivate } from '@nestjs/common';
+import {
+  Injectable,
+  ExecutionContext,
+  HttpException,
+  HttpStatus,
+  CanActivate,
+} from '@nestjs/common';
 import { Inject } from '@nestjs/common';
 import Redis from 'ioredis';
 import { REDIS_CLIENT } from '../../providers/redis/redis.provider';
@@ -24,7 +30,7 @@ export class RedisThrottleGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const ip = request.ip || request.connection?.remoteAddress || 'unknown';
     const companyId = request.user?.companyId || 'anonymous';
-    
+
     // Use companyId + IP for distributed rate limiting
     return `throttle:${companyId}:${ip}:${identifier}`;
   }
@@ -32,25 +38,28 @@ export class RedisThrottleGuard implements CanActivate {
   /**
    * Check if request should be throttled using Redis
    */
-  async checkLimit(context: ExecutionContext, options: RedisThrottleOptions): Promise<boolean> {
+  async checkLimit(
+    context: ExecutionContext,
+    options: RedisThrottleOptions,
+  ): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     const route = request.route?.path || request.url;
-    
-    const identifier = options.keyGenerator 
+
+    const identifier = options.keyGenerator
       ? options.keyGenerator(context)
       : route;
 
     const key = this.generateKey(context, identifier);
-    
+
     try {
       // Use Redis INCR with TTL for rate limiting
       const count = await this.redisClient.incr(key);
-      
+
       if (count === 1) {
         // Set TTL on first request
         await this.redisClient.expire(key, options.ttl);
       }
-      
+
       if (count > options.limit) {
         // Get remaining TTL
         const ttl = await this.redisClient.ttl(key);
@@ -63,7 +72,7 @@ export class RedisThrottleGuard implements CanActivate {
           HttpStatus.TOO_MANY_REQUESTS,
         );
       }
-      
+
       return true;
     } catch (error) {
       if (error instanceof HttpException) {
@@ -105,4 +114,3 @@ export class RedisThrottleGuard implements CanActivate {
     });
   }
 }
-

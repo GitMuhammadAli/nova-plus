@@ -39,7 +39,12 @@ export class WorkflowExecution {
   @Prop({ type: Types.ObjectId, ref: 'Company', required: true, index: true })
   companyId: Types.ObjectId;
 
-  @Prop({ type: String, enum: ExecutionStatus, default: ExecutionStatus.RUNNING, index: true })
+  @Prop({
+    type: String,
+    enum: ExecutionStatus,
+    default: ExecutionStatus.RUNNING,
+    index: true,
+  })
   status: ExecutionStatus;
 
   @Prop({ type: Object, required: true })
@@ -58,10 +63,10 @@ export class WorkflowExecution {
   error?: string;
 }
 
-export const WorkflowExecutionSchema = SchemaFactory.createForClass(WorkflowExecution);
+export const WorkflowExecutionSchema =
+  SchemaFactory.createForClass(WorkflowExecution);
 
 // Indexes
 WorkflowExecutionSchema.index({ workflowId: 1, startedAt: -1 });
 WorkflowExecutionSchema.index({ companyId: 1, startedAt: -1 });
 WorkflowExecutionSchema.index({ status: 1 });
-

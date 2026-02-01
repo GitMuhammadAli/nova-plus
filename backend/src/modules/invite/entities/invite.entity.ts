@@ -48,4 +48,3 @@ export const InviteSchema = SchemaFactory.createForClass(Invite);
 InviteSchema.index({ companyId: 1 });
 InviteSchema.index({ email: 1 });
 InviteSchema.index({ expiresAt: 1 });
-

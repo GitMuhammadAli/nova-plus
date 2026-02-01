@@ -37,7 +37,10 @@ export class ProjectController {
 
   @Get('me')
   findMyProjects(@Req() req) {
-    return this.projectService.findUserProjects(req.user._id.toString(), req.user);
+    return this.projectService.findUserProjects(
+      req.user._id.toString(),
+      req.user,
+    );
   }
 
   @Get(':id')
@@ -59,4 +62,3 @@ export class ProjectController {
     return this.projectService.remove(id, req.user);
   }
 }
-

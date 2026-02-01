@@ -32,9 +32,13 @@ describe('Phase 3 - Manager Module (e2e)', () => {
     // Clean up any existing test data first
     const companyModel = app.get<Model<Company>>(getModelToken(Company.name));
     const userModel = app.get<Model<User>>(getModelToken(User.name));
-    const departmentModel = app.get<Model<Department>>(getModelToken(Department.name));
-    
-    await userModel.deleteMany({ email: { $in: ['manager@test.com', 'user@test.com'] } }).exec();
+    const departmentModel = app.get<Model<Department>>(
+      getModelToken(Department.name),
+    );
+
+    await userModel
+      .deleteMany({ email: { $in: ['manager@test.com', 'user@test.com'] } })
+      .exec();
     await departmentModel.deleteMany({ name: 'Engineering' }).exec();
     await companyModel.deleteMany({ name: 'Test Company' }).exec();
 
@@ -85,7 +89,7 @@ describe('Phase 3 - Manager Module (e2e)', () => {
     // For testing, we'll use a placeholder token
     // In real tests, you would login properly or generate JWT tokens
     managerToken = 'test-manager-token-placeholder';
-    
+
     // Note: In production tests, you would:
     // 1. Hash password properly with bcrypt
     // 2. Login via /api/v1/auth/login
@@ -96,14 +100,20 @@ describe('Phase 3 - Manager Module (e2e)', () => {
     // Cleanup test data
     const userModel = app.get<Model<User>>(getModelToken(User.name));
     const companyModel = app.get<Model<Company>>(getModelToken(Company.name));
-    const departmentModel = app.get<Model<Department>>(getModelToken(Department.name));
+    const departmentModel = app.get<Model<Department>>(
+      getModelToken(Department.name),
+    );
     const projectModel = app.get<Model<Project>>(getModelToken(Project.name));
     const taskModel = app.get<Model<Task>>(getModelToken(Task.name));
 
-    await userModel.deleteMany({ email: { $in: ['manager@test.com', 'user@test.com'] } }).exec();
+    await userModel
+      .deleteMany({ email: { $in: ['manager@test.com', 'user@test.com'] } })
+      .exec();
     await departmentModel.deleteMany({ name: 'Engineering' }).exec();
     await projectModel.deleteMany({ name: 'Test Project' }).exec();
-    await taskModel.deleteMany({ title: { $in: ['Test Task', 'Updated Task'] } }).exec();
+    await taskModel
+      .deleteMany({ title: { $in: ['Test Task', 'Updated Task'] } })
+      .exec();
     await companyModel.deleteMany({ name: 'Test Company' }).exec();
 
     await app.close();
@@ -338,4 +348,3 @@ describe('Phase 3 - Manager Module (e2e)', () => {
     });
   });
 });
-

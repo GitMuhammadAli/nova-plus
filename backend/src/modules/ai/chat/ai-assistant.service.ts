@@ -81,7 +81,8 @@ export class AIAssistantService {
       logger.error('AI chat failed', { error: error.message, userId });
       return {
         type: 'answer',
-        answer: 'I apologize, but I encountered an error processing your request. Please try again.',
+        answer:
+          'I apologize, but I encountered an error processing your request. Please try again.',
         sources: [],
       };
     }
@@ -118,4 +119,3 @@ export class AIAssistantService {
     }
   }
 }
-

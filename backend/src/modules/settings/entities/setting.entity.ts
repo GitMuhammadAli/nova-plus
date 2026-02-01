@@ -22,7 +22,12 @@ export class Setting {
   @Prop({ type: Object, required: true })
   value: any;
 
-  @Prop({ type: String, enum: SettingType, default: SettingType.GENERAL, indexed: true })
+  @Prop({
+    type: String,
+    enum: SettingType,
+    default: SettingType.GENERAL,
+    indexed: true,
+  })
   type: SettingType;
 
   @Prop({ type: Types.ObjectId, ref: 'Company', required: true, indexed: true })

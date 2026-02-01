@@ -50,9 +50,15 @@ describe('PlanLimitsService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PlanLimitsService,
-        { provide: getModelToken(Subscription.name), useValue: mockSubscriptionModel },
+        {
+          provide: getModelToken(Subscription.name),
+          useValue: mockSubscriptionModel,
+        },
         { provide: getModelToken(User.name), useValue: mockUserModel },
-        { provide: getModelToken(Department.name), useValue: mockDepartmentModel },
+        {
+          provide: getModelToken(Department.name),
+          useValue: mockDepartmentModel,
+        },
         { provide: getModelToken(Project.name), useValue: mockProjectModel },
         { provide: getModelToken(Workflow.name), useValue: mockWorkflowModel },
         { provide: getModelToken(Upload.name), useValue: mockUploadModel },
@@ -158,7 +164,9 @@ describe('PlanLimitsService', () => {
       departmentModel.countDocuments.mockResolvedValue(1);
       projectModel.countDocuments.mockResolvedValue(2);
       workflowModel.countDocuments.mockResolvedValue(1);
-      uploadModel.aggregate.mockResolvedValue([{ totalBytes: 512 * 1024 * 1024 }]); // 0.5 GB
+      uploadModel.aggregate.mockResolvedValue([
+        { totalBytes: 512 * 1024 * 1024 },
+      ]); // 0.5 GB
 
       const usage = await service.getUsageStats(mockCompanyId);
 
@@ -181,7 +189,9 @@ describe('PlanLimitsService', () => {
       departmentModel.countDocuments.mockResolvedValue(20);
       projectModel.countDocuments.mockResolvedValue(30);
       workflowModel.countDocuments.mockResolvedValue(10);
-      uploadModel.aggregate.mockResolvedValue([{ totalBytes: 50 * 1024 * 1024 * 1024 }]);
+      uploadModel.aggregate.mockResolvedValue([
+        { totalBytes: 50 * 1024 * 1024 * 1024 },
+      ]);
 
       const usage = await service.getUsageStats(mockCompanyId);
 
@@ -226,33 +236,46 @@ describe('PlanLimitsService', () => {
       subscriptionModel.findOne.mockResolvedValue(null);
       userModel.countDocuments.mockResolvedValue(3);
 
-      await expect(service.enforceUserLimit(mockCompanyId)).resolves.not.toThrow();
+      await expect(
+        service.enforceUserLimit(mockCompanyId),
+      ).resolves.not.toThrow();
     });
 
     it('should throw ForbiddenException when at limit', async () => {
       subscriptionModel.findOne.mockResolvedValue(null);
       userModel.countDocuments.mockResolvedValue(5);
 
-      await expect(service.enforceUserLimit(mockCompanyId))
-        .rejects.toThrow(ForbiddenException);
+      await expect(service.enforceUserLimit(mockCompanyId)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
   describe('canUploadStorage', () => {
     it('should return true when under storage limit', async () => {
       subscriptionModel.findOne.mockResolvedValue(null);
-      uploadModel.aggregate.mockResolvedValue([{ totalBytes: 500 * 1024 * 1024 }]); // 0.5 GB
+      uploadModel.aggregate.mockResolvedValue([
+        { totalBytes: 500 * 1024 * 1024 },
+      ]); // 0.5 GB
 
-      const result = await service.canUploadStorage(mockCompanyId, 100 * 1024 * 1024); // 100 MB
+      const result = await service.canUploadStorage(
+        mockCompanyId,
+        100 * 1024 * 1024,
+      ); // 100 MB
 
       expect(result).toBe(true);
     });
 
     it('should return false when would exceed storage limit', async () => {
       subscriptionModel.findOne.mockResolvedValue(null);
-      uploadModel.aggregate.mockResolvedValue([{ totalBytes: 900 * 1024 * 1024 }]); // 0.9 GB
+      uploadModel.aggregate.mockResolvedValue([
+        { totalBytes: 900 * 1024 * 1024 },
+      ]); // 0.9 GB
 
-      const result = await service.canUploadStorage(mockCompanyId, 200 * 1024 * 1024); // 200 MB
+      const result = await service.canUploadStorage(
+        mockCompanyId,
+        200 * 1024 * 1024,
+      ); // 200 MB
 
       expect(result).toBe(false);
     });
@@ -297,15 +320,17 @@ describe('PlanLimitsService', () => {
         status: 'active',
       });
 
-      await expect(service.enforceFeature(mockCompanyId, 'analytics'))
-        .resolves.not.toThrow();
+      await expect(
+        service.enforceFeature(mockCompanyId, 'analytics'),
+      ).resolves.not.toThrow();
     });
 
     it('should throw ForbiddenException when feature is not available', async () => {
       subscriptionModel.findOne.mockResolvedValue(null);
 
-      await expect(service.enforceFeature(mockCompanyId, 'analytics'))
-        .rejects.toThrow(ForbiddenException);
+      await expect(
+        service.enforceFeature(mockCompanyId, 'analytics'),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 
@@ -322,7 +347,9 @@ describe('PlanLimitsService', () => {
       departmentModel.countDocuments.mockResolvedValue(5);
       projectModel.countDocuments.mockResolvedValue(10);
       workflowModel.countDocuments.mockResolvedValue(5);
-      uploadModel.aggregate.mockResolvedValue([{ totalBytes: 2 * 1024 * 1024 * 1024 }]);
+      uploadModel.aggregate.mockResolvedValue([
+        { totalBytes: 2 * 1024 * 1024 * 1024 },
+      ]);
 
       const planInfo = await service.getPlanInfo(mockCompanyId);
 
@@ -335,4 +362,3 @@ describe('PlanLimitsService', () => {
     });
   });
 });
-

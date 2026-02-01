@@ -5,7 +5,11 @@ import { JwtService } from '@nestjs/jwt';
 import { Company } from './entities/company.entity';
 import { User, UserRole } from '../user/entities/user.entity';
 import { AuditService } from '../audit/audit.service';
-import { BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  BadRequestException,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { Types } from 'mongoose';
 
@@ -33,8 +37,12 @@ describe('CompanyService', () => {
     managers: [],
     users: [],
     isActive: true,
-    save: jest.fn().mockImplementation(function() { return this; }),
-    toObject: jest.fn().mockImplementation(function() { return { ...this }; }),
+    save: jest.fn().mockImplementation(function () {
+      return this;
+    }),
+    toObject: jest.fn().mockImplementation(function () {
+      return { ...this };
+    }),
   };
 
   const mockUser = {
@@ -45,7 +53,7 @@ describe('CompanyService', () => {
     role: UserRole.COMPANY_ADMIN,
     companyId: mockCompanyId,
     isActive: true,
-    toObject: jest.fn().mockImplementation(function() { 
+    toObject: jest.fn().mockImplementation(function () {
       const obj = { ...this };
       delete obj.password;
       return obj;
@@ -62,7 +70,7 @@ describe('CompanyService', () => {
     };
 
     // Make the model constructor callable
-    const CompanyModelMock = function(data: any) {
+    const CompanyModelMock = function (data: any) {
       return {
         ...mockCompany,
         ...data,
@@ -124,10 +132,13 @@ describe('CompanyService', () => {
     };
 
     it('should register a new company with admin user', async () => {
-      companyModel.findOne = jest.fn()
+      companyModel.findOne = jest
+        .fn()
         .mockReturnValueOnce({ exec: jest.fn().mockResolvedValue(null) }) // company name check
         .mockReturnValueOnce({ exec: jest.fn().mockResolvedValue(null) }); // domain check
-      userModel.findOne.mockReturnValue({ exec: jest.fn().mockResolvedValue(null) }); // email check
+      userModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(null),
+      }); // email check
       userModel.create.mockResolvedValue(mockUser);
 
       const result = await service.register(registerDto);
@@ -140,24 +151,27 @@ describe('CompanyService', () => {
     });
 
     it('should throw BadRequestException if company name exists', async () => {
-      companyModel.findOne = jest.fn().mockReturnValue({ 
-        exec: jest.fn().mockResolvedValue(mockCompany) 
+      companyModel.findOne = jest.fn().mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockCompany),
       });
 
-      await expect(service.register(registerDto))
-        .rejects.toThrow(BadRequestException);
+      await expect(service.register(registerDto)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw BadRequestException if email already registered', async () => {
-      companyModel.findOne = jest.fn()
+      companyModel.findOne = jest
+        .fn()
         .mockReturnValueOnce({ exec: jest.fn().mockResolvedValue(null) })
         .mockReturnValueOnce({ exec: jest.fn().mockResolvedValue(null) });
-      userModel.findOne.mockReturnValue({ 
-        exec: jest.fn().mockResolvedValue(mockUser) 
+      userModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockUser),
       });
 
-      await expect(service.register(registerDto))
-        .rejects.toThrow(BadRequestException);
+      await expect(service.register(registerDto)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -170,7 +184,9 @@ describe('CompanyService', () => {
       const result = await service.findOne(mockCompanyId.toString());
 
       expect(result).toEqual(mockCompany);
-      expect(companyModel.findById).toHaveBeenCalledWith(mockCompanyId.toString());
+      expect(companyModel.findById).toHaveBeenCalledWith(
+        mockCompanyId.toString(),
+      );
     });
 
     it('should throw NotFoundException if company not found', async () => {
@@ -178,8 +194,9 @@ describe('CompanyService', () => {
         exec: jest.fn().mockResolvedValue(null),
       });
 
-      await expect(service.findOne('nonexistentId'))
-        .rejects.toThrow(NotFoundException);
+      await expect(service.findOne('nonexistentId')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -213,7 +230,11 @@ describe('CompanyService', () => {
       });
       userModel.countDocuments.mockResolvedValue(25);
 
-      const result = await service.getCompanyUsers(mockCompanyId.toString(), 2, 10);
+      const result = await service.getCompanyUsers(
+        mockCompanyId.toString(),
+        2,
+        10,
+      );
 
       expect(userModel.find().skip).toHaveBeenCalledWith(10);
       expect(userModel.find().limit).toHaveBeenCalledWith(10);
@@ -246,11 +267,13 @@ describe('CompanyService', () => {
         sort: jest.fn().mockReturnThis(),
         skip: jest.fn().mockReturnThis(),
         limit: jest.fn().mockReturnThis(),
-        exec: jest.fn().mockResolvedValue(
-          query.companyId === companyAId 
-            ? [{ ...mockUser, companyId: companyAId }]
-            : [{ ...mockUser, companyId: companyBId }]
-        ),
+        exec: jest
+          .fn()
+          .mockResolvedValue(
+            query.companyId === companyAId
+              ? [{ ...mockUser, companyId: companyAId }]
+              : [{ ...mockUser, companyId: companyBId }],
+          ),
       }));
       userModel.countDocuments.mockResolvedValue(1);
 
@@ -277,8 +300,9 @@ describe('CompanyService', () => {
       });
 
       // Attempting to get stats for non-existent company should throw
-      await expect(service.getCompanyStats(differentCompanyId))
-        .rejects.toThrow(NotFoundException);
+      await expect(service.getCompanyStats(differentCompanyId)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -308,12 +332,13 @@ describe('CompanyService', () => {
         exec: jest.fn().mockResolvedValue(null),
       });
 
-      await expect(service.update(
-        'nonexistentId',
-        { name: 'New Name' },
-        mockUserId.toString(),
-      )).rejects.toThrow(NotFoundException);
+      await expect(
+        service.update(
+          'nonexistentId',
+          { name: 'New Name' },
+          mockUserId.toString(),
+        ),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 });
-

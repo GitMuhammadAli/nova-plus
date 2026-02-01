@@ -28,12 +28,18 @@ export class PineconeService implements OnModuleInit {
   private dimension: number = 1536;
 
   constructor(private readonly configService: ConfigService) {
-    this.indexName = this.configService.get<string>('PINECONE_INDEX_NAME', 'novapulse');
+    this.indexName = this.configService.get<string>(
+      'PINECONE_INDEX_NAME',
+      'novapulse',
+    );
   }
 
   async onModuleInit() {
     const apiKey = this.configService.get<string>('PINECONE_API_KEY');
-    const environment = this.configService.get<string>('PINECONE_ENVIRONMENT', 'us-east-1');
+    const environment = this.configService.get<string>(
+      'PINECONE_ENVIRONMENT',
+      'us-east-1',
+    );
 
     if (apiKey) {
       try {
@@ -44,9 +50,13 @@ export class PineconeService implements OnModuleInit {
         this.pinecone = new PineconeClass({
           apiKey,
         });
-        logger.info('Pinecone client initialized', { indexName: this.indexName });
+        logger.info('Pinecone client initialized', {
+          indexName: this.indexName,
+        });
       } catch (error: any) {
-        logger.warn('Pinecone module not available', { error: error?.message || 'Unknown error' });
+        logger.warn('Pinecone module not available', {
+          error: error?.message || 'Unknown error',
+        });
       }
     } else {
       logger.warn('Pinecone API key not configured, vector search will fail');
@@ -140,7 +150,11 @@ export class PineconeService implements OnModuleInit {
   /**
    * Delete vectors by entity
    */
-  async deleteByEntity(entityId: string, entityType: string, namespace?: string): Promise<void> {
+  async deleteByEntity(
+    entityId: string,
+    entityType: string,
+    namespace?: string,
+  ): Promise<void> {
     if (!this.pinecone) {
       throw new Error('Pinecone client not initialized');
     }
@@ -163,4 +177,3 @@ export class PineconeService implements OnModuleInit {
     }
   }
 }
-

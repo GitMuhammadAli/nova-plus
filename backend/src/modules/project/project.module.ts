@@ -19,4 +19,3 @@ import { Company, CompanySchema } from '../company/entities/company.entity';
   exports: [ProjectService],
 })
 export class ProjectModule {}
-

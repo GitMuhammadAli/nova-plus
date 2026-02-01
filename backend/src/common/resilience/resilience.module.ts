@@ -7,4 +7,3 @@ import { CircuitBreakerManager } from './circuit-breaker';
   exports: [CircuitBreakerManager],
 })
 export class ResilienceModule {}
-

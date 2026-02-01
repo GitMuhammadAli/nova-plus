@@ -1,6 +1,17 @@
-import { IsString, IsOptional, IsArray, IsEnum, ValidateNested, IsObject } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsArray,
+  IsEnum,
+  ValidateNested,
+  IsObject,
+} from 'class-validator';
 import { Type } from 'class-transformer';
-import { WorkflowStatus, TriggerType, ActionType } from '../entities/workflow.entity';
+import {
+  WorkflowStatus,
+  TriggerType,
+  ActionType,
+} from '../entities/workflow.entity';
 
 export class WorkflowNodeDto {
   @IsString()
@@ -31,7 +42,16 @@ export class ConditionDto {
   @IsString()
   field: string;
 
-  @IsEnum(['equals', 'not_equals', 'contains', 'not_contains', 'greater_than', 'less_than', 'starts_with', 'ends_with'])
+  @IsEnum([
+    'equals',
+    'not_equals',
+    'contains',
+    'not_contains',
+    'greater_than',
+    'less_than',
+    'starts_with',
+    'ends_with',
+  ])
   operator: string;
 
   @IsString()
@@ -86,4 +106,3 @@ export class CreateWorkflowDto {
   @IsString({ each: true })
   tags?: string[];
 }
-

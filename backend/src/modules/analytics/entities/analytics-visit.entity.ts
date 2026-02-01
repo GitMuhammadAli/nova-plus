@@ -41,11 +41,11 @@ export class AnalyticsVisit {
   visitedAt: Date;
 }
 
-export const AnalyticsVisitSchema = SchemaFactory.createForClass(AnalyticsVisit);
+export const AnalyticsVisitSchema =
+  SchemaFactory.createForClass(AnalyticsVisit);
 
 // Indexes for performance
 AnalyticsVisitSchema.index({ companyId: 1, visitedAt: -1 });
 AnalyticsVisitSchema.index({ companyId: 1, page: 1, visitedAt: -1 });
 AnalyticsVisitSchema.index({ userId: 1, visitedAt: -1 });
 AnalyticsVisitSchema.index({ device: 1, visitedAt: -1 });
-

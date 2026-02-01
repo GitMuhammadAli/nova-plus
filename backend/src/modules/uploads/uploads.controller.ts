@@ -44,7 +44,12 @@ export class UploadsController {
       throw new Error('Company ID not found in user session');
     }
 
-    const upload = await this.uploadsService.uploadFile(file, companyId, userId, createUploadDto);
+    const upload = await this.uploadsService.uploadFile(
+      file,
+      companyId,
+      userId,
+      createUploadDto,
+    );
     return {
       success: true,
       data: upload,
@@ -67,7 +72,8 @@ export class UploadsController {
     const companyId = req.user.companyId?.toString() || req.user.companyId;
     const result = await this.uploadsService.findAll(companyId, {
       category,
-      isPublic: isPublic === 'true' ? true : isPublic === 'false' ? false : undefined,
+      isPublic:
+        isPublic === 'true' ? true : isPublic === 'false' ? false : undefined,
       search,
       limit: limit ? parseInt(limit) : undefined,
       page: page ? parseInt(page) : undefined,
@@ -111,7 +117,12 @@ export class UploadsController {
   ) {
     const companyId = req.user.companyId?.toString() || req.user.companyId;
     const userId = req.user._id?.toString() || req.user.id;
-    const upload = await this.uploadsService.update(id, updateUploadDto, companyId, userId);
+    const upload = await this.uploadsService.update(
+      id,
+      updateUploadDto,
+      companyId,
+      userId,
+    );
     return {
       success: true,
       data: upload,

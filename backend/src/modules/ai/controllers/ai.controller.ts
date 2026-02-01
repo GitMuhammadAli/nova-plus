@@ -1,4 +1,12 @@
-import { Controller, Post, Get, Body, Query, Param, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Query,
+  Param,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { AIAssistantService } from '../chat/ai-assistant.service';
 import { RagService } from '../chat/rag.service';
@@ -27,7 +35,9 @@ export class AIController {
   ): Promise<ChatResponseDto> {
     return this.aiAssistant.chat(dto.message, user._id || user.id, {
       tenantId: dto.tenantId || user.companyId,
-      conversationHistory: dto.history as Array<{ role: 'user' | 'assistant' | 'system'; content: string }> | undefined,
+      conversationHistory: dto.history as
+        | Array<{ role: 'user' | 'assistant' | 'system'; content: string }>
+        | undefined,
     });
   }
 
@@ -63,7 +73,8 @@ export class AIController {
   async getRisks(@CurrentUser() user: any) {
     const companyId = user.companyId;
     const companyRisk = await this.riskScore.scoreCompany(companyId);
-    const highRiskDepts = await this.insights.detectHighRiskDepartments(companyId);
+    const highRiskDepts =
+      await this.insights.detectHighRiskDepartments(companyId);
 
     return {
       company: companyRisk,
@@ -105,4 +116,3 @@ export class AIController {
     });
   }
 }
-

@@ -6,11 +6,11 @@ import { REDIS_CLIENT } from '../redis/redis.provider';
  * Cache TTL constants (in seconds)
  */
 export const CACHE_TTL = {
-  SHORT: 60,           // 1 minute - for rapidly changing data
-  MEDIUM: 300,         // 5 minutes - for moderately changing data
-  LONG: 3600,          // 1 hour - for stable data
-  VERY_LONG: 86400,    // 24 hours - for rarely changing data
-  SESSION: 900,        // 15 minutes - for session data
+  SHORT: 60, // 1 minute - for rapidly changing data
+  MEDIUM: 300, // 5 minutes - for moderately changing data
+  LONG: 3600, // 1 hour - for stable data
+  VERY_LONG: 86400, // 24 hours - for rarely changing data
+  SESSION: 900, // 15 minutes - for session data
 } as const;
 
 /**
@@ -29,9 +29,7 @@ export const CACHE_PREFIX = {
 
 @Injectable()
 export class CacheService implements OnModuleDestroy {
-  constructor(
-    @Inject(REDIS_CLIENT) private readonly redis: Redis,
-  ) {}
+  constructor(@Inject(REDIS_CLIENT) private readonly redis: Redis) {}
 
   async onModuleDestroy() {
     // Clean up Redis connection on module destruction
@@ -55,7 +53,11 @@ export class CacheService implements OnModuleDestroy {
   /**
    * Set a value in cache with optional TTL
    */
-  async set(key: string, value: any, ttl: number = CACHE_TTL.MEDIUM): Promise<void> {
+  async set(
+    key: string,
+    value: any,
+    ttl: number = CACHE_TTL.MEDIUM,
+  ): Promise<void> {
     try {
       const serialized = JSON.stringify(value);
       await this.redis.setex(key, ttl, serialized);
@@ -363,7 +365,7 @@ export class CacheService implements OnModuleDestroy {
     try {
       const info = await this.redis.info('memory');
       const keyCount = await this.redis.dbsize();
-      
+
       const memoryMatch = info.match(/used_memory_human:(.+)/);
       const memoryUsed = memoryMatch ? memoryMatch[1].trim() : 'unknown';
 
@@ -374,4 +376,3 @@ export class CacheService implements OnModuleDestroy {
     }
   }
 }
-

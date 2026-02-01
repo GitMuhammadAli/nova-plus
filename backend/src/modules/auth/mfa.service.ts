@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { User, UserDocument } from '../user/entities/user.entity';
@@ -8,18 +12,21 @@ import logger from '../../common/logger/winston.logger';
 
 @Injectable()
 export class MfaService {
-  constructor(
-    @InjectModel(User.name) private userModel: Model<UserDocument>,
-  ) {}
+  constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) {}
 
   /**
    * Generate TOTP secret and QR code for user
    */
-  async setupMfa(userId: string, companyId: string): Promise<{ secret: string; qrCode: string; recoveryCodes: string[] }> {
-    const user = await this.userModel.findOne({
-      _id: userId,
-      companyId: new Types.ObjectId(companyId),
-    }).exec();
+  async setupMfa(
+    userId: string,
+    companyId: string,
+  ): Promise<{ secret: string; qrCode: string; recoveryCodes: string[] }> {
+    const user = await this.userModel
+      .findOne({
+        _id: userId,
+        companyId: new Types.ObjectId(companyId),
+      })
+      .exec();
 
     if (!user) {
       throw new NotFoundException('User not found');
@@ -58,11 +65,17 @@ export class MfaService {
   /**
    * Verify TOTP code and enable MFA
    */
-  async verifyAndEnableMfa(userId: string, companyId: string, token: string): Promise<{ success: boolean }> {
-    const user = await this.userModel.findOne({
-      _id: userId,
-      companyId: new Types.ObjectId(companyId),
-    }).exec();
+  async verifyAndEnableMfa(
+    userId: string,
+    companyId: string,
+    token: string,
+  ): Promise<{ success: boolean }> {
+    const user = await this.userModel
+      .findOne({
+        _id: userId,
+        companyId: new Types.ObjectId(companyId),
+      })
+      .exec();
 
     if (!user) {
       throw new NotFoundException('User not found');
@@ -140,11 +153,16 @@ export class MfaService {
   /**
    * Disable MFA for user
    */
-  async disableMfa(userId: string, companyId: string): Promise<{ success: boolean }> {
-    const user = await this.userModel.findOne({
-      _id: userId,
-      companyId: new Types.ObjectId(companyId),
-    }).exec();
+  async disableMfa(
+    userId: string,
+    companyId: string,
+  ): Promise<{ success: boolean }> {
+    const user = await this.userModel
+      .findOne({
+        _id: userId,
+        companyId: new Types.ObjectId(companyId),
+      })
+      .exec();
 
     if (!user) {
       throw new NotFoundException('User not found');
@@ -163,11 +181,16 @@ export class MfaService {
   /**
    * Regenerate recovery codes
    */
-  async regenerateRecoveryCodes(userId: string, companyId: string): Promise<{ recoveryCodes: string[] }> {
-    const user = await this.userModel.findOne({
-      _id: userId,
-      companyId: new Types.ObjectId(companyId),
-    }).exec();
+  async regenerateRecoveryCodes(
+    userId: string,
+    companyId: string,
+  ): Promise<{ recoveryCodes: string[] }> {
+    const user = await this.userModel
+      .findOne({
+        _id: userId,
+        companyId: new Types.ObjectId(companyId),
+      })
+      .exec();
 
     if (!user) {
       throw new NotFoundException('User not found');
@@ -207,4 +230,3 @@ export class MfaService {
     return codes;
   }
 }
-

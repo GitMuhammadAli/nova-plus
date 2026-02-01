@@ -8,7 +8,10 @@ import { AuditModule } from '../audit/audit.module';
 import { PlanLimitsService } from './plan-limits.service';
 import { FeatureGuard, LimitCheckGuard } from './plan-limits.guard';
 import { User, UserSchema } from '../user/entities/user.entity';
-import { Department, DepartmentSchema } from '../department/entities/department.entity';
+import {
+  Department,
+  DepartmentSchema,
+} from '../department/entities/department.entity';
 import { Project, ProjectSchema } from '../project/entities/project.entity';
 // Team entity removed - teams are counted via departments
 import { Workflow, WorkflowSchema } from '../workflow/entities/workflow.entity';

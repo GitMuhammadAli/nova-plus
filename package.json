@@ -10,7 +10,7 @@
     "docker:down": "docker-compose down",
     "docker:logs": "docker-compose logs -f",
     "backend:dev": "cd backend && npm run start:dev",
-    "backend:start": "cd backend && node dist/backend/src/main.js",
+    "backend:start": "cd backend && node dist/main.js",
     "backend:build": "cd backend && npm run build",
     "backend:install": "cd backend && npm install",
     "frontend:dev": "cd Frontend && npm run dev",
@@ -29,7 +29,12 @@
     "type": "git",
     "url": "git+https://github.com/GitMuhammadAli/nova-plus.git"
   },
-  "keywords": ["saas", "nestjs", "nextjs", "multi-tenant"],
+  "keywords": [
+    "saas",
+    "nestjs",
+    "nextjs",
+    "multi-tenant"
+  ],
   "author": "",
   "license": "ISC",
   "bugs": {

@@ -1,13 +1,27 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Inject, forwardRef } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { Task, TaskDocument, TaskStatus } from '../../task/entities/task.entity';
+import {
+  Task,
+  TaskDocument,
+  TaskStatus,
+} from '../../task/entities/task.entity';
 import { User, UserDocument } from '../../user/entities/user.entity';
 import { CreateTaskDto } from '../../task/dto/create-task.dto';
 import { UpdateTaskDto } from '../../task/dto/update-task.dto';
 import { ManagerService } from '../manager.service';
 import { AuditService } from '../../audit/audit.service';
-import { AuditAction, AuditResource } from '../../audit/entities/audit-log.entity';
+import {
+  AuditAction,
+  AuditResource,
+} from '../../audit/entities/audit-log.entity';
 
 @Injectable()
 export class ManagerTasksService {
@@ -37,7 +51,9 @@ export class ManagerTasksService {
         companyId,
       );
       if (!userInDepartment) {
-        throw new ForbiddenException('Cannot assign tasks to users outside your department');
+        throw new ForbiddenException(
+          'Cannot assign tasks to users outside your department',
+        );
       }
     }
 
@@ -46,8 +62,12 @@ export class ManagerTasksService {
       companyId: new Types.ObjectId(companyId),
       departmentId: departmentId ? new Types.ObjectId(departmentId) : undefined,
       assignedBy: new Types.ObjectId(manager._id || manager.id),
-      assignedTo: createTaskDto.assignedTo ? new Types.ObjectId(createTaskDto.assignedTo) : undefined,
-      projectId: createTaskDto.projectId ? new Types.ObjectId(createTaskDto.projectId) : undefined,
+      assignedTo: createTaskDto.assignedTo
+        ? new Types.ObjectId(createTaskDto.assignedTo)
+        : undefined,
+      projectId: createTaskDto.projectId
+        ? new Types.ObjectId(createTaskDto.projectId)
+        : undefined,
       status: createTaskDto.status || TaskStatus.TODO,
       isActive: true,
     });
@@ -61,8 +81,13 @@ export class ManagerTasksService {
         resource: AuditResource.TASK,
         userId: manager._id || manager.id,
         companyId: companyId,
-        resourceId: (saved._id?.toString() || saved._id) as string | Types.ObjectId,
-        metadata: { title: saved.title, assignedTo: saved.assignedTo?.toString() },
+        resourceId: (saved._id?.toString() || saved._id) as
+          | string
+          | Types.ObjectId,
+        metadata: {
+          title: saved.title,
+          assignedTo: saved.assignedTo?.toString(),
+        },
       });
     } catch (error) {
       console.error('Failed to create audit log:', error);
@@ -115,7 +140,11 @@ export class ManagerTasksService {
   /**
    * Get task details
    */
-  async getTaskDetails(taskId: string, companyId: string, departmentId?: string): Promise<any> {
+  async getTaskDetails(
+    taskId: string,
+    companyId: string,
+    departmentId?: string,
+  ): Promise<any> {
     const task = await this.taskModel
       .findOne({
         _id: taskId,
@@ -154,11 +183,13 @@ export class ManagerTasksService {
     departmentId: string | undefined,
     manager: any,
   ): Promise<TaskDocument> {
-    const task = await this.taskModel.findOne({
-      _id: taskId,
-      companyId: new Types.ObjectId(companyId),
-      isActive: true,
-    }).exec();
+    const task = await this.taskModel
+      .findOne({
+        _id: taskId,
+        companyId: new Types.ObjectId(companyId),
+        isActive: true,
+      })
+      .exec();
 
     if (!task) {
       throw new NotFoundException('Task not found');
@@ -179,7 +210,9 @@ export class ManagerTasksService {
         companyId,
       );
       if (!userInDepartment) {
-        throw new ForbiddenException('Cannot assign tasks to users outside your department');
+        throw new ForbiddenException(
+          'Cannot assign tasks to users outside your department',
+        );
       }
     }
 
@@ -200,7 +233,9 @@ export class ManagerTasksService {
         resource: AuditResource.TASK,
         userId: manager._id || manager.id,
         companyId: companyId,
-        resourceId: (saved._id?.toString() || saved._id) as string | Types.ObjectId,
+        resourceId: (saved._id?.toString() || saved._id) as
+          | string
+          | Types.ObjectId,
         metadata: { changes: updateTaskDto },
       });
     } catch (error) {
@@ -219,11 +254,13 @@ export class ManagerTasksService {
     departmentId: string | undefined,
     manager: any,
   ): Promise<void> {
-    const task = await this.taskModel.findOne({
-      _id: taskId,
-      companyId: new Types.ObjectId(companyId),
-      isActive: true,
-    }).exec();
+    const task = await this.taskModel
+      .findOne({
+        _id: taskId,
+        companyId: new Types.ObjectId(companyId),
+        isActive: true,
+      })
+      .exec();
 
     if (!task) {
       throw new NotFoundException('Task not found');
@@ -272,15 +309,19 @@ export class ManagerTasksService {
         companyId,
       );
       if (!userInDepartment) {
-        throw new ForbiddenException('Cannot assign tasks to users outside your department');
+        throw new ForbiddenException(
+          'Cannot assign tasks to users outside your department',
+        );
       }
     }
 
-    const task = await this.taskModel.findOne({
-      _id: taskId,
-      companyId: new Types.ObjectId(companyId),
-      isActive: true,
-    }).exec();
+    const task = await this.taskModel
+      .findOne({
+        _id: taskId,
+        companyId: new Types.ObjectId(companyId),
+        isActive: true,
+      })
+      .exec();
 
     if (!task) {
       throw new NotFoundException('Task not found');
@@ -316,11 +357,13 @@ export class ManagerTasksService {
     departmentId: string | undefined,
     manager: any,
   ): Promise<TaskDocument> {
-    const task = await this.taskModel.findOne({
-      _id: taskId,
-      companyId: new Types.ObjectId(companyId),
-      isActive: true,
-    }).exec();
+    const task = await this.taskModel
+      .findOne({
+        _id: taskId,
+        companyId: new Types.ObjectId(companyId),
+        isActive: true,
+      })
+      .exec();
 
     if (!task) {
       throw new NotFoundException('Task not found');
@@ -364,11 +407,13 @@ export class ManagerTasksService {
     companyId: string,
     departmentId: string | undefined,
   ): Promise<TaskDocument> {
-    const task = await this.taskModel.findOne({
-      _id: taskId,
-      companyId: new Types.ObjectId(companyId),
-      isActive: true,
-    }).exec();
+    const task = await this.taskModel
+      .findOne({
+        _id: taskId,
+        companyId: new Types.ObjectId(companyId),
+        isActive: true,
+      })
+      .exec();
 
     if (!task) {
       throw new NotFoundException('Task not found');
@@ -400,15 +445,22 @@ export class ManagerTasksService {
   async addAttachment(
     taskId: string,
     userId: string,
-    attachment: { filename: string; url: string; size?: number; mimeType?: string },
+    attachment: {
+      filename: string;
+      url: string;
+      size?: number;
+      mimeType?: string;
+    },
     companyId: string,
     departmentId: string | undefined,
   ): Promise<TaskDocument> {
-    const task = await this.taskModel.findOne({
-      _id: taskId,
-      companyId: new Types.ObjectId(companyId),
-      isActive: true,
-    }).exec();
+    const task = await this.taskModel
+      .findOne({
+        _id: taskId,
+        companyId: new Types.ObjectId(companyId),
+        isActive: true,
+      })
+      .exec();
 
     if (!task) {
       throw new NotFoundException('Task not found');
@@ -437,4 +489,3 @@ export class ManagerTasksService {
     return task.save();
   }
 }
-

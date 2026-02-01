@@ -12,7 +12,10 @@ import {
 } from '@nestjs/common';
 import { BillingService } from './billing.service';
 import { PlanLimitsService } from './plan-limits.service';
-import { CreateCheckoutSessionDto, UpdateUsageDto } from './dto/create-billing.dto';
+import {
+  CreateCheckoutSessionDto,
+  UpdateUsageDto,
+} from './dto/create-billing.dto';
 import { CancelSubscriptionDto } from './dto/update-billing.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -97,7 +100,7 @@ export class BillingController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   async getPlanInfo(@Req() req: any) {
     const companyId = req.user.companyId?.toString() || req.user.companyId;
-    
+
     if (!companyId) {
       throw new Error('Company ID not found in user session');
     }
@@ -117,7 +120,7 @@ export class BillingController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   async getUsageStats(@Req() req: any) {
     const companyId = req.user.companyId?.toString() || req.user.companyId;
-    
+
     if (!companyId) {
       throw new Error('Company ID not found in user session');
     }
@@ -166,11 +169,18 @@ export class BillingController {
   @Post('cancel')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.COMPANY_ADMIN, UserRole.SUPER_ADMIN)
-  async cancelSubscription(@Body() cancelDto: CancelSubscriptionDto, @Req() req: any) {
+  async cancelSubscription(
+    @Body() cancelDto: CancelSubscriptionDto,
+    @Req() req: any,
+  ) {
     const companyId = req.user.companyId?.toString() || req.user.companyId;
     const userId = req.user._id?.toString() || req.user.id;
 
-    const subscription = await this.billingService.cancelSubscription(companyId, cancelDto, userId);
+    const subscription = await this.billingService.cancelSubscription(
+      companyId,
+      cancelDto,
+      userId,
+    );
     return {
       success: true,
       data: subscription,
@@ -187,7 +197,9 @@ export class BillingController {
     @Headers('stripe-signature') signature: string,
     @Req() req: any,
   ) {
-    const webhookSecret = this.configService.get<string>('STRIPE_WEBHOOK_SECRET');
+    const webhookSecret = this.configService.get<string>(
+      'STRIPE_WEBHOOK_SECRET',
+    );
     if (!webhookSecret) {
       throw new Error('STRIPE_WEBHOOK_SECRET is not configured');
     }

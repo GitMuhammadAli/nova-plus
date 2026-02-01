@@ -41,4 +41,3 @@ export const IntegrationSchema = SchemaFactory.createForClass(Integration);
 // Indexes
 IntegrationSchema.index({ companyId: 1, type: 1 });
 IntegrationSchema.index({ companyId: 1, isActive: 1 });
-

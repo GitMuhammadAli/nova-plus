@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Webhook, WebhookDocument } from './entities/webhook.entity';
@@ -13,7 +18,8 @@ import logger from '../../common/logger/winston.logger';
 export class WebhookService {
   constructor(
     @InjectModel(Webhook.name) private webhookModel: Model<WebhookDocument>,
-    @InjectModel(WebhookLog.name) private webhookLogModel: Model<WebhookLogDocument>,
+    @InjectModel(WebhookLog.name)
+    private webhookLogModel: Model<WebhookLogDocument>,
     private readonly queueService: QueueService,
   ) {}
 
@@ -27,7 +33,11 @@ export class WebhookService {
   /**
    * Create a new webhook
    */
-  async create(createWebhookDto: CreateWebhookDto, companyId: string, userId: string): Promise<WebhookDocument> {
+  async create(
+    createWebhookDto: CreateWebhookDto,
+    companyId: string,
+    userId: string,
+  ): Promise<WebhookDocument> {
     const secret = this.generateSecret();
 
     const webhook = new this.webhookModel({
@@ -35,12 +45,19 @@ export class WebhookService {
       companyId: new Types.ObjectId(companyId),
       createdBy: new Types.ObjectId(userId),
       secret,
-      isActive: createWebhookDto.isActive !== undefined ? createWebhookDto.isActive : true,
+      isActive:
+        createWebhookDto.isActive !== undefined
+          ? createWebhookDto.isActive
+          : true,
       retries: createWebhookDto.retries || 3,
     });
 
     const savedWebhook = await webhook.save();
-    logger.info('Webhook created', { webhookId: savedWebhook._id, companyId, url: savedWebhook.url });
+    logger.info('Webhook created', {
+      webhookId: savedWebhook._id,
+      companyId,
+      url: savedWebhook.url,
+    });
 
     return savedWebhook;
   }
@@ -78,11 +95,17 @@ export class WebhookService {
   /**
    * Update webhook
    */
-  async update(id: string, updateWebhookDto: UpdateWebhookDto, companyId: string): Promise<WebhookDocument> {
-    const webhook = await this.webhookModel.findOne({
-      _id: id,
-      companyId: new Types.ObjectId(companyId),
-    }).exec();
+  async update(
+    id: string,
+    updateWebhookDto: UpdateWebhookDto,
+    companyId: string,
+  ): Promise<WebhookDocument> {
+    const webhook = await this.webhookModel
+      .findOne({
+        _id: id,
+        companyId: new Types.ObjectId(companyId),
+      })
+      .exec();
 
     if (!webhook) {
       throw new NotFoundException('Webhook not found');
@@ -96,23 +119,31 @@ export class WebhookService {
    * Delete webhook
    */
   async remove(id: string, companyId: string): Promise<void> {
-    const result = await this.webhookModel.deleteOne({
-      _id: id,
-      companyId: new Types.ObjectId(companyId),
-    }).exec();
+    const result = await this.webhookModel
+      .deleteOne({
+        _id: id,
+        companyId: new Types.ObjectId(companyId),
+      })
+      .exec();
 
     if (result.deletedCount === 0) {
       throw new NotFoundException('Webhook not found');
     }
 
     // Also delete related logs
-    await this.webhookLogModel.deleteMany({ webhookId: new Types.ObjectId(id) }).exec();
+    await this.webhookLogModel
+      .deleteMany({ webhookId: new Types.ObjectId(id) })
+      .exec();
   }
 
   /**
    * Trigger webhook (enqueue job)
    */
-  async triggerWebhook(webhookId: string, event: string, data: Record<string, any>): Promise<void> {
+  async triggerWebhook(
+    webhookId: string,
+    event: string,
+    data: Record<string, any>,
+  ): Promise<void> {
     const webhook = await this.webhookModel.findById(webhookId).exec();
 
     if (!webhook) {
@@ -124,7 +155,9 @@ export class WebhookService {
     }
 
     if (!webhook.events.includes(event)) {
-      throw new BadRequestException(`Webhook does not listen to event: ${event}`);
+      throw new BadRequestException(
+        `Webhook does not listen to event: ${event}`,
+      );
     }
 
     // Enqueue webhook job
@@ -142,7 +175,10 @@ export class WebhookService {
   /**
    * Test webhook (immediate dispatch)
    */
-  async testWebhook(id: string, companyId: string): Promise<{ success: boolean; message: string }> {
+  async testWebhook(
+    id: string,
+    companyId: string,
+  ): Promise<{ success: boolean; message: string }> {
     const webhook = await this.findOne(id, companyId);
 
     if (!webhook || !webhook._id) {
@@ -164,7 +200,11 @@ export class WebhookService {
   /**
    * Get webhook logs
    */
-  async getLogs(webhookId: string, companyId: string, limit: number = 50): Promise<WebhookLogDocument[]> {
+  async getLogs(
+    webhookId: string,
+    companyId: string,
+    limit: number = 50,
+  ): Promise<WebhookLogDocument[]> {
     // Verify webhook belongs to company
     await this.findOne(webhookId, companyId);
 
@@ -203,13 +243,15 @@ export class WebhookService {
     });
 
     // Update webhook last status
-    await this.webhookModel.updateOne(
-      { _id: webhookId },
-      {
-        lastStatus: status,
-        lastAttemptAt: new Date(),
-      },
-    ).exec();
+    await this.webhookModel
+      .updateOne(
+        { _id: webhookId },
+        {
+          lastStatus: status,
+          lastAttemptAt: new Date(),
+        },
+      )
+      .exec();
 
     return log.save();
   }
@@ -224,4 +266,3 @@ export class WebhookService {
     return `sha256=${hmac.digest('hex')}`;
   }
 }
-

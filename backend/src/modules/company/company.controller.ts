@@ -1,4 +1,17 @@
-import { Controller, Get, Post, Patch, Param, Body, UseGuards, Req, ForbiddenException, Res, Inject, forwardRef } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Param,
+  Body,
+  UseGuards,
+  Req,
+  ForbiddenException,
+  Res,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { CompanyService } from './company.service';
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { RegisterCompanyDto } from './dto/register-company.dto';
@@ -104,8 +117,13 @@ export class CompanyController {
     }
     const creatorId = req.user._id || req.user.id;
     const creatorRole = req.user.role;
-    
-    const result = await this.inviteService.createInvite(companyId, creatorId, creatorRole, createInviteDto);
+
+    const result = await this.inviteService.createInvite(
+      companyId,
+      creatorId,
+      creatorRole,
+      createInviteDto,
+    );
     return {
       success: true,
       inviteToken: result.token || result.invite.token,
@@ -125,14 +143,26 @@ export class CompanyController {
    * NOTE: Must come before /company/:id routes to avoid route conflicts
    */
   @Post('join')
-  async joinCompany(@Body() joinDto: { email: string; password: string; name?: string; inviteToken: string }, @Res({ passthrough: true }) res: Response) {
+  async joinCompany(
+    @Body()
+    joinDto: {
+      email: string;
+      password: string;
+      name?: string;
+      inviteToken: string;
+    },
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const acceptInviteDto: AcceptInviteDto = {
       email: joinDto.email,
       name: joinDto.name || joinDto.email.split('@')[0],
       password: joinDto.password,
     };
-    
-    const result = await this.inviteService.acceptInvite(joinDto.inviteToken, acceptInviteDto);
+
+    const result = await this.inviteService.acceptInvite(
+      joinDto.inviteToken,
+      acceptInviteDto,
+    );
 
     // Generate JWT tokens
     const userId = result.user._id?.toString() || result.user._id;
@@ -183,7 +213,11 @@ export class CompanyController {
   async getCompanyUsers(@Param('id') id: string, @Req() req) {
     const requestUserId = req.user._id || req.user.id;
     const requestUserRole = req.user.role;
-    return this.companyService.getCompanyUsers(id, requestUserId, requestUserRole);
+    return this.companyService.getCompanyUsers(
+      id,
+      requestUserId,
+      requestUserRole,
+    );
   }
 
   /**
@@ -202,7 +236,7 @@ export class CompanyController {
         hasUser: !!req.user,
       });
     }
-    
+
     const requestUserId = req.user._id || req.user.id;
     const requestUserRole = req.user.role;
     return this.companyService.findById(id, requestUserId, requestUserRole);
@@ -222,7 +256,12 @@ export class CompanyController {
   ) {
     const requestUserId = req.user._id || req.user.id;
     const requestUserRole = req.user.role;
-    return this.companyService.update(id, updateData, requestUserId, requestUserRole);
+    return this.companyService.update(
+      id,
+      updateData,
+      requestUserId,
+      requestUserRole,
+    );
   }
 
   /**
@@ -235,7 +274,11 @@ export class CompanyController {
   async getCompanyStats(@Param('id') id: string, @Req() req) {
     const requestUserId = req.user._id || req.user.id;
     const requestUserRole = req.user.role;
-    const stats = await this.companyService.getCompanyStats(id, requestUserId, requestUserRole);
+    const stats = await this.companyService.getCompanyStats(
+      id,
+      requestUserId,
+      requestUserRole,
+    );
     return {
       success: true,
       stats,
@@ -252,7 +295,11 @@ export class CompanyController {
   async getCompanyActivity(@Param('id') id: string, @Req() req) {
     const requestUserId = req.user._id || req.user.id;
     const requestUserRole = req.user.role;
-    const activity = await this.companyService.getCompanyActivity(id, requestUserId, requestUserRole);
+    const activity = await this.companyService.getCompanyActivity(
+      id,
+      requestUserId,
+      requestUserRole,
+    );
     return {
       success: true,
       activity,
@@ -269,7 +316,11 @@ export class CompanyController {
   async getCompanyProfile(@Param('id') id: string, @Req() req) {
     const requestUserId = req.user._id || req.user.id;
     const requestUserRole = req.user.role;
-    const profile = await this.companyService.getCompanyProfile(id, requestUserId, requestUserRole);
+    const profile = await this.companyService.getCompanyProfile(
+      id,
+      requestUserId,
+      requestUserRole,
+    );
     return {
       success: true,
       profile,

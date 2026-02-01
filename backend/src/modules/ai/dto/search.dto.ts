@@ -23,4 +23,3 @@ export class SearchResponseDto {
   }>;
   total: number;
 }
-

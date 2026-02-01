@@ -28,7 +28,14 @@ export class IntegrationsController {
   @Post('email/test')
   @Roles(UserRole.COMPANY_ADMIN, UserRole.SUPER_ADMIN)
   async testEmail(
-    @Body() body: { smtpHost: string; smtpPort: number; username: string; password: string; to: string },
+    @Body()
+    body: {
+      smtpHost: string;
+      smtpPort: number;
+      username: string;
+      password: string;
+      to: string;
+    },
     @Req() req: any,
   ) {
     const companyId = req.user.companyId?.toString() || req.user.companyId;
@@ -43,10 +50,7 @@ export class IntegrationsController {
    */
   @Post('slack/test')
   @Roles(UserRole.COMPANY_ADMIN, UserRole.SUPER_ADMIN)
-  async testSlack(
-    @Body() body: { webhookUrl: string },
-    @Req() req: any,
-  ) {
+  async testSlack(@Body() body: { webhookUrl: string }, @Req() req: any) {
     const companyId = req.user.companyId?.toString() || req.user.companyId;
     const userId = req.user._id?.toString() || req.user.id;
 
@@ -79,10 +83,17 @@ export class IntegrationsController {
   ) {
     // Decode state to get companyId and userId
     const stateData = JSON.parse(Buffer.from(state, 'base64').toString());
-    const companyId = stateData.companyId || req.user.companyId?.toString() || req.user.companyId;
+    const companyId =
+      stateData.companyId ||
+      req.user.companyId?.toString() ||
+      req.user.companyId;
     const userId = stateData.userId || req.user._id?.toString() || req.user.id;
 
-    return this.integrationsService.handleGoogleOAuthCallback(companyId, userId, code);
+    return this.integrationsService.handleGoogleOAuthCallback(
+      companyId,
+      userId,
+      code,
+    );
   }
 
   /**
@@ -117,4 +128,3 @@ export class IntegrationsController {
     };
   }
 }
-

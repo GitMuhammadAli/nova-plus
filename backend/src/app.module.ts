@@ -60,9 +60,12 @@ import { MetricsController } from './common/controllers/metrics.controller';
         uri: configService.get<string>('mongoUri'),
         maxPoolSize: configService.get<number>('MONGO_MAX_POOL_SIZE') || 10,
         minPoolSize: configService.get<number>('MONGO_MIN_POOL_SIZE') || 2,
-        maxIdleTimeMS: configService.get<number>('MONGO_MAX_IDLE_TIME_MS') || 30000,
-        serverSelectionTimeoutMS: configService.get<number>('MONGO_SERVER_SELECTION_TIMEOUT') || 5000,
-        socketTimeoutMS: configService.get<number>('MONGO_SOCKET_TIMEOUT') || 45000,
+        maxIdleTimeMS:
+          configService.get<number>('MONGO_MAX_IDLE_TIME_MS') || 30000,
+        serverSelectionTimeoutMS:
+          configService.get<number>('MONGO_SERVER_SELECTION_TIMEOUT') || 5000,
+        socketTimeoutMS:
+          configService.get<number>('MONGO_SOCKET_TIMEOUT') || 45000,
         retryWrites: true,
         w: 'majority',
       }),

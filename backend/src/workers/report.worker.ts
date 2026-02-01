@@ -14,14 +14,14 @@ export class ReportWorker {
 
   async start() {
     const redisClient = this.queueService.getRedisClient();
-    
+
     this.worker = new Worker(
       'nova-report',
       async (job) => {
         const { reportType, companyId, userId, params } = job.data;
-        
-        logger.info('Processing report job', { 
-          jobId: job.id, 
+
+        logger.info('Processing report job', {
+          jobId: job.id,
           reportType,
           companyId,
           attempt: job.attemptsMade + 1,
@@ -30,21 +30,21 @@ export class ReportWorker {
         try {
           // Report generation logic would go here
           // For now, just log and return success
-          logger.info('Report generated', { 
-            jobId: job.id, 
+          logger.info('Report generated', {
+            jobId: job.id,
             reportType,
             companyId,
           });
 
-          return { 
-            success: true, 
+          return {
+            success: true,
             reportType,
             generatedAt: new Date().toISOString(),
           };
         } catch (error: any) {
-          logger.error('Report job failed', { 
-            jobId: job.id, 
-            reportType, 
+          logger.error('Report job failed', {
+            jobId: job.id,
+            reportType,
             error: error.message,
             stack: error.stack,
           });
@@ -69,8 +69,8 @@ export class ReportWorker {
     });
 
     this.worker.on('failed', (job, err) => {
-      logger.error('Report job failed', { 
-        jobId: job?.id, 
+      logger.error('Report job failed', {
+        jobId: job?.id,
         error: err.message,
         attemptsMade: job?.attemptsMade,
       });
@@ -90,4 +90,3 @@ export class ReportWorker {
     }
   }
 }
-

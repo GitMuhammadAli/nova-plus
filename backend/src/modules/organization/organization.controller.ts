@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Patch, Param, Body, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Param,
+  Body,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import { OrganizationService } from './organization.service';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -66,7 +75,11 @@ export class OrganizationController {
   @Post(':id/members')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
-  async addMember(@Param('id') orgId: string, @Body() body: { userId: string }, @Req() req) {
+  async addMember(
+    @Param('id') orgId: string,
+    @Body() body: { userId: string },
+    @Req() req,
+  ) {
     // Ensure admin can only add members to their own org
     if (req.user.orgId?.toString() !== orgId) {
       throw new Error('You can only add members to your own organization');
@@ -74,4 +87,3 @@ export class OrganizationController {
     return this.orgService.addMember(orgId, body.userId);
   }
 }
-

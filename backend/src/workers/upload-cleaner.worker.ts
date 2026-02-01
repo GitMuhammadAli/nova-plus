@@ -21,13 +21,22 @@ export class UploadCleanerWorker {
           // Using require for dynamic imports in workers
           const { AppModule } = require('../app.module');
           const { NestFactory } = require('@nestjs/core');
-          const appContext = await NestFactory.createApplicationContext(AppModule);
-          const { UploadsService } = require('../modules/uploads/uploads.service');
+          const appContext =
+            await NestFactory.createApplicationContext(AppModule);
+          const {
+            UploadsService,
+          } = require('../modules/uploads/uploads.service');
           const uploadsService = appContext.get('UploadsService');
 
-          if (uploadsService && typeof uploadsService.cleanupExpiredUploads === 'function') {
+          if (
+            uploadsService &&
+            typeof uploadsService.cleanupExpiredUploads === 'function'
+          ) {
             const deletedCount = await uploadsService.cleanupExpiredUploads();
-            logger.info('Upload cleanup completed', { jobId: job.id, deletedCount });
+            logger.info('Upload cleanup completed', {
+              jobId: job.id,
+              deletedCount,
+            });
             return { success: true, deletedCount };
           } else {
             throw new Error('UploadsService not available');
@@ -67,4 +76,3 @@ export class UploadCleanerWorker {
     }
   }
 }
-

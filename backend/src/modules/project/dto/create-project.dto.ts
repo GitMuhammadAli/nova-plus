@@ -1,4 +1,11 @@
-import { IsString, IsOptional, IsArray, IsEnum, IsDateString, IsNotEmpty } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsArray,
+  IsEnum,
+  IsDateString,
+  IsNotEmpty,
+} from 'class-validator';
 import { ProjectStatus } from '../entities/project.entity';
 
 export class CreateProjectDto {
@@ -26,4 +33,3 @@ export class CreateProjectDto {
   @IsOptional()
   endDate?: string;
 }
-

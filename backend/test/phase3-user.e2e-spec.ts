@@ -31,10 +31,12 @@ describe('Phase 3 - User Module (e2e)', () => {
     const userModel = app.get<Model<User>>(getModelToken(User.name));
     const projectModel = app.get<Model<Project>>(getModelToken(Project.name));
     const taskModel = app.get<Model<Task>>(getModelToken(Task.name));
-    
+
     await userModel.deleteMany({ email: 'testuser@test.com' }).exec();
     await projectModel.deleteMany({ name: 'User Project' }).exec();
-    await taskModel.deleteMany({ title: { $in: ['User Task', 'New Task'] } }).exec();
+    await taskModel
+      .deleteMany({ title: { $in: ['User Task', 'New Task'] } })
+      .exec();
     await companyModel.deleteMany({ name: 'Test Company' }).exec();
 
     // Create test company
@@ -85,7 +87,7 @@ describe('Phase 3 - User Module (e2e)', () => {
     // For testing, we'll use a placeholder token
     // In real tests, you would login properly or generate JWT tokens
     userToken = 'test-user-token-placeholder';
-    
+
     // Note: In production tests, you would:
     // 1. Hash password properly with bcrypt
     // 2. Login via /api/v1/auth/login
@@ -101,7 +103,9 @@ describe('Phase 3 - User Module (e2e)', () => {
 
     await userModel.deleteMany({ email: 'testuser@test.com' }).exec();
     await projectModel.deleteMany({ name: 'User Project' }).exec();
-    await taskModel.deleteMany({ title: { $in: ['User Task', 'New Task'] } }).exec();
+    await taskModel
+      .deleteMany({ title: { $in: ['User Task', 'New Task'] } })
+      .exec();
     await companyModel.deleteMany({ name: 'Test Company' }).exec();
 
     await app.close();
@@ -278,4 +282,3 @@ describe('Phase 3 - User Module (e2e)', () => {
     });
   });
 });
-

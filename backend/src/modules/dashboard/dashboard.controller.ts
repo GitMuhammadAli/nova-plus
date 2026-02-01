@@ -34,4 +34,3 @@ export class ActivityController {
     return this.dashboardService.getRecentActivities(limitNum);
   }
 }
-

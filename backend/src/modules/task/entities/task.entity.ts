@@ -51,25 +51,35 @@ export class Task {
   @Prop({ enum: TaskPriority, default: TaskPriority.MEDIUM })
   priority: TaskPriority;
 
-  @Prop({ type: [{ 
-    userId: { type: Types.ObjectId, ref: 'User' },
-    comment: String,
-    createdAt: { type: Date, default: Date.now }
-  }], default: [] })
+  @Prop({
+    type: [
+      {
+        userId: { type: Types.ObjectId, ref: 'User' },
+        comment: String,
+        createdAt: { type: Date, default: Date.now },
+      },
+    ],
+    default: [],
+  })
   comments: Array<{
     userId: Types.ObjectId;
     comment: string;
     createdAt: Date;
   }>;
 
-  @Prop({ type: [{ 
-    filename: String,
-    url: String,
-    uploadedBy: { type: Types.ObjectId, ref: 'User' },
-    uploadedAt: { type: Date, default: Date.now },
-    size: Number,
-    mimeType: String
-  }], default: [] })
+  @Prop({
+    type: [
+      {
+        filename: String,
+        url: String,
+        uploadedBy: { type: Types.ObjectId, ref: 'User' },
+        uploadedAt: { type: Date, default: Date.now },
+        size: Number,
+        mimeType: String,
+      },
+    ],
+    default: [],
+  })
   attachments: Array<{
     filename: string;
     url: string;
@@ -82,10 +92,15 @@ export class Task {
   @Prop({ type: Types.ObjectId, ref: 'Department' })
   departmentId?: Types.ObjectId;
 
-  @Prop({ type: [{ 
-    taskId: { type: Types.ObjectId, ref: 'Task' },
-    type: { type: String, enum: ['blocks', 'depends_on', 'related'] }
-  }], default: [] })
+  @Prop({
+    type: [
+      {
+        taskId: { type: Types.ObjectId, ref: 'Task' },
+        type: { type: String, enum: ['blocks', 'depends_on', 'related'] },
+      },
+    ],
+    default: [],
+  })
   dependencies: Array<{
     taskId: Types.ObjectId;
     type: 'blocks' | 'depends_on' | 'related';
@@ -97,9 +112,9 @@ export class Task {
       interval: { type: String, enum: ['daily', 'weekly', 'monthly'] },
       cron: String,
       nextRun: Date,
-      endDate: Date
+      endDate: Date,
     },
-    default: { enabled: false }
+    default: { enabled: false },
   })
   recurring?: {
     enabled: boolean;
@@ -112,12 +127,17 @@ export class Task {
   @Prop({ type: Types.ObjectId, ref: 'TaskTemplate' })
   templateId?: Types.ObjectId;
 
-  @Prop({ type: [{ 
-    userId: { type: Types.ObjectId, ref: 'User' },
-    startAt: Date,
-    endAt: Date,
-    seconds: Number
-  }], default: [] })
+  @Prop({
+    type: [
+      {
+        userId: { type: Types.ObjectId, ref: 'User' },
+        startAt: Date,
+        endAt: Date,
+        seconds: Number,
+      },
+    ],
+    default: [],
+  })
   timeLogs: Array<{
     userId: Types.ObjectId;
     startAt: Date;

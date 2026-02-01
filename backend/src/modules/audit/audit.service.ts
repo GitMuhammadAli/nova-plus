@@ -1,7 +1,12 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { AuditLog, AuditLogDocument, AuditAction, AuditResource } from './entities/audit-log.entity';
+import {
+  AuditLog,
+  AuditLogDocument,
+  AuditAction,
+  AuditResource,
+} from './entities/audit-log.entity';
 import { Types } from 'mongoose';
 
 export interface CreateAuditLogDto {
@@ -28,7 +33,9 @@ export class AuditService {
       ...dto,
       companyId: new Types.ObjectId(dto.companyId),
       userId: dto.userId ? new Types.ObjectId(dto.userId) : undefined,
-      resourceId: dto.resourceId ? new Types.ObjectId(dto.resourceId) : undefined,
+      resourceId: dto.resourceId
+        ? new Types.ObjectId(dto.resourceId)
+        : undefined,
     });
     return log.save();
   }
@@ -110,4 +117,3 @@ export class AuditService {
       .lean();
   }
 }
-

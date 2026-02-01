@@ -11,7 +11,7 @@ import { ConfigService } from '@nestjs/config';
 async function bootstrapWorker() {
   try {
     logger.info('Starting worker process...');
-    
+
     // Create application context (no HTTP server)
     const app = await NestFactory.createApplicationContext(AppModule, {
       logger: ['error', 'warn', 'log'],
@@ -42,7 +42,7 @@ async function bootstrapWorker() {
     // Graceful shutdown
     const shutdown = async (signal: string) => {
       logger.info(`Received ${signal}, shutting down workers gracefully...`);
-      
+
       await Promise.all([
         emailWorker.stop(),
         webhookWorker.stop(),
@@ -57,7 +57,6 @@ async function bootstrapWorker() {
 
     process.on('SIGTERM', () => shutdown('SIGTERM'));
     process.on('SIGINT', () => shutdown('SIGINT'));
-
   } catch (error) {
     logger.error('Failed to start worker process', { error });
     process.exit(1);
@@ -65,4 +64,3 @@ async function bootstrapWorker() {
 }
 
 bootstrapWorker();
-

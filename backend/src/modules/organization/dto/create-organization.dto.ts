@@ -1,4 +1,10 @@
-import { IsString, IsEmail, MinLength, IsOptional, Matches } from 'class-validator';
+import {
+  IsString,
+  IsEmail,
+  MinLength,
+  IsOptional,
+  Matches,
+} from 'class-validator';
 
 export class CreateOrganizationDto {
   @IsString()
@@ -27,4 +33,3 @@ export class CreateOrganizationDto {
   @MinLength(2)
   adminName: string;
 }
-

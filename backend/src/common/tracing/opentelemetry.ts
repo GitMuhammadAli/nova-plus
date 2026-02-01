@@ -1,5 +1,8 @@
 import { NodeSDK } from '@opentelemetry/sdk-node';
-import { defaultResource, resourceFromAttributes } from '@opentelemetry/resources';
+import {
+  defaultResource,
+  resourceFromAttributes,
+} from '@opentelemetry/resources';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
 import { MongooseInstrumentation } from '@opentelemetry/instrumentation-mongoose';
@@ -17,8 +20,10 @@ export function initializeTracing(serviceName: string = 'novapulse-api'): void {
     // Create resource with service attributes
     const customResource = resourceFromAttributes({
       [SemanticResourceAttributes.SERVICE_NAME]: serviceName,
-      [SemanticResourceAttributes.SERVICE_VERSION]: process.env.npm_package_version || '1.0.0',
-      [SemanticResourceAttributes.DEPLOYMENT_ENVIRONMENT]: process.env.NODE_ENV || 'development',
+      [SemanticResourceAttributes.SERVICE_VERSION]:
+        process.env.npm_package_version || '1.0.0',
+      [SemanticResourceAttributes.DEPLOYMENT_ENVIRONMENT]:
+        process.env.NODE_ENV || 'development',
     });
     const resource = defaultResource().merge(customResource);
 
@@ -45,14 +50,16 @@ export function initializeTracing(serviceName: string = 'novapulse-api'): void {
 
 export function shutdownTracing(): Promise<void> {
   if (sdk) {
-    return sdk.shutdown().then(() => {
-      logger.info('OpenTelemetry tracing shutdown');
-      sdk = null;
-    }).catch((error) => {
-      logger.error('Error shutting down OpenTelemetry', { error });
-      sdk = null;
-    });
+    return sdk
+      .shutdown()
+      .then(() => {
+        logger.info('OpenTelemetry tracing shutdown');
+        sdk = null;
+      })
+      .catch((error) => {
+        logger.error('Error shutting down OpenTelemetry', { error });
+        sdk = null;
+      });
   }
   return Promise.resolve();
 }
-

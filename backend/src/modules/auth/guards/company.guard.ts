@@ -25,9 +25,10 @@ export class CompanyGuard implements CanActivate {
     }
 
     // Get companyId from request params, body, or query
-    const companyId = request.params?.companyId || 
-                      request.body?.companyId || 
-                      request.query?.companyId;
+    const companyId =
+      request.params?.companyId ||
+      request.body?.companyId ||
+      request.query?.companyId;
 
     // If no companyId in request, check if user has one
     if (!companyId) {
@@ -41,10 +42,11 @@ export class CompanyGuard implements CanActivate {
     // Verify user's companyId matches requested companyId
     const userCompanyId = user.companyId?.toString() || user.orgId?.toString();
     if (userCompanyId !== companyId.toString()) {
-      throw new ForbiddenException('Access denied: You can only access data from your own company');
+      throw new ForbiddenException(
+        'Access denied: You can only access data from your own company',
+      );
     }
 
     return true;
   }
 }
-

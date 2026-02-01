@@ -1,4 +1,11 @@
-import { Injectable, BadRequestException, NotFoundException, ForbiddenException, Inject, forwardRef } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  ForbiddenException,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { JwtService } from '@nestjs/jwt';
@@ -26,21 +33,27 @@ export class CompanyService {
    */
   async register(registerCompanyDto: RegisterCompanyDto) {
     // Check if company name already exists
-    const existing = await this.companyModel.findOne({ name: registerCompanyDto.companyName }).exec();
+    const existing = await this.companyModel
+      .findOne({ name: registerCompanyDto.companyName })
+      .exec();
     if (existing) {
       throw new BadRequestException('Company name already exists');
     }
 
     // Check if domain is provided and unique
     if (registerCompanyDto.domain) {
-      const existingDomain = await this.companyModel.findOne({ domain: registerCompanyDto.domain }).exec();
+      const existingDomain = await this.companyModel
+        .findOne({ domain: registerCompanyDto.domain })
+        .exec();
       if (existingDomain) {
         throw new BadRequestException('Company domain already exists');
       }
     }
 
     // Check if admin email already exists
-    const existingUser = await this.userModel.findOne({ email: registerCompanyDto.email }).exec();
+    const existingUser = await this.userModel
+      .findOne({ email: registerCompanyDto.email })
+      .exec();
     if (existingUser) {
       throw new BadRequestException('Email already registered');
     }
@@ -61,7 +74,8 @@ export class CompanyService {
 
     // Create company admin user
     const hashedPassword = await bcrypt.hash(registerCompanyDto.password, 10);
-    const adminName = registerCompanyDto.adminName || registerCompanyDto.email.split('@')[0];
+    const adminName =
+      registerCompanyDto.adminName || registerCompanyDto.email.split('@')[0];
 
     const companyAdmin = await this.userModel.create({
       email: registerCompanyDto.email,
@@ -127,21 +141,27 @@ export class CompanyService {
    */
   async create(createCompanyDto: CreateCompanyDto, createdBy: string) {
     // Check if company name already exists
-    const existing = await this.companyModel.findOne({ name: createCompanyDto.name }).exec();
+    const existing = await this.companyModel
+      .findOne({ name: createCompanyDto.name })
+      .exec();
     if (existing) {
       throw new BadRequestException('Company name already exists');
     }
 
     // Check if domain is provided and unique
     if (createCompanyDto.domain) {
-      const existingDomain = await this.companyModel.findOne({ domain: createCompanyDto.domain }).exec();
+      const existingDomain = await this.companyModel
+        .findOne({ domain: createCompanyDto.domain })
+        .exec();
       if (existingDomain) {
         throw new BadRequestException('Company domain already exists');
       }
     }
 
     // Check if admin email already exists
-    const existingUser = await this.userModel.findOne({ email: createCompanyDto.companyAdminEmail }).exec();
+    const existingUser = await this.userModel
+      .findOne({ email: createCompanyDto.companyAdminEmail })
+      .exec();
     if (existingUser) {
       throw new BadRequestException('Email already registered');
     }
@@ -161,7 +181,10 @@ export class CompanyService {
     const savedCompany = await company.save();
 
     // Create company admin user
-    const hashedPassword = await bcrypt.hash(createCompanyDto.companyAdminPassword, 10);
+    const hashedPassword = await bcrypt.hash(
+      createCompanyDto.companyAdminPassword,
+      10,
+    );
     const companyAdmin = await this.userModel.create({
       email: createCompanyDto.companyAdminEmail,
       password: hashedPassword,
@@ -198,7 +221,11 @@ export class CompanyService {
   /**
    * Find company by ID with authorization check
    */
-  async findById(companyId: string, requestUserId: string, requestUserRole: string) {
+  async findById(
+    companyId: string,
+    requestUserId: string,
+    requestUserRole: string,
+  ) {
     // Debug logging in development
     if (process.env.NODE_ENV === 'development') {
       console.log('🔵 Company Service - findById:', {
@@ -209,7 +236,7 @@ export class CompanyService {
     }
 
     const company = await this.companyModel.findById(companyId).exec();
-    
+
     if (!company) {
       if (process.env.NODE_ENV === 'development') {
         console.error('❌ Company not found:', companyId);
@@ -267,24 +294,37 @@ export class CompanyService {
   /**
    * Update company
    */
-  async update(companyId: string, updateData: Partial<CreateCompanyDto>, requestUserId: string, requestUserRole: string) {
-    const company = await this.findById(companyId, requestUserId, requestUserRole);
-    
+  async update(
+    companyId: string,
+    updateData: Partial<CreateCompanyDto>,
+    requestUserId: string,
+    requestUserRole: string,
+  ) {
+    const company = await this.findById(
+      companyId,
+      requestUserId,
+      requestUserRole,
+    );
+
     if (updateData.name) {
-      const existing = await this.companyModel.findOne({ 
-        name: updateData.name, 
-        _id: { $ne: companyId } 
-      }).exec();
+      const existing = await this.companyModel
+        .findOne({
+          name: updateData.name,
+          _id: { $ne: companyId },
+        })
+        .exec();
       if (existing) {
         throw new BadRequestException('Company name already exists');
       }
     }
 
     if (updateData.domain) {
-      const existing = await this.companyModel.findOne({ 
-        domain: updateData.domain, 
-        _id: { $ne: companyId } 
-      }).exec();
+      const existing = await this.companyModel
+        .findOne({
+          domain: updateData.domain,
+          _id: { $ne: companyId },
+        })
+        .exec();
       if (existing) {
         throw new BadRequestException('Company domain already exists');
       }
@@ -297,7 +337,12 @@ export class CompanyService {
   /**
    * Get company users
    */
-  async getCompanyUsers(companyId: string, requestUserId: string, requestUserRole: string, params?: { page?: number; limit?: number; search?: string }) {
+  async getCompanyUsers(
+    companyId: string,
+    requestUserId: string,
+    requestUserRole: string,
+    params?: { page?: number; limit?: number; search?: string },
+  ) {
     // Verify user has access to this company
     await this.findById(companyId, requestUserId, requestUserRole);
 
@@ -305,7 +350,7 @@ export class CompanyService {
     const limit = params?.limit || 10;
     const skip = (page - 1) * limit;
 
-    const query: any = { 
+    const query: any = {
       companyId: companyId,
     };
 
@@ -322,7 +367,7 @@ export class CompanyService {
     ]);
 
     return {
-      data: users.map(user => {
+      data: users.map((user) => {
         const userObj: any = user.toObject();
         delete userObj.password;
         return userObj;
@@ -339,17 +384,24 @@ export class CompanyService {
   /**
    * Get company statistics
    */
-  async getCompanyStats(companyId: string, requestUserId: string, requestUserRole: string) {
+  async getCompanyStats(
+    companyId: string,
+    requestUserId: string,
+    requestUserRole: string,
+  ) {
     // Verify user has access to this company
     await this.findById(companyId, requestUserId, requestUserRole);
 
-    const [totalUsers, activeUsers, totalManagers, pendingInvites] = await Promise.all([
-      this.userModel.countDocuments({ companyId }).exec(),
-      this.userModel.countDocuments({ companyId, isActive: true }).exec(),
-      this.userModel.countDocuments({ companyId, role: UserRole.MANAGER }).exec(),
-      // Get pending invites count (would need invite service)
-      0, // Placeholder - implement with invite service
-    ]);
+    const [totalUsers, activeUsers, totalManagers, pendingInvites] =
+      await Promise.all([
+        this.userModel.countDocuments({ companyId }).exec(),
+        this.userModel.countDocuments({ companyId, isActive: true }).exec(),
+        this.userModel
+          .countDocuments({ companyId, role: UserRole.MANAGER })
+          .exec(),
+        // Get pending invites count (would need invite service)
+        0, // Placeholder - implement with invite service
+      ]);
 
     return {
       totalUsers,
@@ -363,20 +415,32 @@ export class CompanyService {
   /**
    * Get company activity (last 30 actions)
    */
-  async getCompanyActivity(companyId: string, requestUserId: string, requestUserRole: string) {
+  async getCompanyActivity(
+    companyId: string,
+    requestUserId: string,
+    requestUserRole: string,
+  ) {
     // Verify user has access to this company
     await this.findById(companyId, requestUserId, requestUserRole);
 
     // Get recent activity from AuditService
     try {
-      const activities = await this.auditService.getRecentActivity(companyId, 30);
+      const activities = await this.auditService.getRecentActivity(
+        companyId,
+        30,
+      );
       return activities.map((activity: any) => ({
         _id: activity._id,
         action: activity.action,
         resource: activity.resource,
         userId: activity.userId,
-        userName: activity.userName || (activity.userId?.name || activity.userId?.email || 'System'),
-        description: activity.description || `${activity.action} ${activity.resource}`,
+        userName:
+          activity.userName ||
+          activity.userId?.name ||
+          activity.userId?.email ||
+          'System',
+        description:
+          activity.description || `${activity.action} ${activity.resource}`,
         createdAt: activity.createdAt,
         metadata: activity.metadata,
       }));
@@ -389,20 +453,30 @@ export class CompanyService {
   /**
    * Get company profile with details
    */
-  async getCompanyProfile(companyId: string, requestUserId: string, requestUserRole: string) {
+  async getCompanyProfile(
+    companyId: string,
+    requestUserId: string,
+    requestUserRole: string,
+  ) {
     // Verify user has access to this company
-    const company = await this.findById(companyId, requestUserId, requestUserRole);
+    const company = await this.findById(
+      companyId,
+      requestUserId,
+      requestUserRole,
+    );
 
     // Get additional details
     const [totalUsers, totalManagers, totalProjects] = await Promise.all([
       this.userModel.countDocuments({ companyId }).exec(),
-      this.userModel.countDocuments({ companyId, role: UserRole.MANAGER }).exec(),
+      this.userModel
+        .countDocuments({ companyId, role: UserRole.MANAGER })
+        .exec(),
       // Would need Project model
       0,
     ]);
 
     // Convert to plain object to access timestamps
-    const companyObj = company.toObject ? company.toObject() : company as any;
+    const companyObj = company.toObject ? company.toObject() : (company as any);
 
     return {
       company: {

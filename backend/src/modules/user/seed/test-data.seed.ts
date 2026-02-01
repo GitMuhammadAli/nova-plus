@@ -2,12 +2,15 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User, UserRole } from '../entities/user.entity';
-import { Company, CompanyDocument } from '../../company/entities/company.entity';
+import {
+  Company,
+  CompanyDocument,
+} from '../../company/entities/company.entity';
 import * as bcrypt from 'bcrypt';
 
 /**
  * Test Data Seed for Phase 2 Testing
- * 
+ *
  * Creates:
  * - 1 Super Admin (global SaaS owner)
  * - 2 Companies: AcmeCorp, TechVerse
@@ -15,7 +18,7 @@ import * as bcrypt from 'bcrypt';
  *   - 1 Company Admin (CEO)
  *   - 1 Manager
  *   - 2 Users
- * 
+ *
  * Usage: Call seedTestData() method to populate database
  */
 @Injectable()
@@ -42,7 +45,11 @@ export class TestDataSeed {
       const superAdmin = await this.createSuperAdmin();
 
       // Create AcmeCorp
-      const acmeCorp = await this.createCompany('AcmeCorp', 'acme.com', superAdmin._id);
+      const acmeCorp = await this.createCompany(
+        'AcmeCorp',
+        'acme.com',
+        superAdmin._id,
+      );
       const acmeAdmin = await this.createUser(
         'acme.admin@acme.com',
         'Acme Admin',
@@ -88,7 +95,11 @@ export class TestDataSeed {
       await acmeCorp.save();
 
       // Create TechVerse
-      const techVerse = await this.createCompany('TechVerse', 'techverse.com', superAdmin._id);
+      const techVerse = await this.createCompany(
+        'TechVerse',
+        'techverse.com',
+        superAdmin._id,
+      );
       const techAdmin = await this.createUser(
         'tech.admin@techverse.com',
         'TechVerse Admin',
@@ -166,26 +177,30 @@ export class TestDataSeed {
     this.logger.log('🧹 Clearing existing test data...');
 
     // Delete test companies
-    await this.companyModel.deleteMany({
-      name: { $in: ['AcmeCorp', 'TechVerse'] },
-    }).exec();
+    await this.companyModel
+      .deleteMany({
+        name: { $in: ['AcmeCorp', 'TechVerse'] },
+      })
+      .exec();
 
     // Delete test users
-    await this.userModel.deleteMany({
-      email: {
-        $in: [
-          'super.admin@test.com',
-          'acme.admin@acme.com',
-          'acme.manager@acme.com',
-          'acme.user1@acme.com',
-          'acme.user2@acme.com',
-          'tech.admin@techverse.com',
-          'tech.manager@techverse.com',
-          'tech.user1@techverse.com',
-          'tech.user2@techverse.com',
-        ],
-      },
-    }).exec();
+    await this.userModel
+      .deleteMany({
+        email: {
+          $in: [
+            'super.admin@test.com',
+            'acme.admin@acme.com',
+            'acme.manager@acme.com',
+            'acme.user1@acme.com',
+            'acme.user2@acme.com',
+            'tech.admin@techverse.com',
+            'tech.manager@techverse.com',
+            'tech.user1@techverse.com',
+            'tech.user2@techverse.com',
+          ],
+        },
+      })
+      .exec();
 
     this.logger.log('✅ Test data cleared');
   }
@@ -279,4 +294,3 @@ export class TestDataSeed {
     return user;
   }
 }
-

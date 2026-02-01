@@ -20,4 +20,3 @@ export class CreateUserByManagerDto {
   @IsString()
   location?: string;
 }
-

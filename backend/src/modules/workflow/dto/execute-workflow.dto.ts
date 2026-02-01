@@ -5,4 +5,3 @@ export class ExecuteWorkflowDto {
   @IsObject()
   triggerData?: any;
 }
-

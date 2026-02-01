@@ -7,4 +7,3 @@ export class UpdateWebhookDto extends PartialType(CreateWebhookDto) {
   @IsBoolean()
   isActive?: boolean;
 }
-

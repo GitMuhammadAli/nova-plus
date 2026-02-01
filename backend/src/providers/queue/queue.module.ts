@@ -10,7 +10,8 @@ import { REDIS_CLIENT, redisProvider } from '../redis/redis.provider';
     BullModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
-        const redisUrl = configService.get<string>('REDIS_URL') || 'redis://localhost:6379';
+        const redisUrl =
+          configService.get<string>('REDIS_URL') || 'redis://localhost:6379';
         return {
           connection: {
             url: redisUrl,
@@ -33,4 +34,3 @@ import { REDIS_CLIENT, redisProvider } from '../redis/redis.provider';
   exports: [QueueService, REDIS_CLIENT, BullModule],
 })
 export class QueueModule {}
-

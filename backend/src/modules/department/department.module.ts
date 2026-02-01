@@ -19,4 +19,3 @@ import { AuditModule } from '../audit/audit.module';
   exports: [DepartmentService],
 })
 export class DepartmentModule {}
-

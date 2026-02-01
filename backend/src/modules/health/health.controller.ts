@@ -1,5 +1,11 @@
 import { Controller, Get } from '@nestjs/common';
-import { HealthCheck, HealthCheckService, MongooseHealthIndicator, MemoryHealthIndicator, HealthIndicatorResult } from '@nestjs/terminus';
+import {
+  HealthCheck,
+  HealthCheckService,
+  MongooseHealthIndicator,
+  MemoryHealthIndicator,
+  HealthIndicatorResult,
+} from '@nestjs/terminus';
 import { Inject } from '@nestjs/common';
 import Redis from 'ioredis';
 import { REDIS_CLIENT } from '../../providers/redis/redis.provider';

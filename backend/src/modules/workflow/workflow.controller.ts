@@ -38,8 +38,12 @@ export class WorkflowController {
     const user = req.user;
     const companyId = user.companyId?.toString() || user.companyId;
 
-    const workflow = await this.workflowService.create(createWorkflowDto, companyId, user._id || user.id);
-    
+    const workflow = await this.workflowService.create(
+      createWorkflowDto,
+      companyId,
+      user._id || user.id,
+    );
+
     return {
       success: true,
       workflow,
@@ -50,7 +54,12 @@ export class WorkflowController {
    * Get all workflows
    */
   @Get()
-  @Roles(UserRole.COMPANY_ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.SUPER_ADMIN)
+  @Roles(
+    UserRole.COMPANY_ADMIN,
+    UserRole.MANAGER,
+    UserRole.USER,
+    UserRole.SUPER_ADMIN,
+  )
   async findAll(
     @Req() req,
     @Query('status') status?: WorkflowStatus,
@@ -59,8 +68,11 @@ export class WorkflowController {
     const user = req.user;
     const companyId = user.companyId?.toString() || user.companyId;
 
-    const workflows = await this.workflowService.findAll(companyId, { status, search });
-    
+    const workflows = await this.workflowService.findAll(companyId, {
+      status,
+      search,
+    });
+
     return {
       success: true,
       workflows,
@@ -71,13 +83,18 @@ export class WorkflowController {
    * Get one workflow
    */
   @Get(':id')
-  @Roles(UserRole.COMPANY_ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.SUPER_ADMIN)
+  @Roles(
+    UserRole.COMPANY_ADMIN,
+    UserRole.MANAGER,
+    UserRole.USER,
+    UserRole.SUPER_ADMIN,
+  )
   async findOne(@Param('id') id: string, @Req() req) {
     const user = req.user;
     const companyId = user.companyId?.toString() || user.companyId;
 
     const workflow = await this.workflowService.findOne(id, companyId);
-    
+
     return {
       success: true,
       workflow,
@@ -97,8 +114,12 @@ export class WorkflowController {
     const user = req.user;
     const companyId = user.companyId?.toString() || user.companyId;
 
-    const workflow = await this.workflowService.update(id, updateWorkflowDto, companyId);
-    
+    const workflow = await this.workflowService.update(
+      id,
+      updateWorkflowDto,
+      companyId,
+    );
+
     return {
       success: true,
       workflow,
@@ -115,7 +136,7 @@ export class WorkflowController {
     const companyId = user.companyId?.toString() || user.companyId;
 
     await this.workflowService.remove(id, companyId);
-    
+
     return {
       success: true,
       message: 'Workflow deleted successfully',
@@ -132,7 +153,7 @@ export class WorkflowController {
     const companyId = user.companyId?.toString() || user.companyId;
 
     const workflow = await this.workflowService.toggleStatus(id, companyId);
-    
+
     return {
       success: true,
       workflow,
@@ -148,8 +169,12 @@ export class WorkflowController {
     const user = req.user;
     const companyId = user.companyId?.toString() || user.companyId;
 
-    const workflow = await this.workflowService.duplicate(id, companyId, user._id || user.id);
-    
+    const workflow = await this.workflowService.duplicate(
+      id,
+      companyId,
+      user._id || user.id,
+    );
+
     return {
       success: true,
       workflow,
@@ -174,7 +199,7 @@ export class WorkflowController {
       companyId,
       executeDto.triggerData || {},
     );
-    
+
     return {
       success: true,
       execution,
@@ -202,4 +227,3 @@ export class WorkflowController {
     };
   }
 }
-

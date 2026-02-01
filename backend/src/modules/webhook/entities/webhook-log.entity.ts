@@ -43,4 +43,3 @@ export const WebhookLogSchema = SchemaFactory.createForClass(WebhookLog);
 // Indexes
 WebhookLogSchema.index({ webhookId: 1, createdAt: -1 });
 WebhookLogSchema.index({ status: 1, createdAt: -1 });
-

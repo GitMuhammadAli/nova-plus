@@ -7,7 +7,9 @@ import { AuditModule } from '../audit/audit.module';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: Integration.name, schema: IntegrationSchema }]),
+    MongooseModule.forFeature([
+      { name: Integration.name, schema: IntegrationSchema },
+    ]),
     AuditModule,
   ],
   controllers: [IntegrationsController],
@@ -15,4 +17,3 @@ import { AuditModule } from '../audit/audit.module';
   exports: [IntegrationsService],
 })
 export class IntegrationsModule {}
-

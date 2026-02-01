@@ -1,23 +1,42 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { MongooseModuleOptions, MongooseOptionsFactory } from '@nestjs/mongoose';
+import {
+  MongooseModuleOptions,
+  MongooseOptionsFactory,
+} from '@nestjs/mongoose';
 import { connect, connection, Connection } from 'mongoose';
 import logger from '../../common/logger/winston.logger';
 
 @Injectable()
-export class MongoProvider implements MongooseOptionsFactory, OnModuleInit, OnModuleDestroy {
+export class MongoProvider
+  implements MongooseOptionsFactory, OnModuleInit, OnModuleDestroy
+{
   private connection: Connection | null = null;
 
   constructor(private configService: ConfigService) {}
 
   createMongooseOptions(): MongooseModuleOptions {
-    const uri = this.configService.get<string>('mongoUri') || 'mongodb://localhost:27017/novapulse';
+    const uri =
+      this.configService.get<string>('mongoUri') ||
+      'mongodb://localhost:27017/novapulse';
     const maxPoolSize = this.configService.get<number>('mongoMaxPoolSize', 10);
     const minPoolSize = this.configService.get<number>('mongoMinPoolSize', 2);
-    const maxIdleTimeMS = this.configService.get<number>('mongoMaxIdleTimeMS', 30000);
-    const serverSelectionTimeoutMS = this.configService.get<number>('mongoServerSelectionTimeout', 5000);
-    const socketTimeoutMS = this.configService.get<number>('mongoSocketTimeout', 45000);
-    const readPreference = this.configService.get<string>('mongoReadPreference', 'primaryPreferred');
+    const maxIdleTimeMS = this.configService.get<number>(
+      'mongoMaxIdleTimeMS',
+      30000,
+    );
+    const serverSelectionTimeoutMS = this.configService.get<number>(
+      'mongoServerSelectionTimeout',
+      5000,
+    );
+    const socketTimeoutMS = this.configService.get<number>(
+      'mongoSocketTimeout',
+      45000,
+    );
+    const readPreference = this.configService.get<string>(
+      'mongoReadPreference',
+      'primaryPreferred',
+    );
 
     return {
       uri,
@@ -34,7 +53,9 @@ export class MongoProvider implements MongooseOptionsFactory, OnModuleInit, OnMo
 
   async onModuleInit() {
     try {
-      const uri = this.configService.get<string>('mongoUri') || 'mongodb://localhost:27017/novapulse';
+      const uri =
+        this.configService.get<string>('mongoUri') ||
+        'mongodb://localhost:27017/novapulse';
       this.connection = connection;
 
       // Connection event handlers
@@ -43,7 +64,10 @@ export class MongoProvider implements MongooseOptionsFactory, OnModuleInit, OnMo
       });
 
       this.connection.on('error', (error) => {
-        logger.error('MongoDB connection error', { error: error.message, provider: 'mongo' });
+        logger.error('MongoDB connection error', {
+          error: error.message,
+          provider: 'mongo',
+        });
       });
 
       this.connection.on('disconnected', () => {
@@ -58,7 +82,9 @@ export class MongoProvider implements MongooseOptionsFactory, OnModuleInit, OnMo
         });
       });
     } catch (error) {
-      logger.error('Failed to initialize MongoDB provider', { error: error.message });
+      logger.error('Failed to initialize MongoDB provider', {
+        error: error.message,
+      });
       throw error;
     }
   }
@@ -86,7 +112,8 @@ export class MongoProvider implements MongooseOptionsFactory, OnModuleInit, OnMo
     };
 
     return {
-      status: states[this.connection.readyState as keyof typeof states] || 'unknown',
+      status:
+        states[this.connection.readyState as keyof typeof states] || 'unknown',
       readyState: this.connection.readyState,
     };
   }
@@ -106,10 +133,13 @@ export class MongoProvider implements MongooseOptionsFactory, OnModuleInit, OnMo
         return await operation();
       } catch (error) {
         lastError = error as Error;
-        logger.warn(`MongoDB operation failed (attempt ${attempt}/${maxRetries})`, {
-          error: error.message,
-          attempt,
-        });
+        logger.warn(
+          `MongoDB operation failed (attempt ${attempt}/${maxRetries})`,
+          {
+            error: error.message,
+            attempt,
+          },
+        );
 
         if (attempt < maxRetries) {
           await new Promise((resolve) => setTimeout(resolve, delay * attempt));
@@ -120,4 +150,3 @@ export class MongoProvider implements MongooseOptionsFactory, OnModuleInit, OnMo
     throw lastError!;
   }
 }
-

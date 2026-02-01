@@ -5,8 +5,17 @@ import { User, UserDocument } from '../user/entities/user.entity';
 import { Project, ProjectDocument } from '../project/entities/project.entity';
 import { Task, TaskDocument } from '../task/entities/task.entity';
 import { Invite, InviteDocument } from '../invite/entities/invite.entity';
-import { AnalyticsVisit, AnalyticsVisitDocument } from './entities/analytics-visit.entity';
-import { AnalyticsStatsDto, TrafficDataPoint, DeviceData, ConversionData, TopPageData } from './dto/analytics-stats.dto';
+import {
+  AnalyticsVisit,
+  AnalyticsVisitDocument,
+} from './entities/analytics-visit.entity';
+import {
+  AnalyticsStatsDto,
+  TrafficDataPoint,
+  DeviceData,
+  ConversionData,
+  TopPageData,
+} from './dto/analytics-stats.dto';
 
 @Injectable()
 export class AnalyticsService {
@@ -15,7 +24,8 @@ export class AnalyticsService {
     @InjectModel(Project.name) private projectModel: Model<ProjectDocument>,
     @InjectModel(Task.name) private taskModel: Model<TaskDocument>,
     @InjectModel(Invite.name) private inviteModel: Model<InviteDocument>,
-    @InjectModel(AnalyticsVisit.name) private visitModel: Model<AnalyticsVisitDocument>,
+    @InjectModel(AnalyticsVisit.name)
+    private visitModel: Model<AnalyticsVisitDocument>,
   ) {}
 
   /**
@@ -63,25 +73,34 @@ export class AnalyticsService {
     sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
 
     // Get total visitors
-    const totalVisitors = await this.visitModel.distinct('userId', {
-      companyId: new Types.ObjectId(companyId),
-    }).then(ids => ids.filter(Boolean).length);
+    const totalVisitors = await this.visitModel
+      .distinct('userId', {
+        companyId: new Types.ObjectId(companyId),
+      })
+      .then((ids) => ids.filter(Boolean).length);
 
     // Get visitors in last 30 days
-    const visitorsLast30Days = await this.visitModel.distinct('userId', {
-      companyId: new Types.ObjectId(companyId),
-      visitedAt: { $gte: thirtyDaysAgo },
-    }).then(ids => ids.filter(Boolean).length);
+    const visitorsLast30Days = await this.visitModel
+      .distinct('userId', {
+        companyId: new Types.ObjectId(companyId),
+        visitedAt: { $gte: thirtyDaysAgo },
+      })
+      .then((ids) => ids.filter(Boolean).length);
 
     // Get visitors in previous 30 days
-    const visitorsPrev30Days = await this.visitModel.distinct('userId', {
-      companyId: new Types.ObjectId(companyId),
-      visitedAt: { $gte: sixtyDaysAgo, $lt: thirtyDaysAgo },
-    }).then(ids => ids.filter(Boolean).length);
+    const visitorsPrev30Days = await this.visitModel
+      .distinct('userId', {
+        companyId: new Types.ObjectId(companyId),
+        visitedAt: { $gte: sixtyDaysAgo, $lt: thirtyDaysAgo },
+      })
+      .then((ids) => ids.filter(Boolean).length);
 
-    const visitorChange = visitorsPrev30Days > 0
-      ? ((visitorsLast30Days - visitorsPrev30Days) / visitorsPrev30Days) * 100
-      : (visitorsLast30Days > 0 ? 100 : 0);
+    const visitorChange =
+      visitorsPrev30Days > 0
+        ? ((visitorsLast30Days - visitorsPrev30Days) / visitorsPrev30Days) * 100
+        : visitorsLast30Days > 0
+          ? 100
+          : 0;
 
     // Get total users, projects, tasks
     const totalUsers = await this.userModel.countDocuments({
@@ -97,19 +116,26 @@ export class AnalyticsService {
     });
 
     // Get average session duration
-    const recentVisits = await this.visitModel.find({
-      companyId: new Types.ObjectId(companyId),
-      visitedAt: { $gte: thirtyDaysAgo },
-    }).lean();
+    const recentVisits = await this.visitModel
+      .find({
+        companyId: new Types.ObjectId(companyId),
+        visitedAt: { $gte: thirtyDaysAgo },
+      })
+      .lean();
 
-    const totalDuration = recentVisits.reduce((sum, v) => sum + (v.duration || 0), 0);
-    const avgDurationSeconds = recentVisits.length > 0 ? totalDuration / recentVisits.length : 0;
+    const totalDuration = recentVisits.reduce(
+      (sum, v) => sum + (v.duration || 0),
+      0,
+    );
+    const avgDurationSeconds =
+      recentVisits.length > 0 ? totalDuration / recentVisits.length : 0;
     const avgSessionDuration = this.formatDuration(avgDurationSeconds);
 
     // Calculate conversion rate (mock for now)
-    const conversionRate = totalUsers > 0 && totalVisitors > 0 
-      ? (totalUsers / Math.max(totalVisitors, totalUsers)) * 100 
-      : 0;
+    const conversionRate =
+      totalUsers > 0 && totalVisitors > 0
+        ? (totalUsers / Math.max(totalVisitors, totalUsers)) * 100
+        : 0;
     const conversionRateChange = 2.1; // Placeholder
 
     // Calculate revenue (mock for now)
@@ -134,53 +160,79 @@ export class AnalyticsService {
   /**
    * Get comprehensive analytics stats for a company
    */
-  async getAnalyticsStats(companyId: string, period: string = '6m'): Promise<AnalyticsStatsDto> {
+  async getAnalyticsStats(
+    companyId: string,
+    period: string = '6m',
+  ): Promise<AnalyticsStatsDto> {
     const dateRange = this.getDateRange(period);
     const previousDateRange = this.getPreviousDateRange(period);
 
     // Get company users
-    const companyUsers = await this.userModel.find({
-      companyId: new Types.ObjectId(companyId),
-      isActive: true,
-    }).lean();
+    const companyUsers = await this.userModel
+      .find({
+        companyId: new Types.ObjectId(companyId),
+        isActive: true,
+      })
+      .lean();
 
     // Get visits data
-    const visits = await this.visitModel.find({
-      companyId: new Types.ObjectId(companyId),
-      visitedAt: { $gte: dateRange.start },
-    }).lean();
+    const visits = await this.visitModel
+      .find({
+        companyId: new Types.ObjectId(companyId),
+        visitedAt: { $gte: dateRange.start },
+      })
+      .lean();
 
-    const previousVisits = await this.visitModel.find({
-      companyId: new Types.ObjectId(companyId),
-      visitedAt: { $gte: previousDateRange.start, $lt: previousDateRange.end },
-    }).lean();
+    const previousVisits = await this.visitModel
+      .find({
+        companyId: new Types.ObjectId(companyId),
+        visitedAt: {
+          $gte: previousDateRange.start,
+          $lt: previousDateRange.end,
+        },
+      })
+      .lean();
 
     // Calculate unique visitors
-    const uniqueVisitors = new Set(visits.map(v => v.userId?.toString()).filter(Boolean));
+    const uniqueVisitors = new Set(
+      visits.map((v) => v.userId?.toString()).filter(Boolean),
+    );
     const totalVisitors = uniqueVisitors.size;
-    const previousUniqueVisitors = new Set(previousVisits.map(v => v.userId?.toString()).filter(Boolean));
+    const previousUniqueVisitors = new Set(
+      previousVisits.map((v) => v.userId?.toString()).filter(Boolean),
+    );
     const previousTotalVisitors = previousUniqueVisitors.size;
 
     // Calculate pageviews and sessions
     const pageviews = visits.length;
     const previousPageviews = previousVisits.length;
-    
+
     // Group visits by day for traffic data
-    const trafficData = this.generateTrafficData(visits, dateRange.start, period);
+    const trafficData = this.generateTrafficData(
+      visits,
+      dateRange.start,
+      period,
+    );
 
     // Calculate average session duration
     const totalDuration = visits.reduce((sum, v) => sum + (v.duration || 0), 0);
-    const avgDurationSeconds = visits.length > 0 ? totalDuration / visits.length : 0;
+    const avgDurationSeconds =
+      visits.length > 0 ? totalDuration / visits.length : 0;
     const avgSessionDuration = this.formatDuration(avgDurationSeconds);
-    const previousAvgDuration = previousVisits.length > 0 
-      ? previousVisits.reduce((sum, v) => sum + (v.duration || 0), 0) / previousVisits.length 
-      : 0;
+    const previousAvgDuration =
+      previousVisits.length > 0
+        ? previousVisits.reduce((sum, v) => sum + (v.duration || 0), 0) /
+          previousVisits.length
+        : 0;
 
     // Device distribution
     const deviceData = this.calculateDeviceDistribution(visits);
 
     // Conversion funnel (based on user signups, active users, etc.)
-    const conversionData = await this.calculateConversionFunnel(companyId, companyUsers);
+    const conversionData = await this.calculateConversionFunnel(
+      companyId,
+      companyUsers,
+    );
 
     // Top pages
     const topPages = this.calculateTopPages(visits);
@@ -190,26 +242,43 @@ export class AnalyticsService {
     const previousRevenue = 0;
 
     // Calculate growth percentages
-    const visitorsGrowth = previousTotalVisitors > 0
-      ? ((totalVisitors - previousTotalVisitors) / previousTotalVisitors) * 100
-      : totalVisitors > 0 ? 100 : 0;
+    const visitorsGrowth =
+      previousTotalVisitors > 0
+        ? ((totalVisitors - previousTotalVisitors) / previousTotalVisitors) *
+          100
+        : totalVisitors > 0
+          ? 100
+          : 0;
 
-    const sessionsGrowth = previousPageviews > 0
-      ? ((pageviews - previousPageviews) / previousPageviews) * 100
-      : pageviews > 0 ? 100 : 0;
+    const sessionsGrowth =
+      previousPageviews > 0
+        ? ((pageviews - previousPageviews) / previousPageviews) * 100
+        : pageviews > 0
+          ? 100
+          : 0;
 
-    const conversionGrowth = conversionData.length > 0
-      ? ((conversionData[conversionData.length - 1].rate - (conversionData[conversionData.length - 1].rate * 0.95)) / (conversionData[conversionData.length - 1].rate * 0.95)) * 100
-      : 0;
+    const conversionGrowth =
+      conversionData.length > 0
+        ? ((conversionData[conversionData.length - 1].rate -
+            conversionData[conversionData.length - 1].rate * 0.95) /
+            (conversionData[conversionData.length - 1].rate * 0.95)) *
+          100
+        : 0;
 
-    const revenueGrowth = previousRevenue > 0
-      ? ((revenue - previousRevenue) / previousRevenue) * 100
-      : revenue > 0 ? 100 : 0;
+    const revenueGrowth =
+      previousRevenue > 0
+        ? ((revenue - previousRevenue) / previousRevenue) * 100
+        : revenue > 0
+          ? 100
+          : 0;
 
     return {
       totalVisitors,
       avgSessionDuration,
-      conversionRate: conversionData.length > 0 ? conversionData[conversionData.length - 1].rate : 0,
+      conversionRate:
+        conversionData.length > 0
+          ? conversionData[conversionData.length - 1].rate
+          : 0,
       revenue,
       trafficData,
       deviceData,
@@ -230,7 +299,7 @@ export class AnalyticsService {
    */
   private getDateRange(period: string): { start: Date; end: Date } {
     const end = new Date();
-    let start = new Date();
+    const start = new Date();
 
     switch (period) {
       case '7d':
@@ -261,7 +330,7 @@ export class AnalyticsService {
   private getPreviousDateRange(period: string): { start: Date; end: Date } {
     const current = this.getDateRange(period);
     const duration = current.end.getTime() - current.start.getTime();
-    
+
     return {
       start: new Date(current.start.getTime() - duration),
       end: current.start,
@@ -271,9 +340,22 @@ export class AnalyticsService {
   /**
    * Generate traffic data points
    */
-  private generateTrafficData(visits: any[], startDate: Date, period: string): TrafficDataPoint[] {
+  private generateTrafficData(
+    visits: any[],
+    startDate: Date,
+    period: string,
+  ): TrafficDataPoint[] {
     const data: TrafficDataPoint[] = [];
-    const days = period === '7d' ? 7 : period === '30d' ? 30 : period === '3m' ? 90 : period === '6m' ? 180 : 365;
+    const days =
+      period === '7d'
+        ? 7
+        : period === '30d'
+          ? 30
+          : period === '3m'
+            ? 90
+            : period === '6m'
+              ? 180
+              : 365;
     const interval = days <= 30 ? 1 : days <= 90 ? 7 : 30;
 
     for (let i = 0; i < days; i += interval) {
@@ -282,15 +364,20 @@ export class AnalyticsService {
       const nextDate = new Date(date);
       nextDate.setDate(nextDate.getDate() + interval);
 
-      const periodVisits = visits.filter(v => {
+      const periodVisits = visits.filter((v) => {
         const visitDate = new Date(v.visitedAt);
         return visitDate >= date && visitDate < nextDate;
       });
 
-      const uniqueVisitors = new Set(periodVisits.map(v => v.userId?.toString()).filter(Boolean));
+      const uniqueVisitors = new Set(
+        periodVisits.map((v) => v.userId?.toString()).filter(Boolean),
+      );
 
       data.push({
-        date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        date: date.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+        }),
         visitors: uniqueVisitors.size,
         pageviews: periodVisits.length,
         sessions: Math.ceil(periodVisits.length / 3), // Approximate sessions
@@ -305,7 +392,7 @@ export class AnalyticsService {
    */
   private calculateDeviceDistribution(visits: any[]): DeviceData[] {
     const deviceCounts: Record<string, number> = {};
-    visits.forEach(visit => {
+    visits.forEach((visit) => {
       const device = visit.device || 'unknown';
       deviceCounts[device] = (deviceCounts[device] || 0) + 1;
     });
@@ -330,14 +417,19 @@ export class AnalyticsService {
   /**
    * Calculate conversion funnel
    */
-  private async calculateConversionFunnel(companyId: string, users: any[]): Promise<ConversionData[]> {
+  private async calculateConversionFunnel(
+    companyId: string,
+    users: any[],
+  ): Promise<ConversionData[]> {
     const totalUsers = users.length;
-    const activeUsers = users.filter(u => u.isActive).length;
-    
+    const activeUsers = users.filter((u) => u.isActive).length;
+
     // Get signups (users created in last period)
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const recentSignups = users.filter(u => new Date(u.createdAt) >= thirtyDaysAgo).length;
+    const recentSignups = users.filter(
+      (u) => new Date(u.createdAt) >= thirtyDaysAgo,
+    ).length;
 
     // Get projects/tasks completion as "paid" conversion
     const projects = await this.projectModel.countDocuments({
@@ -381,9 +473,12 @@ export class AnalyticsService {
    * Calculate top pages
    */
   private calculateTopPages(visits: any[]): TopPageData[] {
-    const pageStats: Record<string, { views: number; totalDuration: number; count: number }> = {};
+    const pageStats: Record<
+      string,
+      { views: number; totalDuration: number; count: number }
+    > = {};
 
-    visits.forEach(visit => {
+    visits.forEach((visit) => {
       const page = visit.page || '/';
       if (!pageStats[page]) {
         pageStats[page] = { views: 0, totalDuration: 0, count: 0 };
@@ -421,8 +516,14 @@ export class AnalyticsService {
   private detectDevice(userAgent?: string): string {
     if (!userAgent) return 'unknown';
     const ua = userAgent.toLowerCase();
-    if (/(tablet|ipad|playbook|silk)|(android(?!.*mobi))/i.test(ua)) return 'tablet';
-    if (/Mobile|Android|iP(hone|od)|IEMobile|BlackBerry|Kindle|Silk-Accelerated|(hpw|web)OS|Opera M(obi|ini)/.test(ua)) return 'mobile';
+    if (/(tablet|ipad|playbook|silk)|(android(?!.*mobi))/i.test(ua))
+      return 'tablet';
+    if (
+      /Mobile|Android|iP(hone|od)|IEMobile|BlackBerry|Kindle|Silk-Accelerated|(hpw|web)OS|Opera M(obi|ini)/.test(
+        ua,
+      )
+    )
+      return 'mobile';
     return 'desktop';
   }
 
@@ -450,7 +551,8 @@ export class AnalyticsService {
     if (ua.includes('mac')) return 'macOS';
     if (ua.includes('linux')) return 'Linux';
     if (ua.includes('android')) return 'Android';
-    if (ua.includes('ios') || ua.includes('iphone') || ua.includes('ipad')) return 'iOS';
+    if (ua.includes('ios') || ua.includes('iphone') || ua.includes('ipad'))
+      return 'iOS';
     return 'Unknown';
   }
 }

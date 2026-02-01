@@ -1,7 +1,15 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { Setting, SettingDocument, SettingType } from './entities/setting.entity';
+import {
+  Setting,
+  SettingDocument,
+  SettingType,
+} from './entities/setting.entity';
 import { CreateSettingDto } from './dto/create-setting.dto';
 import { UpdateSettingDto } from './dto/update-setting.dto';
 import { UserRole } from '../user/entities/user.entity';
@@ -12,12 +20,17 @@ export class SettingsService {
     @InjectModel(Setting.name) private settingModel: Model<SettingDocument>,
   ) {}
 
-  async create(createSettingDto: CreateSettingDto, companyId: string): Promise<SettingDocument> {
+  async create(
+    createSettingDto: CreateSettingDto,
+    companyId: string,
+  ): Promise<SettingDocument> {
     // Check if setting already exists
-    const existing = await this.settingModel.findOne({
-      companyId: new Types.ObjectId(companyId),
-      key: createSettingDto.key,
-    }).exec();
+    const existing = await this.settingModel
+      .findOne({
+        companyId: new Types.ObjectId(companyId),
+        key: createSettingDto.key,
+      })
+      .exec();
 
     if (existing) {
       throw new ForbiddenException('Setting with this key already exists');
@@ -32,7 +45,10 @@ export class SettingsService {
     return setting.save();
   }
 
-  async findAll(companyId: string, type?: SettingType): Promise<SettingDocument[]> {
+  async findAll(
+    companyId: string,
+    type?: SettingType,
+  ): Promise<SettingDocument[]> {
     const query: any = { companyId: new Types.ObjectId(companyId) };
     if (type) {
       query.type = type;
@@ -41,10 +57,12 @@ export class SettingsService {
   }
 
   async findOne(id: string, companyId: string): Promise<SettingDocument> {
-    const setting = await this.settingModel.findOne({
-      _id: id,
-      companyId: new Types.ObjectId(companyId),
-    }).exec();
+    const setting = await this.settingModel
+      .findOne({
+        _id: id,
+        companyId: new Types.ObjectId(companyId),
+      })
+      .exec();
 
     if (!setting) {
       throw new NotFoundException('Setting not found');
@@ -53,18 +71,29 @@ export class SettingsService {
     return setting;
   }
 
-  async findByKey(key: string, companyId: string): Promise<SettingDocument | null> {
-    return this.settingModel.findOne({
-      key,
-      companyId: new Types.ObjectId(companyId),
-    }).exec();
+  async findByKey(
+    key: string,
+    companyId: string,
+  ): Promise<SettingDocument | null> {
+    return this.settingModel
+      .findOne({
+        key,
+        companyId: new Types.ObjectId(companyId),
+      })
+      .exec();
   }
 
-  async update(id: string, updateSettingDto: UpdateSettingDto, companyId: string): Promise<SettingDocument> {
-    const setting = await this.settingModel.findOne({
-      _id: id,
-      companyId: new Types.ObjectId(companyId),
-    }).exec();
+  async update(
+    id: string,
+    updateSettingDto: UpdateSettingDto,
+    companyId: string,
+  ): Promise<SettingDocument> {
+    const setting = await this.settingModel
+      .findOne({
+        _id: id,
+        companyId: new Types.ObjectId(companyId),
+      })
+      .exec();
 
     if (!setting) {
       throw new NotFoundException('Setting not found');
@@ -74,11 +103,17 @@ export class SettingsService {
     return setting.save();
   }
 
-  async updateByKey(key: string, value: any, companyId: string): Promise<SettingDocument> {
-    const setting = await this.settingModel.findOne({
-      key,
-      companyId: new Types.ObjectId(companyId),
-    }).exec();
+  async updateByKey(
+    key: string,
+    value: any,
+    companyId: string,
+  ): Promise<SettingDocument> {
+    const setting = await this.settingModel
+      .findOne({
+        key,
+        companyId: new Types.ObjectId(companyId),
+      })
+      .exec();
 
     if (!setting) {
       throw new NotFoundException('Setting not found');
@@ -89,10 +124,12 @@ export class SettingsService {
   }
 
   async remove(id: string, companyId: string): Promise<void> {
-    const result = await this.settingModel.deleteOne({
-      _id: id,
-      companyId: new Types.ObjectId(companyId),
-    }).exec();
+    const result = await this.settingModel
+      .deleteOne({
+        _id: id,
+        companyId: new Types.ObjectId(companyId),
+      })
+      .exec();
 
     if (result.deletedCount === 0) {
       throw new NotFoundException('Setting not found');
@@ -106,7 +143,7 @@ export class SettingsService {
     const settings = await this.findAll(companyId);
     const grouped: Record<string, any[]> = {};
 
-    settings.forEach(setting => {
+    settings.forEach((setting) => {
       if (!grouped[setting.type]) {
         grouped[setting.type] = [];
       }
@@ -131,20 +168,40 @@ export class SettingsService {
   /**
    * Update branding settings
    */
-  async updateBranding(companyId: string, branding: { logo?: string; primaryColor?: string; secondaryColor?: string; companyName?: string }) {
-    const brandingKeys = ['logo', 'primaryColor', 'secondaryColor', 'companyName'];
+  async updateBranding(
+    companyId: string,
+    branding: {
+      logo?: string;
+      primaryColor?: string;
+      secondaryColor?: string;
+      companyName?: string;
+    },
+  ) {
+    const brandingKeys = [
+      'logo',
+      'primaryColor',
+      'secondaryColor',
+      'companyName',
+    ];
 
     for (const key of brandingKeys) {
       if (branding[key as keyof typeof branding] !== undefined) {
         const existing = await this.findByKey(key, companyId);
         if (existing) {
-          await this.updateByKey(key, branding[key as keyof typeof branding], companyId);
-        } else {
-          await this.create({
+          await this.updateByKey(
             key,
-            value: branding[key as keyof typeof branding],
-            type: SettingType.BRANDING,
-          }, companyId);
+            branding[key as keyof typeof branding],
+            companyId,
+          );
+        } else {
+          await this.create(
+            {
+              key,
+              value: branding[key as keyof typeof branding],
+              type: SettingType.BRANDING,
+            },
+            companyId,
+          );
         }
       }
     }
@@ -167,30 +224,39 @@ export class SettingsService {
     if (existing) {
       return this.updateByKey('permissions', permissions, companyId);
     } else {
-      return this.create({
-        key: 'permissions',
-        value: permissions,
-        type: SettingType.PERMISSIONS,
-      }, companyId);
+      return this.create(
+        {
+          key: 'permissions',
+          value: permissions,
+          type: SettingType.PERMISSIONS,
+        },
+        companyId,
+      );
     }
   }
 
   /**
    * Update company settings (general)
    */
-  async updateCompanySettings(companyId: string, settings: Record<string, any>) {
+  async updateCompanySettings(
+    companyId: string,
+    settings: Record<string, any>,
+  ) {
     const updated: any[] = [];
-    
+
     for (const [key, value] of Object.entries(settings)) {
       const existing = await this.findByKey(key, companyId);
       if (existing) {
         await this.updateByKey(key, value, companyId);
       } else {
-        await this.create({
-          key,
-          value,
-          type: SettingType.COMPANY,
-        }, companyId);
+        await this.create(
+          {
+            key,
+            value,
+            type: SettingType.COMPANY,
+          },
+          companyId,
+        );
       }
       updated.push({ key, value });
     }
@@ -226,16 +292,19 @@ export class SettingsService {
   /**
    * Update working hours settings
    */
-  async updateWorkingHours(companyId: string, workingHours: {
-    monday?: { start: string; end: string; enabled: boolean };
-    tuesday?: { start: string; end: string; enabled: boolean };
-    wednesday?: { start: string; end: string; enabled: boolean };
-    thursday?: { start: string; end: string; enabled: boolean };
-    friday?: { start: string; end: string; enabled: boolean };
-    saturday?: { start: string; end: string; enabled: boolean };
-    sunday?: { start: string; end: string; enabled: boolean };
-    timezone?: string;
-  }) {
+  async updateWorkingHours(
+    companyId: string,
+    workingHours: {
+      monday?: { start: string; end: string; enabled: boolean };
+      tuesday?: { start: string; end: string; enabled: boolean };
+      wednesday?: { start: string; end: string; enabled: boolean };
+      thursday?: { start: string; end: string; enabled: boolean };
+      friday?: { start: string; end: string; enabled: boolean };
+      saturday?: { start: string; end: string; enabled: boolean };
+      sunday?: { start: string; end: string; enabled: boolean };
+      timezone?: string;
+    },
+  ) {
     const existing = await this.findByKey('workingHours', companyId);
     const current = existing ? existing.value : {};
     const updated = { ...current, ...workingHours };
@@ -243,11 +312,14 @@ export class SettingsService {
     if (existing) {
       return this.updateByKey('workingHours', updated, companyId);
     } else {
-      return this.create({
-        key: 'workingHours',
-        value: updated,
-        type: SettingType.WORK_HOURS,
-      }, companyId);
+      return this.create(
+        {
+          key: 'workingHours',
+          value: updated,
+          type: SettingType.WORK_HOURS,
+        },
+        companyId,
+      );
     }
   }
 }

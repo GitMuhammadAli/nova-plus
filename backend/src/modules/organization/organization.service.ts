@@ -1,7 +1,14 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Organization, OrganizationDocument } from './entities/organization.entity';
+import {
+  Organization,
+  OrganizationDocument,
+} from './entities/organization.entity';
 import { UsersService } from '../user/user.service';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
 import { UserRole } from '../user/entities/user.entity';
@@ -84,11 +91,11 @@ export class OrganizationService {
       .populate('owner', 'name email role')
       .populate('members', 'name email role')
       .exec();
-    
+
     if (!org) {
       throw new NotFoundException('Organization not found');
     }
-    
+
     return org;
   }
 
@@ -113,11 +120,11 @@ export class OrganizationService {
     const org = await this.orgModel
       .findByIdAndUpdate(id, data, { new: true })
       .exec();
-    
+
     if (!org) {
       throw new NotFoundException('Organization not found');
     }
-    
+
     return org;
   }
 
@@ -126,12 +133,12 @@ export class OrganizationService {
    */
   async addMember(orgId: string, userId: string) {
     const org = await this.findById(orgId);
-    
-    if (!org.members.some(m => m.toString() === userId)) {
+
+    if (!org.members.some((m) => m.toString() === userId)) {
       org.members.push(userId as any);
       await org.save();
     }
-    
+
     return org;
   }
 
@@ -142,4 +149,3 @@ export class OrganizationService {
     return this.orgModel.find().populate('owner', 'name email').exec();
   }
 }
-

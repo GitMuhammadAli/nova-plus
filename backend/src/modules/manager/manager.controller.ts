@@ -39,11 +39,17 @@ export class ManagerController {
   async getProjects(@Req() req) {
     const manager = req.user;
     const companyId = manager.companyId?.toString() || manager.companyId;
-    const departmentId = await this.getManagerDepartmentId(manager._id || manager.id, companyId);
-    
+    const departmentId = await this.getManagerDepartmentId(
+      manager._id || manager.id,
+      companyId,
+    );
+
     return {
       success: true,
-      data: await this.projectsService.getDepartmentProjects(companyId, departmentId),
+      data: await this.projectsService.getDepartmentProjects(
+        companyId,
+        departmentId,
+      ),
     };
   }
 
@@ -51,11 +57,18 @@ export class ManagerController {
   async getProject(@Param('id') id: string, @Req() req) {
     const manager = req.user;
     const companyId = manager.companyId?.toString() || manager.companyId;
-    const departmentId = await this.getManagerDepartmentId(manager._id || manager.id, companyId);
-    
+    const departmentId = await this.getManagerDepartmentId(
+      manager._id || manager.id,
+      companyId,
+    );
+
     return {
       success: true,
-      data: await this.projectsService.getProjectDetails(id, companyId, departmentId),
+      data: await this.projectsService.getProjectDetails(
+        id,
+        companyId,
+        departmentId,
+      ),
     };
   }
 
@@ -63,11 +76,18 @@ export class ManagerController {
   async getProjectTasks(@Param('id') id: string, @Req() req) {
     const manager = req.user;
     const companyId = manager.companyId?.toString() || manager.companyId;
-    const departmentId = await this.getManagerDepartmentId(manager._id || manager.id, companyId);
-    
+    const departmentId = await this.getManagerDepartmentId(
+      manager._id || manager.id,
+      companyId,
+    );
+
     return {
       success: true,
-      data: await this.projectsService.getProjectTasks(id, companyId, departmentId),
+      data: await this.projectsService.getProjectTasks(
+        id,
+        companyId,
+        departmentId,
+      ),
     };
   }
 
@@ -76,11 +96,19 @@ export class ManagerController {
   async createTask(@Body() createTaskDto: CreateTaskDto, @Req() req) {
     const manager = req.user;
     const companyId = manager.companyId?.toString() || manager.companyId;
-    const departmentId = await this.getManagerDepartmentId(manager._id || manager.id, companyId);
-    
+    const departmentId = await this.getManagerDepartmentId(
+      manager._id || manager.id,
+      companyId,
+    );
+
     return {
       success: true,
-      data: await this.tasksService.createTask(createTaskDto, manager, companyId, departmentId),
+      data: await this.tasksService.createTask(
+        createTaskDto,
+        manager,
+        companyId,
+        departmentId,
+      ),
     };
   }
 
@@ -93,8 +121,11 @@ export class ManagerController {
   ) {
     const manager = req.user;
     const companyId = manager.companyId?.toString() || manager.companyId;
-    const departmentId = await this.getManagerDepartmentId(manager._id || manager.id, companyId);
-    
+    const departmentId = await this.getManagerDepartmentId(
+      manager._id || manager.id,
+      companyId,
+    );
+
     return {
       success: true,
       data: await this.tasksService.getTasks(companyId, departmentId, {
@@ -109,8 +140,11 @@ export class ManagerController {
   async getTask(@Param('id') id: string, @Req() req) {
     const manager = req.user;
     const companyId = manager.companyId?.toString() || manager.companyId;
-    const departmentId = await this.getManagerDepartmentId(manager._id || manager.id, companyId);
-    
+    const departmentId = await this.getManagerDepartmentId(
+      manager._id || manager.id,
+      companyId,
+    );
+
     return {
       success: true,
       data: await this.tasksService.getTaskDetails(id, companyId, departmentId),
@@ -118,14 +152,27 @@ export class ManagerController {
   }
 
   @Patch('tasks/:id')
-  async updateTask(@Param('id') id: string, @Body() updateTaskDto: UpdateTaskDto, @Req() req) {
+  async updateTask(
+    @Param('id') id: string,
+    @Body() updateTaskDto: UpdateTaskDto,
+    @Req() req,
+  ) {
     const manager = req.user;
     const companyId = manager.companyId?.toString() || manager.companyId;
-    const departmentId = await this.getManagerDepartmentId(manager._id || manager.id, companyId);
-    
+    const departmentId = await this.getManagerDepartmentId(
+      manager._id || manager.id,
+      companyId,
+    );
+
     return {
       success: true,
-      data: await this.tasksService.updateTask(id, updateTaskDto, companyId, departmentId, manager),
+      data: await this.tasksService.updateTask(
+        id,
+        updateTaskDto,
+        companyId,
+        departmentId,
+        manager,
+      ),
     };
   }
 
@@ -133,8 +180,11 @@ export class ManagerController {
   async deleteTask(@Param('id') id: string, @Req() req) {
     const manager = req.user;
     const companyId = manager.companyId?.toString() || manager.companyId;
-    const departmentId = await this.getManagerDepartmentId(manager._id || manager.id, companyId);
-    
+    const departmentId = await this.getManagerDepartmentId(
+      manager._id || manager.id,
+      companyId,
+    );
+
     await this.tasksService.deleteTask(id, companyId, departmentId, manager);
     return {
       success: true,
@@ -150,11 +200,20 @@ export class ManagerController {
   ) {
     const manager = req.user;
     const companyId = manager.companyId?.toString() || manager.companyId;
-    const departmentId = await this.getManagerDepartmentId(manager._id || manager.id, companyId);
-    
+    const departmentId = await this.getManagerDepartmentId(
+      manager._id || manager.id,
+      companyId,
+    );
+
     return {
       success: true,
-      data: await this.tasksService.assignTask(id, body.userId, companyId, departmentId, manager),
+      data: await this.tasksService.assignTask(
+        id,
+        body.userId,
+        companyId,
+        departmentId,
+        manager,
+      ),
     };
   }
 
@@ -166,11 +225,20 @@ export class ManagerController {
   ) {
     const manager = req.user;
     const companyId = manager.companyId?.toString() || manager.companyId;
-    const departmentId = await this.getManagerDepartmentId(manager._id || manager.id, companyId);
-    
+    const departmentId = await this.getManagerDepartmentId(
+      manager._id || manager.id,
+      companyId,
+    );
+
     return {
       success: true,
-      data: await this.tasksService.updateTaskStatus(id, body.status, companyId, departmentId, manager),
+      data: await this.tasksService.updateTaskStatus(
+        id,
+        body.status,
+        companyId,
+        departmentId,
+        manager,
+      ),
     };
   }
 
@@ -182,29 +250,48 @@ export class ManagerController {
   ) {
     const manager = req.user;
     const companyId = manager.companyId?.toString() || manager.companyId;
-    const departmentId = await this.getManagerDepartmentId(manager._id || manager.id, companyId);
+    const departmentId = await this.getManagerDepartmentId(
+      manager._id || manager.id,
+      companyId,
+    );
     const userId = manager._id || manager.id;
-    
+
     return {
       success: true,
-      data: await this.tasksService.addComment(id, userId, body.comment, companyId, departmentId),
+      data: await this.tasksService.addComment(
+        id,
+        userId,
+        body.comment,
+        companyId,
+        departmentId,
+      ),
     };
   }
 
   @Post('tasks/:id/attachment')
   async addAttachment(
     @Param('id') id: string,
-    @Body() body: { filename: string; url: string; size?: number; mimeType?: string },
+    @Body()
+    body: { filename: string; url: string; size?: number; mimeType?: string },
     @Req() req,
   ) {
     const manager = req.user;
     const companyId = manager.companyId?.toString() || manager.companyId;
-    const departmentId = await this.getManagerDepartmentId(manager._id || manager.id, companyId);
+    const departmentId = await this.getManagerDepartmentId(
+      manager._id || manager.id,
+      companyId,
+    );
     const userId = manager._id || manager.id;
-    
+
     return {
       success: true,
-      data: await this.tasksService.addAttachment(id, userId, body, companyId, departmentId),
+      data: await this.tasksService.addAttachment(
+        id,
+        userId,
+        body,
+        companyId,
+        departmentId,
+      ),
     };
   }
 
@@ -213,8 +300,11 @@ export class ManagerController {
   async getTeam(@Req() req) {
     const manager = req.user;
     const companyId = manager.companyId?.toString() || manager.companyId;
-    const departmentId = await this.getManagerDepartmentId(manager._id || manager.id, companyId);
-    
+    const departmentId = await this.getManagerDepartmentId(
+      manager._id || manager.id,
+      companyId,
+    );
+
     return {
       success: true,
       data: await this.teamService.getTeamMembers(companyId, departmentId),
@@ -225,11 +315,18 @@ export class ManagerController {
   async getTeamMember(@Param('userId') userId: string, @Req() req) {
     const manager = req.user;
     const companyId = manager.companyId?.toString() || manager.companyId;
-    const departmentId = await this.getManagerDepartmentId(manager._id || manager.id, companyId);
-    
+    const departmentId = await this.getManagerDepartmentId(
+      manager._id || manager.id,
+      companyId,
+    );
+
     return {
       success: true,
-      data: await this.teamService.getTeamMemberDetails(userId, companyId, departmentId),
+      data: await this.teamService.getTeamMemberDetails(
+        userId,
+        companyId,
+        departmentId,
+      ),
     };
   }
 
@@ -238,8 +335,11 @@ export class ManagerController {
   async getStatsOverview(@Req() req) {
     const manager = req.user;
     const companyId = manager.companyId?.toString() || manager.companyId;
-    const departmentId = await this.getManagerDepartmentId(manager._id || manager.id, companyId);
-    
+    const departmentId = await this.getManagerDepartmentId(
+      manager._id || manager.id,
+      companyId,
+    );
+
     return {
       success: true,
       data: await this.statsService.getOverview(companyId, departmentId),
@@ -250,8 +350,11 @@ export class ManagerController {
   async getTaskStats(@Req() req) {
     const manager = req.user;
     const companyId = manager.companyId?.toString() || manager.companyId;
-    const departmentId = await this.getManagerDepartmentId(manager._id || manager.id, companyId);
-    
+    const departmentId = await this.getManagerDepartmentId(
+      manager._id || manager.id,
+      companyId,
+    );
+
     return {
       success: true,
       data: await this.statsService.getTaskStats(companyId, departmentId),
@@ -262,8 +365,11 @@ export class ManagerController {
   async getTeamStats(@Req() req) {
     const manager = req.user;
     const companyId = manager.companyId?.toString() || manager.companyId;
-    const departmentId = await this.getManagerDepartmentId(manager._id || manager.id, companyId);
-    
+    const departmentId = await this.getManagerDepartmentId(
+      manager._id || manager.id,
+      companyId,
+    );
+
     return {
       success: true,
       data: await this.statsService.getTeamStats(companyId, departmentId),
@@ -271,8 +377,10 @@ export class ManagerController {
   }
 
   // Helper method to get manager's department ID
-  private async getManagerDepartmentId(managerId: string, companyId: string): Promise<string | undefined> {
+  private async getManagerDepartmentId(
+    managerId: string,
+    companyId: string,
+  ): Promise<string | undefined> {
     return this.managerService.getManagerDepartmentId(managerId, companyId);
   }
 }
-

@@ -27,4 +27,3 @@ import { AuditModule } from '../audit/audit.module';
   exports: [CompanyService],
 })
 export class CompanyModule {}
-

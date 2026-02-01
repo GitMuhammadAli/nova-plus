@@ -63,7 +63,9 @@ Return JSON with:
         temperature: 0.3,
       });
 
-      const response = JSON.parse(completion.choices[0]?.message?.content || '{}');
+      const response = JSON.parse(
+        completion.choices[0]?.message?.content || '{}',
+      );
 
       if (response.action && response.confidence > 0.7) {
         return {
@@ -117,4 +119,3 @@ Return JSON with:
     return {};
   }
 }
-

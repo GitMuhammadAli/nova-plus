@@ -54,7 +54,8 @@ export class RagService {
 
       if (searchResults.length === 0) {
         return {
-          answer: "I don't have enough data to answer this question yet. Please ensure your company data is properly indexed.",
+          answer:
+            "I don't have enough data to answer this question yet. Please ensure your company data is properly indexed.",
           sources: [],
         };
       }
@@ -87,7 +88,8 @@ Rules:
         max_tokens: 500,
       });
 
-      const answer = completion.choices[0]?.message?.content || 'Unable to generate answer';
+      const answer =
+        completion.choices[0]?.message?.content || 'Unable to generate answer';
 
       return {
         answer,
@@ -117,4 +119,3 @@ Rules:
     });
   }
 }
-

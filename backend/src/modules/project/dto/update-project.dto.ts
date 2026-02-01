@@ -1,4 +1,11 @@
-import { IsString, IsOptional, IsArray, IsEnum, IsDateString, IsBoolean } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsArray,
+  IsEnum,
+  IsDateString,
+  IsBoolean,
+} from 'class-validator';
 import { ProjectStatus } from '../entities/project.entity';
 
 export class UpdateProjectDto {
@@ -30,4 +37,3 @@ export class UpdateProjectDto {
   @IsOptional()
   isActive?: boolean;
 }
-

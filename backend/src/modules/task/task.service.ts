@@ -1,7 +1,17 @@
-import { Injectable, ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  ForbiddenException,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Task, TaskDocument, TaskStatus, TaskPriority } from './entities/task.entity';
+import {
+  Task,
+  TaskDocument,
+  TaskStatus,
+  TaskPriority,
+} from './entities/task.entity';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { UserRole, UserDocument, User } from '../user/entities/user.entity';
@@ -19,9 +29,11 @@ export class TasksService {
 
   async create(createTaskDto: CreateTaskDto, user: UserDocument) {
     // Only managers and admins can create tasks
-    if (user.role !== UserRole.MANAGER && 
-        user.role !== UserRole.COMPANY_ADMIN && 
-        user.role !== UserRole.SUPER_ADMIN) {
+    if (
+      user.role !== UserRole.MANAGER &&
+      user.role !== UserRole.COMPANY_ADMIN &&
+      user.role !== UserRole.SUPER_ADMIN
+    ) {
       throw new ForbiddenException('Only managers and admins can create tasks');
     }
 
@@ -30,19 +42,25 @@ export class TasksService {
     }
 
     // Verify assigned user belongs to the same company
-    const assignedUser = await this.userModel.findById(createTaskDto.assignedTo).exec();
+    const assignedUser = await this.userModel
+      .findById(createTaskDto.assignedTo)
+      .exec();
     if (!assignedUser) {
       throw new NotFoundException('Assigned user not found');
     }
     const assignedUserCompanyId = assignedUser.companyId?.toString();
     const userCompanyId = user.companyId?.toString() || user.companyId;
     if (assignedUserCompanyId !== userCompanyId) {
-      throw new BadRequestException('Assigned user must belong to your company');
+      throw new BadRequestException(
+        'Assigned user must belong to your company',
+      );
     }
 
     // If projectId is provided, verify it exists and belongs to the company
     if (createTaskDto.projectId) {
-      const project = await this.projectModel.findById(createTaskDto.projectId).exec();
+      const project = await this.projectModel
+        .findById(createTaskDto.projectId)
+        .exec();
       if (!project) {
         throw new NotFoundException('Project not found');
       }
@@ -63,14 +81,19 @@ export class TasksService {
       team: createTaskDto.team,
       status: createTaskDto.status || TaskStatus.PENDING,
       priority: createTaskDto.priority || TaskPriority.MEDIUM,
-      dueDate: createTaskDto.dueDate ? new Date(createTaskDto.dueDate) : undefined,
+      dueDate: createTaskDto.dueDate
+        ? new Date(createTaskDto.dueDate)
+        : undefined,
       isActive: true,
     });
 
     return task.save();
   }
 
-  async findAll(user: UserDocument, filters?: { projectId?: string; status?: TaskStatus; assignedTo?: string }) {
+  async findAll(
+    user: UserDocument,
+    filters?: { projectId?: string; status?: TaskStatus; assignedTo?: string },
+  ) {
     if (!user.companyId) {
       throw new BadRequestException('User must belong to a company');
     }
@@ -78,7 +101,11 @@ export class TasksService {
     const query: any = { companyId: user.companyId, isActive: true };
 
     // Managers/admins can see all company tasks, users only see their own
-    if (user.role === UserRole.USER || user.role === UserRole.VIEWER || user.role === UserRole.EDITOR) {
+    if (
+      user.role === UserRole.USER ||
+      user.role === UserRole.VIEWER ||
+      user.role === UserRole.EDITOR
+    ) {
       query.assignedTo = user._id;
     } else if (filters?.assignedTo) {
       query.assignedTo = filters.assignedTo;
@@ -118,12 +145,18 @@ export class TasksService {
     const userCompanyId = user.companyId?.toString();
     const taskCompanyId = task.companyId?.toString();
     if (userCompanyId !== taskCompanyId) {
-      throw new ForbiddenException('You can only access tasks from your company');
+      throw new ForbiddenException(
+        'You can only access tasks from your company',
+      );
     }
 
     // Users can only see tasks assigned to them
-    if ((user.role === UserRole.USER || user.role === UserRole.VIEWER || user.role === UserRole.EDITOR) &&
-        task.assignedTo.toString() !== user._id?.toString()) {
+    if (
+      (user.role === UserRole.USER ||
+        user.role === UserRole.VIEWER ||
+        user.role === UserRole.EDITOR) &&
+      task.assignedTo.toString() !== user._id?.toString()
+    ) {
       throw new ForbiddenException('You can only view tasks assigned to you');
     }
 
@@ -141,33 +174,43 @@ export class TasksService {
     const userCompanyId = user.companyId?.toString();
     const taskCompanyId = task.companyId?.toString();
     if (userCompanyId !== taskCompanyId) {
-      throw new ForbiddenException('You can only update tasks from your company');
+      throw new ForbiddenException(
+        'You can only update tasks from your company',
+      );
     }
 
     const isAssignedUser = task.assignedTo.toString() === user._id?.toString();
-    const isManagerOrAdmin = 
-      user.role === UserRole.MANAGER || 
-      user.role === UserRole.COMPANY_ADMIN || 
+    const isManagerOrAdmin =
+      user.role === UserRole.MANAGER ||
+      user.role === UserRole.COMPANY_ADMIN ||
       user.role === UserRole.SUPER_ADMIN;
 
     // Only managers/admins can update most fields, but assigned users can update status and add comments
     if (updateTaskDto.assignedTo && !isManagerOrAdmin) {
-      throw new ForbiddenException('Only managers and admins can reassign tasks');
+      throw new ForbiddenException(
+        'Only managers and admins can reassign tasks',
+      );
     }
 
     if (updateTaskDto.projectId && !isManagerOrAdmin) {
-      throw new ForbiddenException('Only managers and admins can change project');
+      throw new ForbiddenException(
+        'Only managers and admins can change project',
+      );
     }
 
     // Prepare update data
     const updateData: any = {};
     if (updateTaskDto.title) updateData.title = updateTaskDto.title;
-    if (updateTaskDto.description !== undefined) updateData.description = updateTaskDto.description;
-    if (updateTaskDto.assignedTo && isManagerOrAdmin) updateData.assignedTo = updateTaskDto.assignedTo;
-    if (updateTaskDto.projectId && isManagerOrAdmin) updateData.projectId = updateTaskDto.projectId;
+    if (updateTaskDto.description !== undefined)
+      updateData.description = updateTaskDto.description;
+    if (updateTaskDto.assignedTo && isManagerOrAdmin)
+      updateData.assignedTo = updateTaskDto.assignedTo;
+    if (updateTaskDto.projectId && isManagerOrAdmin)
+      updateData.projectId = updateTaskDto.projectId;
     if (updateTaskDto.status) updateData.status = updateTaskDto.status;
     if (updateTaskDto.priority) updateData.priority = updateTaskDto.priority;
-    if (updateTaskDto.dueDate) updateData.dueDate = new Date(updateTaskDto.dueDate);
+    if (updateTaskDto.dueDate)
+      updateData.dueDate = new Date(updateTaskDto.dueDate);
 
     return this.taskModel
       .findByIdAndUpdate(id, updateData, { new: true })
@@ -178,9 +221,11 @@ export class TasksService {
   }
 
   async remove(id: string, user: UserDocument) {
-    if (user.role !== UserRole.MANAGER && 
-        user.role !== UserRole.COMPANY_ADMIN && 
-        user.role !== UserRole.SUPER_ADMIN) {
+    if (
+      user.role !== UserRole.MANAGER &&
+      user.role !== UserRole.COMPANY_ADMIN &&
+      user.role !== UserRole.SUPER_ADMIN
+    ) {
       throw new ForbiddenException('Only managers and admins can delete tasks');
     }
 
@@ -194,7 +239,9 @@ export class TasksService {
     const userCompanyId = user.companyId?.toString();
     const taskCompanyId = task.companyId?.toString();
     if (userCompanyId !== taskCompanyId) {
-      throw new ForbiddenException('You can only delete tasks from your company');
+      throw new ForbiddenException(
+        'You can only delete tasks from your company',
+      );
     }
 
     // Soft delete
@@ -204,7 +251,7 @@ export class TasksService {
 
   async findMyTasks(user: UserDocument) {
     return this.taskModel
-      .find({ 
+      .find({
         assignedTo: user._id,
         isActive: true,
         companyId: user.companyId,
@@ -217,7 +264,7 @@ export class TasksService {
 
   async updateStatus(taskId: string, status: TaskStatus, user: UserDocument) {
     const task = await this.taskModel.findById(taskId).exec();
-    
+
     if (!task) {
       throw new NotFoundException('Task not found');
     }
@@ -226,14 +273,16 @@ export class TasksService {
     const userCompanyId = user.companyId?.toString();
     const taskCompanyId = task.companyId?.toString();
     if (userCompanyId !== taskCompanyId) {
-      throw new ForbiddenException('You can only update tasks from your company');
+      throw new ForbiddenException(
+        'You can only update tasks from your company',
+      );
     }
 
     // Only assignee or manager/admin can change status
     const isAssignedUser = task.assignedTo.toString() === user._id?.toString();
-    const isManagerOrAdmin = 
-      user.role === UserRole.MANAGER || 
-      user.role === UserRole.COMPANY_ADMIN || 
+    const isManagerOrAdmin =
+      user.role === UserRole.MANAGER ||
+      user.role === UserRole.COMPANY_ADMIN ||
       user.role === UserRole.SUPER_ADMIN;
 
     if (!isAssignedUser && !isManagerOrAdmin) {
@@ -246,7 +295,7 @@ export class TasksService {
 
   async addComment(taskId: string, comment: string, user: UserDocument) {
     const task = await this.taskModel.findById(taskId).exec();
-    
+
     if (!task) {
       throw new NotFoundException('Task not found');
     }
@@ -255,18 +304,22 @@ export class TasksService {
     const userCompanyId = user.companyId?.toString();
     const taskCompanyId = task.companyId?.toString();
     if (userCompanyId !== taskCompanyId) {
-      throw new ForbiddenException('You can only comment on tasks from your company');
+      throw new ForbiddenException(
+        'You can only comment on tasks from your company',
+      );
     }
 
     // Only assigned user or manager/admin can comment
     const isAssignedUser = task.assignedTo.toString() === user._id?.toString();
-    const isManagerOrAdmin = 
-      user.role === UserRole.MANAGER || 
-      user.role === UserRole.COMPANY_ADMIN || 
+    const isManagerOrAdmin =
+      user.role === UserRole.MANAGER ||
+      user.role === UserRole.COMPANY_ADMIN ||
       user.role === UserRole.SUPER_ADMIN;
 
     if (!isAssignedUser && !isManagerOrAdmin) {
-      throw new ForbiddenException('You can only comment on tasks assigned to you');
+      throw new ForbiddenException(
+        'You can only comment on tasks assigned to you',
+      );
     }
 
     task.comments.push({

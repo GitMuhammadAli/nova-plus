@@ -41,7 +41,12 @@ export class DepartmentController {
   }
 
   @Get()
-  @Roles(UserRole.COMPANY_ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.SUPER_ADMIN)
+  @Roles(
+    UserRole.COMPANY_ADMIN,
+    UserRole.MANAGER,
+    UserRole.USER,
+    UserRole.SUPER_ADMIN,
+  )
   async findAll(@Req() req) {
     const user = req.user;
     const companyId = user.companyId?.toString() || user.companyId;
@@ -55,7 +60,12 @@ export class DepartmentController {
   }
 
   @Get(':id')
-  @Roles(UserRole.COMPANY_ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.SUPER_ADMIN)
+  @Roles(
+    UserRole.COMPANY_ADMIN,
+    UserRole.MANAGER,
+    UserRole.USER,
+    UserRole.SUPER_ADMIN,
+  )
   async findOne(@Param('id') id: string, @Req() req) {
     const user = req.user;
     const companyId = user.companyId?.toString() || user.companyId;
@@ -78,7 +88,11 @@ export class DepartmentController {
     const user = req.user;
     const companyId = user.companyId?.toString() || user.companyId;
 
-    const department = await this.departmentService.update(id, updateDepartmentDto, companyId);
+    const department = await this.departmentService.update(
+      id,
+      updateDepartmentDto,
+      companyId,
+    );
 
     return {
       success: true,
@@ -111,7 +125,11 @@ export class DepartmentController {
     const user = req.user;
     const companyId = user.companyId?.toString() || user.companyId;
 
-    const department = await this.departmentService.assignManager(id, body.managerId, companyId);
+    const department = await this.departmentService.assignManager(
+      id,
+      body.managerId,
+      companyId,
+    );
 
     return {
       success: true,
@@ -129,7 +147,11 @@ export class DepartmentController {
     const user = req.user;
     const companyId = user.companyId?.toString() || user.companyId;
 
-    const department = await this.departmentService.addMember(id, body.userId, companyId);
+    const department = await this.departmentService.addMember(
+      id,
+      body.userId,
+      companyId,
+    );
 
     return {
       success: true,
@@ -147,7 +169,11 @@ export class DepartmentController {
     const user = req.user;
     const companyId = user.companyId?.toString() || user.companyId;
 
-    const department = await this.departmentService.removeMember(id, userId, companyId);
+    const department = await this.departmentService.removeMember(
+      id,
+      userId,
+      companyId,
+    );
 
     return {
       success: true,
@@ -156,7 +182,12 @@ export class DepartmentController {
   }
 
   @Get(':id/members')
-  @Roles(UserRole.COMPANY_ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.SUPER_ADMIN)
+  @Roles(
+    UserRole.COMPANY_ADMIN,
+    UserRole.MANAGER,
+    UserRole.USER,
+    UserRole.SUPER_ADMIN,
+  )
   async getMembers(@Param('id') id: string, @Req() req) {
     const user = req.user;
     const companyId = user.companyId?.toString() || user.companyId;
@@ -189,4 +220,3 @@ export class DepartmentController {
     };
   }
 }
-

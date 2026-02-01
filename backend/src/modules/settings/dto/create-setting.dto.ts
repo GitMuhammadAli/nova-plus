@@ -1,4 +1,11 @@
-import { IsString, IsNotEmpty, IsOptional, IsEnum, IsObject, IsBoolean } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsEnum,
+  IsObject,
+  IsBoolean,
+} from 'class-validator';
 import { SettingType } from '../entities/setting.entity';
 
 export class CreateSettingDto {

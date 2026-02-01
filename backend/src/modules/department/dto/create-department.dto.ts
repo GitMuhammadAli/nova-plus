@@ -17,4 +17,3 @@ export class CreateDepartmentDto {
   @IsMongoId({ each: true })
   memberIds?: string[];
 }
-

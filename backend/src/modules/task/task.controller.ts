@@ -1,4 +1,15 @@
-import { Body, Controller, Get, Post, Patch, Param, Delete, Query, UseGuards, Req } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Param,
+  Delete,
+  Query,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import { TasksService } from './task.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
@@ -22,7 +33,11 @@ export class TasksController {
     @Query('status') status?: TaskStatus,
     @Query('assignedTo') assignedTo?: string,
   ) {
-    return this.tasksService.findAll(req.user, { projectId, status, assignedTo });
+    return this.tasksService.findAll(req.user, {
+      projectId,
+      status,
+      assignedTo,
+    });
   }
 
   @Get('me')
@@ -36,7 +51,11 @@ export class TasksController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateTaskDto: UpdateTaskDto, @Req() req) {
+  update(
+    @Param('id') id: string,
+    @Body() updateTaskDto: UpdateTaskDto,
+    @Req() req,
+  ) {
     return this.tasksService.update(id, updateTaskDto, req.user);
   }
 

@@ -12,4 +12,3 @@ export class DisableMfaDto {
   @IsNotEmpty()
   password: string; // Require password confirmation
 }
-

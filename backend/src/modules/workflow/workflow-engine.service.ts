@@ -1,8 +1,20 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { Workflow, WorkflowDocument, WorkflowNode, WorkflowConnection, Condition } from './entities/workflow.entity';
-import { WorkflowExecution, WorkflowExecutionDocument, ExecutionStatus, StepStatus, ExecutionStep } from './entities/workflow-execution.entity';
+import {
+  Workflow,
+  WorkflowDocument,
+  WorkflowNode,
+  WorkflowConnection,
+  Condition,
+} from './entities/workflow.entity';
+import {
+  WorkflowExecution,
+  WorkflowExecutionDocument,
+  ExecutionStatus,
+  StepStatus,
+  ExecutionStep,
+} from './entities/workflow-execution.entity';
 
 @Injectable()
 export class WorkflowEngineService {
@@ -10,7 +22,8 @@ export class WorkflowEngineService {
 
   constructor(
     @InjectModel(Workflow.name) private workflowModel: Model<WorkflowDocument>,
-    @InjectModel(WorkflowExecution.name) private executionModel: Model<WorkflowExecutionDocument>,
+    @InjectModel(WorkflowExecution.name)
+    private executionModel: Model<WorkflowExecutionDocument>,
   ) {}
 
   /**
@@ -22,7 +35,7 @@ export class WorkflowEngineService {
     triggerData: any = {},
   ): Promise<WorkflowExecutionDocument> {
     const workflow = await this.workflowModel.findById(workflowId).lean();
-    
+
     if (!workflow) {
       throw new Error('Workflow not found');
     }
@@ -49,8 +62,8 @@ export class WorkflowEngineService {
 
     try {
       // Find trigger node
-      const triggerNode = workflow.nodes.find(n => n.type === 'trigger');
-      
+      const triggerNode = workflow.nodes.find((n) => n.type === 'trigger');
+
       if (!triggerNode) {
         throw new Error('No trigger node found');
       }
@@ -67,9 +80,11 @@ export class WorkflowEngineService {
         $inc: { runCount: 1 },
         lastRun: new Date(),
       });
-
     } catch (error) {
-      this.logger.error(`Workflow execution failed: ${error.message}`, error.stack);
+      this.logger.error(
+        `Workflow execution failed: ${error.message}`,
+        error.stack,
+      );
       execution.status = ExecutionStatus.FAILED;
       execution.error = error.message;
       execution.completedAt = new Date();
@@ -89,7 +104,7 @@ export class WorkflowEngineService {
     data: any,
   ): Promise<any> {
     // Check if node already executed
-    const existingStep = execution.steps.find(s => s.nodeId === node.id);
+    const existingStep = execution.steps.find((s) => s.nodeId === node.id);
     if (existingStep && existingStep.status === StepStatus.SUCCESS) {
       return existingStep.output;
     }
@@ -122,22 +137,35 @@ export class WorkflowEngineService {
       step.output = output;
 
       // Find and execute connected nodes
-      const connections = workflow.connections.filter(c => c.source === node.id);
-      
+      const connections = workflow.connections.filter(
+        (c) => c.source === node.id,
+      );
+
       for (const connection of connections) {
-        const shouldExecute = this.evaluateConditions(connection.conditions || [], connection.logic || 'AND', data);
-        
+        const shouldExecute = this.evaluateConditions(
+          connection.conditions || [],
+          connection.logic || 'AND',
+          data,
+        );
+
         if (shouldExecute) {
-          const targetNode = workflow.nodes.find(n => n.id === connection.target);
+          const targetNode = workflow.nodes.find(
+            (n) => n.id === connection.target,
+          );
           if (targetNode) {
-            await this.executeNode(targetNode, workflow, execution, { ...data, ...output });
+            await this.executeNode(targetNode, workflow, execution, {
+              ...data,
+              ...output,
+            });
           }
         } else {
           // Mark skipped
           const skippedStep: ExecutionStep = {
             id: `step_${Date.now()}_${connection.target}`,
             nodeId: connection.target,
-            nodeName: this.getNodeName(workflow.nodes.find(n => n.id === connection.target) || node),
+            nodeName: this.getNodeName(
+              workflow.nodes.find((n) => n.id === connection.target) || node,
+            ),
             status: StepStatus.SKIPPED,
             startTime: new Date(),
             endTime: new Date(),
@@ -148,7 +176,6 @@ export class WorkflowEngineService {
 
       await execution.save();
       return output;
-
     } catch (error) {
       this.logger.error(`Node execution failed: ${error.message}`, error.stack);
       step.status = StepStatus.FAILED;
@@ -172,30 +199,42 @@ export class WorkflowEngineService {
    */
   private async executeAction(node: WorkflowNode, data: any): Promise<any> {
     // Simulate action execution (replace with real implementations)
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 500));
 
     switch (node.actionType) {
       case 'send_email':
-        return { emailSent: true, recipient: this.interpolate(node.config.recipient || '', data) };
-      
+        return {
+          emailSent: true,
+          recipient: this.interpolate(node.config.recipient || '', data),
+        };
+
       case 'send_sms':
-        return { smsSent: true, phone: this.interpolate(node.config.phone || '', data) };
-      
+        return {
+          smsSent: true,
+          phone: this.interpolate(node.config.phone || '', data),
+        };
+
       case 'create_task':
         return { taskCreated: true, taskId: `task_${Date.now()}` };
-      
+
       case 'update_record':
         return { recordUpdated: true, table: node.config.table };
-      
+
       case 'call_webhook':
         return { webhookCalled: true, url: node.config.url };
-      
+
       case 'send_notification':
-        return { notificationSent: true, message: this.interpolate(node.config.message || '', data) };
-      
+        return {
+          notificationSent: true,
+          message: this.interpolate(node.config.message || '', data),
+        };
+
       case 'log_event':
-        return { eventLogged: true, message: this.interpolate(node.config.message || '', data) };
-      
+        return {
+          eventLogged: true,
+          message: this.interpolate(node.config.message || '', data),
+        };
+
       default:
         return { actionCompleted: true };
     }
@@ -211,14 +250,16 @@ export class WorkflowEngineService {
   ): boolean {
     if (conditions.length === 0) return true;
 
-    const results = conditions.map(condition => {
+    const results = conditions.map((condition) => {
       const fieldValue = this.getFieldValue(data, condition.field);
-      return this.compareValues(fieldValue, condition.operator, condition.value);
+      return this.compareValues(
+        fieldValue,
+        condition.operator,
+        condition.value,
+      );
     });
 
-    return logic === 'AND' 
-      ? results.every(r => r)
-      : results.some(r => r);
+    return logic === 'AND' ? results.every((r) => r) : results.some((r) => r);
   }
 
   /**
@@ -236,7 +277,11 @@ export class WorkflowEngineService {
   /**
    * Compare values based on operator
    */
-  private compareValues(value: any, operator: string, expected: string): boolean {
+  private compareValues(
+    value: any,
+    operator: string,
+    expected: string,
+  ): boolean {
     const valueStr = String(value || '');
     const expectedStr = String(expected || '');
 
@@ -282,4 +327,3 @@ export class WorkflowEngineService {
     return node.actionType?.replace(/_/g, ' ') || 'Action';
   }
 }
-

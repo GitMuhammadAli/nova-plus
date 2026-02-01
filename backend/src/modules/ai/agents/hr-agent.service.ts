@@ -43,7 +43,8 @@ export class HRAgentService {
       departmentId,
       severity: 'low',
       indicators: ['Slightly lower activity this week'],
-      recommendation: 'Monitor team engagement and consider team building activities',
+      recommendation:
+        'Monitor team engagement and consider team building activities',
     };
   }
 
@@ -101,4 +102,3 @@ export class HRAgentService {
     };
   }
 }
-

@@ -1,7 +1,15 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { Workflow, WorkflowDocument, WorkflowStatus } from './entities/workflow.entity';
+import {
+  Workflow,
+  WorkflowDocument,
+  WorkflowStatus,
+} from './entities/workflow.entity';
 import { CreateWorkflowDto } from './dto/create-workflow.dto';
 import { UpdateWorkflowDto } from './dto/update-workflow.dto';
 
@@ -14,7 +22,11 @@ export class WorkflowService {
   /**
    * Create a new workflow
    */
-  async create(createWorkflowDto: CreateWorkflowDto, companyId: string, userId: string): Promise<WorkflowDocument> {
+  async create(
+    createWorkflowDto: CreateWorkflowDto,
+    companyId: string,
+    userId: string,
+  ): Promise<WorkflowDocument> {
     const workflow = new this.workflowModel({
       ...createWorkflowDto,
       companyId: new Types.ObjectId(companyId),
@@ -28,7 +40,10 @@ export class WorkflowService {
   /**
    * Find all workflows for a company
    */
-  async findAll(companyId: string, filters?: { status?: WorkflowStatus; search?: string }): Promise<WorkflowDocument[]> {
+  async findAll(
+    companyId: string,
+    filters?: { status?: WorkflowStatus; search?: string },
+  ): Promise<WorkflowDocument[]> {
     const query: any = { companyId: new Types.ObjectId(companyId) };
 
     if (filters?.status) {
@@ -64,7 +79,11 @@ export class WorkflowService {
   /**
    * Update workflow
    */
-  async update(id: string, updateWorkflowDto: UpdateWorkflowDto, companyId: string): Promise<WorkflowDocument> {
+  async update(
+    id: string,
+    updateWorkflowDto: UpdateWorkflowDto,
+    companyId: string,
+  ): Promise<WorkflowDocument> {
     const workflow = await this.workflowModel.findOne({
       _id: id,
       companyId: new Types.ObjectId(companyId),
@@ -109,14 +128,19 @@ export class WorkflowService {
 
     if (workflow.status === WorkflowStatus.ACTIVE) {
       workflow.status = WorkflowStatus.INACTIVE;
-    } else if (workflow.status === WorkflowStatus.INACTIVE || workflow.status === WorkflowStatus.DRAFT) {
+    } else if (
+      workflow.status === WorkflowStatus.INACTIVE ||
+      workflow.status === WorkflowStatus.DRAFT
+    ) {
       // Validate workflow before activating
       if (workflow.nodes.length === 0) {
         throw new ForbiddenException('Cannot activate workflow without nodes');
       }
-      const hasTrigger = workflow.nodes.some(n => n.type === 'trigger');
+      const hasTrigger = workflow.nodes.some((n) => n.type === 'trigger');
       if (!hasTrigger) {
-        throw new ForbiddenException('Cannot activate workflow without trigger node');
+        throw new ForbiddenException(
+          'Cannot activate workflow without trigger node',
+        );
       }
       workflow.status = WorkflowStatus.ACTIVE;
     }
@@ -128,9 +152,13 @@ export class WorkflowService {
   /**
    * Duplicate workflow
    */
-  async duplicate(id: string, companyId: string, userId: string): Promise<WorkflowDocument> {
+  async duplicate(
+    id: string,
+    companyId: string,
+    userId: string,
+  ): Promise<WorkflowDocument> {
     const original = await this.findOne(id, companyId);
-    
+
     const duplicated = new this.workflowModel({
       name: `${original.name} (Copy)`,
       description: original.description,
@@ -146,4 +174,3 @@ export class WorkflowService {
     return duplicated.save();
   }
 }
-

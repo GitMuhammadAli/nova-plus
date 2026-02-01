@@ -10,4 +10,3 @@ export class DashboardStatsDto {
   revenueTrend?: StatPoint[];
   taskCompletion?: StatPoint[];
 }
-

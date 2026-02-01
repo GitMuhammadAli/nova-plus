@@ -72,4 +72,3 @@ AuditLogSchema.index({ companyId: 1, createdAt: -1 });
 AuditLogSchema.index({ userId: 1, createdAt: -1 });
 AuditLogSchema.index({ resource: 1, resourceId: 1 });
 AuditLogSchema.index({ action: 1, createdAt: -1 });
-

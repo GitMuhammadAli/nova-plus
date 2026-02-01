@@ -56,7 +56,10 @@ export class RiskScoreService {
   /**
    * Score a department
    */
-  async scoreDepartment(departmentId: string, tenantId?: string): Promise<RiskScore> {
+  async scoreDepartment(
+    departmentId: string,
+    tenantId?: string,
+  ): Promise<RiskScore> {
     logger.info('Scoring department risk', { departmentId, tenantId });
 
     // In production, analyze:
@@ -159,10 +162,7 @@ export class RiskScoreService {
   /**
    * Get recommendations based on score
    */
-  private getRecommendations(
-    score: number,
-    entityType: string,
-  ): string[] {
+  private getRecommendations(score: number, entityType: string): string[] {
     const recommendations: string[] = [];
 
     if (score >= 75) {
@@ -180,4 +180,3 @@ export class RiskScoreService {
     return recommendations;
   }
 }
-

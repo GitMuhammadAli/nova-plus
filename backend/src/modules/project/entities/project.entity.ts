@@ -48,4 +48,3 @@ export const ProjectSchema = SchemaFactory.createForClass(Project);
 ProjectSchema.index({ companyId: 1 });
 ProjectSchema.index({ createdBy: 1 });
 ProjectSchema.index({ status: 1 });
-

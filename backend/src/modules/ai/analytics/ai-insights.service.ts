@@ -46,7 +46,10 @@ export class AIInsightsService {
         category: 'productivity',
         title: 'Productivity Trend',
         description: 'Overall productivity is stable with slight upward trend',
-        recommendations: ['Continue current practices', 'Monitor team capacity'],
+        recommendations: [
+          'Continue current practices',
+          'Monitor team capacity',
+        ],
         data: { trend: 'up', percentage: 5 },
       },
       {
@@ -77,12 +80,14 @@ export class AIInsightsService {
   /**
    * Detect high-risk departments
    */
-  async detectHighRiskDepartments(companyId: string): Promise<Array<{
-    departmentId: string;
-    departmentName: string;
-    riskScore: number;
-    riskFactors: string[];
-  }>> {
+  async detectHighRiskDepartments(companyId: string): Promise<
+    Array<{
+      departmentId: string;
+      departmentName: string;
+      riskScore: number;
+      riskFactors: string[];
+    }>
+  > {
     logger.info('Detecting high-risk departments', { companyId });
 
     return [];
@@ -91,13 +96,15 @@ export class AIInsightsService {
   /**
    * Detect burnout alerts
    */
-  async detectBurnoutAlerts(companyId: string): Promise<Array<{
-    userId: string;
-    userName: string;
-    departmentId: string;
-    indicators: string[];
-    severity: 'low' | 'medium' | 'high';
-  }>> {
+  async detectBurnoutAlerts(companyId: string): Promise<
+    Array<{
+      userId: string;
+      userName: string;
+      departmentId: string;
+      indicators: string[];
+      severity: 'low' | 'medium' | 'high';
+    }>
+  > {
     logger.info('Detecting burnout alerts', { companyId });
 
     // In production, analyze:
@@ -147,4 +154,3 @@ export class AIInsightsService {
     };
   }
 }
-

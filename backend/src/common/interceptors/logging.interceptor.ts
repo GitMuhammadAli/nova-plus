@@ -17,8 +17,10 @@ export class LoggingInterceptor implements NestInterceptor {
     const now = Date.now();
     logger.debug(`--> ${method} ${url}`);
 
-    return next.handle().pipe(
-      tap(() => logger.debug(`<-- ${method} ${url} ${Date.now() - now}ms`)),
-    );
+    return next
+      .handle()
+      .pipe(
+        tap(() => logger.debug(`<-- ${method} ${url} ${Date.now() - now}ms`)),
+      );
   }
 }

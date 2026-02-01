@@ -1,6 +1,6 @@
 /**
  * Script to seed comprehensive bulk test data
- * 
+ *
  * Creates:
  * - 1 Super Admin
  * - 3 Companies (AcmeCorp, TechVerse, GlobalSoft)
@@ -10,10 +10,10 @@
  * - 5 Projects per company
  * - 8-12 Tasks per project
  * - 3 Workflows per company
- * 
+ *
  * Usage:
  *   ts-node src/scripts/seed-bulk-data.ts
- * 
+ *
  * Or via npm:
  *   npm run seed:bulk
  */
@@ -55,4 +55,3 @@ async function bootstrap() {
 }
 
 bootstrap();
-

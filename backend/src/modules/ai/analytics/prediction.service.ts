@@ -13,7 +13,10 @@ export class PredictionService {
   /**
    * Predict user churn risk
    */
-  async predictChurnRisk(userId: string, tenantId?: string): Promise<{
+  async predictChurnRisk(
+    userId: string,
+    tenantId?: string,
+  ): Promise<{
     risk: number; // 0-1
     factors: string[];
     timeframe: string;
@@ -63,10 +66,11 @@ export class PredictionService {
     logger.info('Predicting project completion', { projectId });
 
     return {
-      predictedDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      predictedDate: new Date(
+        Date.now() + 30 * 24 * 60 * 60 * 1000,
+      ).toISOString(),
       confidence: 0.6,
       factors: ['Based on current task completion rate'],
     };
   }
 }
-

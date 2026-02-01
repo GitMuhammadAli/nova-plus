@@ -19,7 +19,7 @@ import * as jwt from 'jsonwebtoken';
 
 /**
  * E2E Tests for Multi-Tenant Authentication & Authorization
- * 
+ *
  * Tests:
  * - JWT token generation with companyId + role
  * - Company isolation
@@ -53,7 +53,9 @@ describe('Multi-Tenant Auth E2E Tests', () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [
         ConfigModule.forRoot({ isGlobal: true }),
-        MongooseModule.forRoot(process.env.MONGODB_URI || 'mongodb://localhost:27017/novapulse-test'),
+        MongooseModule.forRoot(
+          process.env.MONGODB_URI || 'mongodb://localhost:27017/novapulse-test',
+        ),
         MongooseModule.forFeature([
           { name: User.name, schema: UserSchema },
           { name: Company.name, schema: CompanySchema },
@@ -72,12 +74,16 @@ describe('Multi-Tenant Auth E2E Tests', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+    app.useGlobalPipes(
+      new ValidationPipe({ whitelist: true, transform: true }),
+    );
     await app.init();
 
     testDataSeed = moduleFixture.get<TestDataSeed>(TestDataSeed);
     userModel = moduleFixture.get<Model<User>>(getModelToken(User.name));
-    companyModel = moduleFixture.get<Model<Company>>(getModelToken(Company.name));
+    companyModel = moduleFixture.get<Model<Company>>(
+      getModelToken(Company.name),
+    );
 
     // Seed test data
     await testDataSeed.seedTestData();
@@ -89,11 +95,21 @@ describe('Multi-Tenant Auth E2E Tests', () => {
     techCompanyId = techVerse?._id.toString() || '';
 
     // Get user IDs and generate tokens
-    const acmeAdmin = await userModel.findOne({ email: 'acme.admin@acme.com' }).exec();
-    const acmeManager = await userModel.findOne({ email: 'acme.manager@acme.com' }).exec();
-    const acmeUser = await userModel.findOne({ email: 'acme.user1@acme.com' }).exec();
-    const techAdmin = await userModel.findOne({ email: 'tech.admin@techverse.com' }).exec();
-    const superAdmin = await userModel.findOne({ email: 'super.admin@test.com' }).exec();
+    const acmeAdmin = await userModel
+      .findOne({ email: 'acme.admin@acme.com' })
+      .exec();
+    const acmeManager = await userModel
+      .findOne({ email: 'acme.manager@acme.com' })
+      .exec();
+    const acmeUser = await userModel
+      .findOne({ email: 'acme.user1@acme.com' })
+      .exec();
+    const techAdmin = await userModel
+      .findOne({ email: 'tech.admin@techverse.com' })
+      .exec();
+    const superAdmin = await userModel
+      .findOne({ email: 'super.admin@test.com' })
+      .exec();
 
     acmeAdminId = acmeAdmin?._id.toString() || '';
     acmeManagerId = acmeManager?._id.toString() || '';
@@ -109,14 +125,19 @@ describe('Multi-Tenant Auth E2E Tests', () => {
     };
 
     // Helper to extract token from login response cookies
-    const extractTokenFromLogin = async (email: string, password: string): Promise<string> => {
+    const extractTokenFromLogin = async (
+      email: string,
+      password: string,
+    ): Promise<string> => {
       const response = await request(app.getHttpServer())
         .post('/auth/login')
         .send({ email, password });
-      
+
       const cookies = response.headers['set-cookie'];
       if (Array.isArray(cookies)) {
-        const accessTokenCookie = cookies.find(c => c.startsWith('access_token='));
+        const accessTokenCookie = cookies.find((c) =>
+          c.startsWith('access_token='),
+        );
         if (accessTokenCookie) {
           const match = accessTokenCookie.match(/access_token=([^;]+)/);
           return match ? match[1] : '';
@@ -125,35 +146,57 @@ describe('Multi-Tenant Auth E2E Tests', () => {
       return '';
     };
 
-    superAdminToken = await extractTokenFromLogin('super.admin@test.com', 'super123');
-    acmeAdminToken = await extractTokenFromLogin('acme.admin@acme.com', 'acme123');
-    acmeManagerToken = await extractTokenFromLogin('acme.manager@acme.com', 'acme123');
-    acmeUserToken = await extractTokenFromLogin('acme.user1@acme.com', 'acme123');
-    techAdminToken = await extractTokenFromLogin('tech.admin@techverse.com', 'tech123');
-    techUserToken = await extractTokenFromLogin('tech.user1@techverse.com', 'tech123');
+    superAdminToken = await extractTokenFromLogin(
+      'super.admin@test.com',
+      'super123',
+    );
+    acmeAdminToken = await extractTokenFromLogin(
+      'acme.admin@acme.com',
+      'acme123',
+    );
+    acmeManagerToken = await extractTokenFromLogin(
+      'acme.manager@acme.com',
+      'acme123',
+    );
+    acmeUserToken = await extractTokenFromLogin(
+      'acme.user1@acme.com',
+      'acme123',
+    );
+    techAdminToken = await extractTokenFromLogin(
+      'tech.admin@techverse.com',
+      'tech123',
+    );
+    techUserToken = await extractTokenFromLogin(
+      'tech.user1@techverse.com',
+      'tech123',
+    );
   });
 
   afterAll(async () => {
     // Clean up test data
-    await userModel.deleteMany({
-      email: {
-        $in: [
-          'super.admin@test.com',
-          'acme.admin@acme.com',
-          'acme.manager@acme.com',
-          'acme.user1@acme.com',
-          'acme.user2@acme.com',
-          'tech.admin@techverse.com',
-          'tech.manager@techverse.com',
-          'tech.user1@techverse.com',
-          'tech.user2@techverse.com',
-        ],
-      },
-    }).exec();
+    await userModel
+      .deleteMany({
+        email: {
+          $in: [
+            'super.admin@test.com',
+            'acme.admin@acme.com',
+            'acme.manager@acme.com',
+            'acme.user1@acme.com',
+            'acme.user2@acme.com',
+            'tech.admin@techverse.com',
+            'tech.manager@techverse.com',
+            'tech.user1@techverse.com',
+            'tech.user2@techverse.com',
+          ],
+        },
+      })
+      .exec();
 
-    await companyModel.deleteMany({
-      name: { $in: ['AcmeCorp', 'TechVerse'] },
-    }).exec();
+    await companyModel
+      .deleteMany({
+        name: { $in: ['AcmeCorp', 'TechVerse'] },
+      })
+      .exec();
 
     await app.close();
   });
@@ -177,9 +220,11 @@ describe('Multi-Tenant Auth E2E Tests', () => {
       // Verify JWT payload - extract token from cookies
       const cookies = response.headers['set-cookie'];
       expect(cookies).toBeDefined();
-      
+
       // Verify token contains correct payload
-      const cookieString = Array.isArray(cookies) ? cookies.join('; ') : cookies;
+      const cookieString = Array.isArray(cookies)
+        ? cookies.join('; ')
+        : cookies;
       const tokenMatch = cookieString.match(/access_token=([^;]+)/);
       if (tokenMatch) {
         const token = tokenMatch[1];
@@ -268,7 +313,9 @@ describe('Multi-Tenant Auth E2E Tests', () => {
         companyId: techCompanyId, // Wrong company!
       };
 
-      const fakeToken = jwt.sign(fakePayload, getJwtSecret(), { expiresIn: '15m' });
+      const fakeToken = jwt.sign(fakePayload, getJwtSecret(), {
+        expiresIn: '15m',
+      });
 
       // The token will be validated, but the user document will have the correct companyId
       // So the guard should still reject it
@@ -416,11 +463,19 @@ describe('Multi-Tenant Auth E2E Tests', () => {
       expect(response.body).toHaveProperty('company');
       expect(response.body).toHaveProperty('admin');
       expect(response.body.company).toHaveProperty('name', 'NewCompany');
-      expect(response.body.admin).toHaveProperty('role', UserRole.COMPANY_ADMIN);
-      expect(response.body.admin).toHaveProperty('companyId', response.body.company._id);
+      expect(response.body.admin).toHaveProperty(
+        'role',
+        UserRole.COMPANY_ADMIN,
+      );
+      expect(response.body.admin).toHaveProperty(
+        'companyId',
+        response.body.company._id,
+      );
 
       // Verify in database
-      const company = await companyModel.findById(response.body.company._id).exec();
+      const company = await companyModel
+        .findById(response.body.company._id)
+        .exec();
       const admin = await userModel.findById(response.body.admin._id).exec();
 
       expect(company).toBeDefined();
@@ -481,7 +536,9 @@ describe('Multi-Tenant Auth E2E Tests', () => {
       expect(response.body.user).toHaveProperty('role', UserRole.USER);
 
       // Verify user was created in database
-      const user = await userModel.findOne({ email: 'invited@acme.com' }).exec();
+      const user = await userModel
+        .findOne({ email: 'invited@acme.com' })
+        .exec();
       expect(user).toBeDefined();
       expect(user?.companyId?.toString()).toBe(acmeCompanyId);
 
@@ -555,4 +612,3 @@ describe('Multi-Tenant Auth E2E Tests', () => {
     });
   });
 });
-

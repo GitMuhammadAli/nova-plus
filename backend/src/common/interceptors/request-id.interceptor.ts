@@ -12,17 +12,16 @@ export class RequestIdInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const request = context.switchToHttp().getRequest();
     const response = context.switchToHttp().getResponse();
-    
+
     // Get request ID from header or generate new one
     const requestId = request.headers['x-request-id'] || uuidv4();
-    
+
     // Attach to request for logging
     request.id = requestId;
-    
+
     // Set response header
     response.setHeader('X-Request-ID', requestId);
-    
+
     return next.handle();
   }
 }
-

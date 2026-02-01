@@ -34,7 +34,10 @@ export class IngestionConsumer implements OnModuleInit {
     tenantId?: string,
   ): Promise<void> {
     try {
-      logger.info('Ingesting entity', { entityType, entityId: entity._id || entity.id });
+      logger.info('Ingesting entity', {
+        entityType,
+        entityId: entity._id || entity.id,
+      });
 
       // 1. Clean
       const cleaned = this.cleaner.cleanEntity(entity, entityType);
@@ -90,7 +93,10 @@ export class IngestionConsumer implements OnModuleInit {
   /**
    * Handle department created event
    */
-  async handleDepartmentCreated(department: any, tenantId?: string): Promise<void> {
+  async handleDepartmentCreated(
+    department: any,
+    tenantId?: string,
+  ): Promise<void> {
     await this.ingestEntity(department, 'department', tenantId);
   }
 
@@ -101,4 +107,3 @@ export class IngestionConsumer implements OnModuleInit {
     await this.ingestEntity(task, 'task', tenantId);
   }
 }
-

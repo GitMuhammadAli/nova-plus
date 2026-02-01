@@ -12,8 +12,9 @@ export class RedisProvider implements OnModuleInit, OnModuleDestroy {
 
   async onModuleInit() {
     try {
-      const redisUrl = this.configService.get<string>('redis.url') || 'redis://localhost:6379';
-      
+      const redisUrl =
+        this.configService.get<string>('redis.url') || 'redis://localhost:6379';
+
       const options: RedisClientOptions = {
         url: redisUrl,
         socket: {
@@ -42,7 +43,10 @@ export class RedisProvider implements OnModuleInit, OnModuleDestroy {
 
       this.client.on('error', (error) => {
         this.isConnected = false;
-        logger.error('Redis connection error', { error: error.message, provider: 'redis' });
+        logger.error('Redis connection error', {
+          error: error.message,
+          provider: 'redis',
+        });
       });
 
       this.client.on('reconnecting', () => {
@@ -56,7 +60,9 @@ export class RedisProvider implements OnModuleInit, OnModuleDestroy {
 
       await this.client.connect();
     } catch (error) {
-      logger.error('Failed to initialize Redis provider', { error: error.message });
+      logger.error('Failed to initialize Redis provider', {
+        error: error.message,
+      });
       // Don't throw - Redis is optional for some operations
       this.isConnected = false;
     }
@@ -216,4 +222,3 @@ export class RedisProvider implements OnModuleInit, OnModuleDestroy {
     };
   }
 }
-

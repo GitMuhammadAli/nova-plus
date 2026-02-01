@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 
-export type UserDocument = User & Document ;
+export type UserDocument = User & Document;
 
 export enum UserRole {
   SUPER_ADMIN = 'super_admin',
@@ -57,12 +57,14 @@ export class User {
   lastSeenAt?: Date;
 
   @Prop({
-    type: [{
-      deviceId: String,
-      userAgent: String,
-      ip: String,
-      lastSeenAt: Date,
-    }],
+    type: [
+      {
+        deviceId: String,
+        userAgent: String,
+        ip: String,
+        lastSeenAt: Date,
+      },
+    ],
     default: [],
   })
   devices?: Array<{

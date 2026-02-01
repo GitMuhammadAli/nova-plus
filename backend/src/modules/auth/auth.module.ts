@@ -3,14 +3,14 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
-import { MongooseModule } from '@nestjs/mongoose'; 
+import { MongooseModule } from '@nestjs/mongoose';
 import { UsersModule } from '../user/user.module';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { MfaService } from './mfa.service';
 import { MfaController } from './mfa.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
-import { User, UserSchema } from './../user/entities/user.entity'; 
+import { User, UserSchema } from './../user/entities/user.entity';
 import { Session, SessionSchema } from './entities/session.entity';
 import { getJwtSecret } from './utils/jwt-secret.util';
 import { CommonModule } from '../../common/common.module';

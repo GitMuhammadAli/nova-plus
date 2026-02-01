@@ -14,14 +14,14 @@ export class WorkflowWorker {
 
   async start() {
     const redisClient = this.queueService.getRedisClient();
-    
+
     this.worker = new Worker(
       'nova-workflow',
       async (job) => {
         const { workflowId, triggerData } = job.data;
-        
-        logger.info('Processing workflow job', { 
-          jobId: job.id, 
+
+        logger.info('Processing workflow job', {
+          jobId: job.id,
           workflowId,
           attempt: job.attemptsMade + 1,
         });
@@ -31,11 +31,14 @@ export class WorkflowWorker {
           // Using require for dynamic imports in workers to avoid TypeScript module resolution issues
           const { AppModule } = require('../app.module');
           const { NestFactory } = require('@nestjs/core');
-          const appContext = await NestFactory.createApplicationContext(AppModule);
+          const appContext =
+            await NestFactory.createApplicationContext(AppModule);
           // Try to get WorkflowService, but handle if it doesn't exist
           let workflowService;
           try {
-            const { WorkflowService } = require('../modules/workflow/workflow.service');
+            const {
+              WorkflowService,
+            } = require('../modules/workflow/workflow.service');
             workflowService = appContext.get(WorkflowService);
           } catch (e) {
             logger.warn('WorkflowService not available', { error: e });
@@ -43,18 +46,26 @@ export class WorkflowWorker {
           }
 
           // Execute workflow
-          if (workflowService && typeof workflowService.execute === 'function') {
+          if (
+            workflowService &&
+            typeof workflowService.execute === 'function'
+          ) {
             await workflowService.execute(workflowId, triggerData || {});
           } else {
-            logger.warn('WorkflowService.execute not available, skipping execution');
+            logger.warn(
+              'WorkflowService.execute not available, skipping execution',
+            );
           }
 
-          logger.info('Workflow executed successfully', { jobId: job.id, workflowId });
+          logger.info('Workflow executed successfully', {
+            jobId: job.id,
+            workflowId,
+          });
           return { success: true, executedAt: new Date().toISOString() };
         } catch (error: any) {
-          logger.error('Workflow job failed', { 
-            jobId: job.id, 
-            workflowId, 
+          logger.error('Workflow job failed', {
+            jobId: job.id,
+            workflowId,
             error: error.message,
             stack: error.stack,
           });
@@ -79,8 +90,8 @@ export class WorkflowWorker {
     });
 
     this.worker.on('failed', (job, err) => {
-      logger.error('Workflow job failed', { 
-        jobId: job?.id, 
+      logger.error('Workflow job failed', {
+        jobId: job?.id,
         error: err.message,
         attemptsMade: job?.attemptsMade,
       });
@@ -100,4 +111,3 @@ export class WorkflowWorker {
     }
   }
 }
-

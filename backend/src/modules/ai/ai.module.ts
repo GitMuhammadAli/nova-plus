@@ -50,4 +50,3 @@ import { AISchedulerService } from './jobs/ai-scheduler.service';
   ],
 })
 export class AIModule {}
-

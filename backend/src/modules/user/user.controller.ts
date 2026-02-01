@@ -1,4 +1,17 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards, Req, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Param,
+  Body,
+  Query,
+  UseGuards,
+  Req,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -33,7 +46,6 @@ export class UserController {
     };
   }
 
-
   /**
    * Manager: Get all users created by the logged-in manager
    * GET /user/my-users (alias for backward compatibility)
@@ -51,14 +63,20 @@ export class UserController {
     const orgId = req.user.orgId?.toString() || req.user.orgId;
     const companyId = req.user.companyId?.toString() || req.user.companyId;
     if (!orgId && !companyId) {
-      throw new ForbiddenException('User must belong to an organization or company');
+      throw new ForbiddenException(
+        'User must belong to an organization or company',
+      );
     }
     const params = {
       page: page ? parseInt(page, 10) : undefined,
       limit: limit ? parseInt(limit, 10) : undefined,
       search,
     };
-    return this.usersService.findUsersByManager(managerId, orgId || companyId, params);
+    return this.usersService.findUsersByManager(
+      managerId,
+      orgId || companyId,
+      params,
+    );
   }
 
   /**
@@ -78,14 +96,20 @@ export class UserController {
     const orgId = req.user.orgId?.toString() || req.user.orgId;
     const companyId = req.user.companyId?.toString() || req.user.companyId;
     if (!orgId && !companyId) {
-      throw new ForbiddenException('User must belong to an organization or company');
+      throw new ForbiddenException(
+        'User must belong to an organization or company',
+      );
     }
     const params = {
       page: page ? parseInt(page, 10) : undefined,
       limit: limit ? parseInt(limit, 10) : undefined,
       search,
     };
-    return this.usersService.findUsersByManager(managerId, orgId || companyId, params);
+    return this.usersService.findUsersByManager(
+      managerId,
+      orgId || companyId,
+      params,
+    );
   }
 
   /**
@@ -176,7 +200,8 @@ export class UserController {
 
     // Company admin sees all users in their company
     if (currentUser.role === UserRole.COMPANY_ADMIN) {
-      const companyId = currentUser.companyId?.toString() || currentUser.companyId;
+      const companyId =
+        currentUser.companyId?.toString() || currentUser.companyId;
       if (!companyId) {
         throw new ForbiddenException('Company admin must belong to a company');
       }
@@ -184,7 +209,10 @@ export class UserController {
     }
 
     // Admin sees all users in their org
-    if (currentUser.role === UserRole.ADMIN || currentUser.role === UserRole.SUPERADMIN) {
+    if (
+      currentUser.role === UserRole.ADMIN ||
+      currentUser.role === UserRole.SUPERADMIN
+    ) {
       const orgId = currentUser.orgId?.toString() || currentUser.orgId;
       if (!orgId) {
         throw new ForbiddenException('User must belong to an organization');
@@ -224,32 +252,42 @@ export class UserController {
     return this.usersService.findById(id, orgId);
   }
 
-
   /**
    * Company Admin / Manager: Create Managers or Users
    */
   @Post('create-by-admin')
   @UseGuards(RolesGuard)
   @Roles(UserRole.COMPANY_ADMIN, UserRole.ADMIN, UserRole.MANAGER)
-  async createUserByAdmin(@Req() req, @Body() createUserDto: CreateUserByAdminDto) {
+  async createUserByAdmin(
+    @Req() req,
+    @Body() createUserDto: CreateUserByAdminDto,
+  ) {
     const creatorId = req.user._id || req.user.id;
     const companyId = req.user.companyId?.toString() || req.user.companyId;
     const orgId = req.user.orgId?.toString() || req.user.orgId || companyId;
     if (!orgId && !companyId) {
-      throw new ForbiddenException('User must belong to an organization or company');
+      throw new ForbiddenException(
+        'User must belong to an organization or company',
+      );
     }
-    const savedUser = await this.usersService.createByAdmin(creatorId, companyId || orgId, {
-      name: createUserDto.name,
-      email: createUserDto.email,
-      password: createUserDto.password,
-      role: createUserDto.role,
-      managerId: createUserDto.managerId,
-      companyId: companyId,
-      department: createUserDto.department,
-      location: createUserDto.location,
-    });
+    const savedUser = await this.usersService.createByAdmin(
+      creatorId,
+      companyId || orgId,
+      {
+        name: createUserDto.name,
+        email: createUserDto.email,
+        password: createUserDto.password,
+        role: createUserDto.role,
+        managerId: createUserDto.managerId,
+        companyId: companyId,
+        department: createUserDto.department,
+        location: createUserDto.location,
+      },
+    );
     // Return without password - Mongoose documents have toObject() method
-    const userObj = (savedUser as any).toObject ? (savedUser as any).toObject() : savedUser;
+    const userObj = (savedUser as any).toObject
+      ? (savedUser as any).toObject()
+      : savedUser;
     const { password, ...userWithoutPassword } = userObj;
     return userWithoutPassword;
   }
@@ -260,23 +298,34 @@ export class UserController {
   @Post('create-by-manager')
   @UseGuards(RolesGuard)
   @Roles(UserRole.MANAGER)
-  async createUserByManager(@Req() req, @Body() createUserDto: CreateUserByManagerDto) {
+  async createUserByManager(
+    @Req() req,
+    @Body() createUserDto: CreateUserByManagerDto,
+  ) {
     const creatorId = req.user._id || req.user.id;
     const companyId = req.user.companyId?.toString() || req.user.companyId;
     const orgId = req.user.orgId?.toString() || req.user.orgId || companyId;
     if (!orgId && !companyId) {
-      throw new ForbiddenException('User must belong to an organization or company');
+      throw new ForbiddenException(
+        'User must belong to an organization or company',
+      );
     }
-    const savedUser = await this.usersService.createByManager(creatorId, companyId || orgId, {
-      name: createUserDto.name,
-      email: createUserDto.email,
-      password: createUserDto.password,
-      department: createUserDto.department,
-      location: createUserDto.location,
-      companyId: companyId,
-    });
+    const savedUser = await this.usersService.createByManager(
+      creatorId,
+      companyId || orgId,
+      {
+        name: createUserDto.name,
+        email: createUserDto.email,
+        password: createUserDto.password,
+        department: createUserDto.department,
+        location: createUserDto.location,
+        companyId: companyId,
+      },
+    );
     // Return without password - Mongoose documents have toObject() method
-    const userObj = (savedUser as any).toObject ? (savedUser as any).toObject() : savedUser;
+    const userObj = (savedUser as any).toObject
+      ? (savedUser as any).toObject()
+      : savedUser;
     const { password, ...userWithoutPassword } = userObj;
     return userWithoutPassword;
   }
@@ -301,7 +350,9 @@ export class UserController {
       role: createUserDto.role || UserRole.USER,
     });
     // Return without password - Mongoose documents have toObject() method
-    const userObj = (savedUser as any).toObject ? (savedUser as any).toObject() : savedUser;
+    const userObj = (savedUser as any).toObject
+      ? (savedUser as any).toObject()
+      : savedUser;
     const { password, ...userWithoutPassword } = userObj;
     return userWithoutPassword;
   }
@@ -314,10 +365,15 @@ export class UserController {
   @Patch(':id')
   @UseGuards(RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.COMPANY_ADMIN)
-  async updateUser(@Req() req, @Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+  async updateUser(
+    @Req() req,
+    @Param('id') id: string,
+    @Body() updateUserDto: UpdateUserDto,
+  ) {
     const currentUser = req.user;
     const orgId = currentUser.orgId?.toString() || currentUser.orgId;
-    const companyId = currentUser.companyId?.toString() || currentUser.companyId;
+    const companyId =
+      currentUser.companyId?.toString() || currentUser.companyId;
     const currentUserId = currentUser._id || currentUser.id;
 
     // Company admin path
@@ -331,7 +387,9 @@ export class UserController {
         userToUpdate.companyId?.toString() || userToUpdate.orgId?.toString();
 
       if (targetCompanyId !== companyId) {
-        throw new ForbiddenException('You can only update users in your company');
+        throw new ForbiddenException(
+          'You can only update users in your company',
+        );
       }
 
       if (
@@ -343,14 +401,16 @@ export class UserController {
 
       if (
         updateUserDto.role &&
-        ![UserRole.MANAGER, UserRole.USER].includes(updateUserDto.role as UserRole)
+        ![UserRole.MANAGER, UserRole.USER].includes(updateUserDto.role)
       ) {
         throw new ForbiddenException('Invalid role assignment');
       }
 
       const sanitizedUpdate: any = { ...updateUserDto };
       if (sanitizedUpdate.managerId) {
-        sanitizedUpdate.managerId = new Types.ObjectId(sanitizedUpdate.managerId);
+        sanitizedUpdate.managerId = new Types.ObjectId(
+          sanitizedUpdate.managerId,
+        );
       }
       return this.usersService.update(id, sanitizedUpdate);
     }
@@ -391,7 +451,8 @@ export class UserController {
   async deleteUser(@Req() req, @Param('id') id: string) {
     const currentUser = req.user;
     const orgId = currentUser.orgId?.toString() || currentUser.orgId;
-    const companyId = currentUser.companyId?.toString() || currentUser.companyId;
+    const companyId =
+      currentUser.companyId?.toString() || currentUser.companyId;
 
     if ((currentUser._id || currentUser.id)?.toString() === id) {
       throw new ForbiddenException('You cannot delete your own account');
@@ -408,7 +469,9 @@ export class UserController {
         userToDelete.companyId?.toString() || userToDelete.orgId?.toString();
 
       if (targetCompanyId !== companyId) {
-        throw new ForbiddenException('You can only delete users in your company');
+        throw new ForbiddenException(
+          'You can only delete users in your company',
+        );
       }
 
       if (
@@ -430,7 +493,10 @@ export class UserController {
 
     // Manager can only delete users they created
     if (currentUser.role === UserRole.MANAGER) {
-      if (userToDelete.createdBy?.toString() !== (currentUser._id || currentUser.id)?.toString()) {
+      if (
+        userToDelete.createdBy?.toString() !==
+        (currentUser._id || currentUser.id)?.toString()
+      ) {
         throw new ForbiddenException('You can only delete users you created');
       }
     }
@@ -445,13 +511,29 @@ export class UserController {
   @Post('bulk')
   @UseGuards(RolesGuard)
   @Roles(UserRole.COMPANY_ADMIN, UserRole.SUPER_ADMIN)
-  async bulkCreateUsers(@Req() req, @Body() body: { users: Array<{ name: string; email: string; password: string; role?: UserRole; departmentId?: string }> }) {
+  async bulkCreateUsers(
+    @Req() req,
+    @Body()
+    body: {
+      users: Array<{
+        name: string;
+        email: string;
+        password: string;
+        role?: UserRole;
+        departmentId?: string;
+      }>;
+    },
+  ) {
     const creatorId = req.user._id || req.user.id;
     const companyId = req.user.companyId?.toString() || req.user.companyId;
     if (!companyId) {
       throw new ForbiddenException('User must belong to a company');
     }
-    const result = await this.usersService.bulkCreate(creatorId, companyId, body.users);
+    const result = await this.usersService.bulkCreate(
+      creatorId,
+      companyId,
+      body.users,
+    );
     return {
       success: true,
       created: result.created.length,
@@ -477,7 +559,11 @@ export class UserController {
     if (!companyId) {
       throw new ForbiddenException('User must belong to a company');
     }
-    const stats = await this.usersService.getStats(companyId, { role, department, status });
+    const stats = await this.usersService.getStats(companyId, {
+      role,
+      department,
+      status,
+    });
     return {
       success: true,
       stats,
@@ -539,13 +625,21 @@ export class UserController {
   @Patch(':id/assign-department')
   @UseGuards(RolesGuard)
   @Roles(UserRole.COMPANY_ADMIN, UserRole.MANAGER, UserRole.SUPER_ADMIN)
-  async assignDepartment(@Req() req, @Param('id') id: string, @Body() body: { departmentId?: string }) {
+  async assignDepartment(
+    @Req() req,
+    @Param('id') id: string,
+    @Body() body: { departmentId?: string },
+  ) {
     const companyId = req.user.companyId?.toString() || req.user.companyId;
     if (!companyId) {
       throw new ForbiddenException('User must belong to a company');
     }
 
-    const user = await this.usersService.assignDepartment(id, body.departmentId, companyId);
+    const user = await this.usersService.assignDepartment(
+      id,
+      body.departmentId,
+      companyId,
+    );
     if (!user) {
       throw new NotFoundException('User not found');
     }
@@ -564,13 +658,21 @@ export class UserController {
   @Patch(':id/assign-manager')
   @UseGuards(RolesGuard)
   @Roles(UserRole.COMPANY_ADMIN, UserRole.SUPER_ADMIN)
-  async assignManager(@Req() req, @Param('id') id: string, @Body() body: { managerId?: string }) {
+  async assignManager(
+    @Req() req,
+    @Param('id') id: string,
+    @Body() body: { managerId?: string },
+  ) {
     const companyId = req.user.companyId?.toString() || req.user.companyId;
     if (!companyId) {
       throw new ForbiddenException('User must belong to a company');
     }
 
-    const user = await this.usersService.assignManager(id, body.managerId, companyId);
+    const user = await this.usersService.assignManager(
+      id,
+      body.managerId,
+      companyId,
+    );
     if (!user) {
       throw new NotFoundException('User not found');
     }
@@ -605,7 +707,10 @@ export class UserController {
 
     return {
       success: true,
-      data: await this.userTasksService.getMyTasks(userId, companyId, { status, projectId }),
+      data: await this.userTasksService.getMyTasks(userId, companyId, {
+        status,
+        projectId,
+      }),
     };
   }
 
@@ -653,7 +758,12 @@ export class UserController {
 
     return {
       success: true,
-      data: await this.userTasksService.updateTaskStatus(id, body.status, userId, companyId),
+      data: await this.userTasksService.updateTaskStatus(
+        id,
+        body.status,
+        userId,
+        companyId,
+      ),
     };
   }
 
@@ -679,7 +789,12 @@ export class UserController {
 
     return {
       success: true,
-      data: await this.userTasksService.addComment(id, userId, body.comment, companyId),
+      data: await this.userTasksService.addComment(
+        id,
+        userId,
+        body.comment,
+        companyId,
+      ),
     };
   }
 
@@ -692,7 +807,8 @@ export class UserController {
   @Roles(UserRole.USER, UserRole.EDITOR)
   async addTaskAttachment(
     @Param('id') id: string,
-    @Body() body: { filename: string; url: string; size?: number; mimeType?: string },
+    @Body()
+    body: { filename: string; url: string; size?: number; mimeType?: string },
     @Req() req,
   ) {
     const user = req.user;
@@ -705,7 +821,12 @@ export class UserController {
 
     return {
       success: true,
-      data: await this.userTasksService.addAttachment(id, userId, body, companyId),
+      data: await this.userTasksService.addAttachment(
+        id,
+        userId,
+        body,
+        companyId,
+      ),
     };
   }
 
@@ -750,7 +871,11 @@ export class UserController {
 
     return {
       success: true,
-      data: await this.userProjectsService.getProjectDetails(id, userId, companyId),
+      data: await this.userProjectsService.getProjectDetails(
+        id,
+        userId,
+        companyId,
+      ),
     };
   }
 

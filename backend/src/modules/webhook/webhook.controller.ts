@@ -94,7 +94,11 @@ export class WebhookController {
       throw new Error('User must belong to a company');
     }
 
-    const webhook = await this.webhookService.update(id, updateWebhookDto, companyId);
+    const webhook = await this.webhookService.update(
+      id,
+      updateWebhookDto,
+      companyId,
+    );
 
     return {
       success: true,
@@ -153,4 +157,3 @@ export class WebhookController {
     };
   }
 }
-

@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Body, Query, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Query,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import { AnalyticsService } from './analytics.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -14,7 +22,12 @@ export class AnalyticsController {
    * Track a page visit (alias for /track)
    */
   @Post('visit')
-  @Roles(UserRole.COMPANY_ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.SUPER_ADMIN)
+  @Roles(
+    UserRole.COMPANY_ADMIN,
+    UserRole.MANAGER,
+    UserRole.USER,
+    UserRole.SUPER_ADMIN,
+  )
   async recordVisit(
     @Req() req,
     @Body() body: { path: string; metadata?: Record<string, any> },
@@ -40,10 +53,16 @@ export class AnalyticsController {
    * Track a page visit
    */
   @Post('track')
-  @Roles(UserRole.COMPANY_ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.SUPER_ADMIN)
+  @Roles(
+    UserRole.COMPANY_ADMIN,
+    UserRole.MANAGER,
+    UserRole.USER,
+    UserRole.SUPER_ADMIN,
+  )
   async trackVisit(
     @Req() req,
-    @Body() body: {
+    @Body()
+    body: {
       page: string;
       referrer?: string;
       userAgent?: string;
@@ -101,8 +120,11 @@ export class AnalyticsController {
   async getTraffic(@Req() req, @Query('period') period?: string) {
     const user = req.user;
     const companyId = user.companyId?.toString() || user.companyId;
-    const stats = await this.analyticsService.getAnalyticsStats(companyId, period || '6m');
-    
+    const stats = await this.analyticsService.getAnalyticsStats(
+      companyId,
+      period || '6m',
+    );
+
     return {
       success: true,
       data: {
@@ -121,8 +143,11 @@ export class AnalyticsController {
   async getDevices(@Req() req, @Query('period') period?: string) {
     const user = req.user;
     const companyId = user.companyId?.toString() || user.companyId;
-    const stats = await this.analyticsService.getAnalyticsStats(companyId, period || '6m');
-    
+    const stats = await this.analyticsService.getAnalyticsStats(
+      companyId,
+      period || '6m',
+    );
+
     return {
       success: true,
       data: stats.deviceData,
@@ -137,8 +162,11 @@ export class AnalyticsController {
   async getConversion(@Req() req, @Query('period') period?: string) {
     const user = req.user;
     const companyId = user.companyId?.toString() || user.companyId;
-    const stats = await this.analyticsService.getAnalyticsStats(companyId, period || '6m');
-    
+    const stats = await this.analyticsService.getAnalyticsStats(
+      companyId,
+      period || '6m',
+    );
+
     return {
       success: true,
       data: stats.conversionData,
@@ -153,8 +181,11 @@ export class AnalyticsController {
   async getTopPages(@Req() req, @Query('period') period?: string) {
     const user = req.user;
     const companyId = user.companyId?.toString() || user.companyId;
-    const stats = await this.analyticsService.getAnalyticsStats(companyId, period || '6m');
-    
+    const stats = await this.analyticsService.getAnalyticsStats(
+      companyId,
+      period || '6m',
+    );
+
     return {
       success: true,
       data: stats.topPages,

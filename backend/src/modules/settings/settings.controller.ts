@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import { SettingsService } from './settings.service';
 import { CreateSettingDto } from './dto/create-setting.dto';
 import { UpdateSettingDto } from './dto/update-setting.dto';
@@ -21,7 +31,10 @@ export class SettingsController {
     if (!companyId) {
       throw new Error('User must belong to a company');
     }
-    const setting = await this.settingsService.create(createSettingDto, companyId);
+    const setting = await this.settingsService.create(
+      createSettingDto,
+      companyId,
+    );
     return {
       success: true,
       setting,
@@ -70,7 +83,16 @@ export class SettingsController {
   @Patch('branding')
   @UseGuards(RolesGuard)
   @Roles(UserRole.COMPANY_ADMIN, UserRole.SUPER_ADMIN)
-  async updateBranding(@Body() body: { logo?: string; primaryColor?: string; secondaryColor?: string; companyName?: string }, @Req() req) {
+  async updateBranding(
+    @Body()
+    body: {
+      logo?: string;
+      primaryColor?: string;
+      secondaryColor?: string;
+      companyName?: string;
+    },
+    @Req() req,
+  ) {
     const companyId = req.user.companyId?.toString() || req.user.companyId;
     if (!companyId) {
       throw new Error('User must belong to a company');
@@ -88,7 +110,8 @@ export class SettingsController {
     if (!companyId) {
       throw new Error('User must belong to a company');
     }
-    const settings = await this.settingsService.getPermissionsSettings(companyId);
+    const settings =
+      await this.settingsService.getPermissionsSettings(companyId);
     return {
       success: true,
       settings,
@@ -103,7 +126,10 @@ export class SettingsController {
     if (!companyId) {
       throw new Error('User must belong to a company');
     }
-    const setting = await this.settingsService.updatePermissions(companyId, body);
+    const setting = await this.settingsService.updatePermissions(
+      companyId,
+      body,
+    );
     return {
       success: true,
       setting,
@@ -113,12 +139,18 @@ export class SettingsController {
   @Patch('company')
   @UseGuards(RolesGuard)
   @Roles(UserRole.COMPANY_ADMIN, UserRole.SUPER_ADMIN)
-  async updateCompanySettings(@Body() settings: Record<string, any>, @Req() req) {
+  async updateCompanySettings(
+    @Body() settings: Record<string, any>,
+    @Req() req,
+  ) {
     const companyId = req.user.companyId?.toString() || req.user.companyId;
     if (!companyId) {
       throw new Error('User must belong to a company');
     }
-    const updated = await this.settingsService.updateCompanySettings(companyId, settings);
+    const updated = await this.settingsService.updateCompanySettings(
+      companyId,
+      settings,
+    );
     return {
       success: true,
       settings: updated,
@@ -146,7 +178,10 @@ export class SettingsController {
     if (!companyId) {
       throw new Error('User must belong to a company');
     }
-    const updated = await this.settingsService.updateWorkingHours(companyId, workingHours);
+    const updated = await this.settingsService.updateWorkingHours(
+      companyId,
+      workingHours,
+    );
     return {
       success: true,
       workingHours: updated,
@@ -169,12 +204,20 @@ export class SettingsController {
   @Patch(':id')
   @UseGuards(RolesGuard)
   @Roles(UserRole.COMPANY_ADMIN, UserRole.SUPER_ADMIN)
-  async update(@Param('id') id: string, @Body() updateSettingDto: UpdateSettingDto, @Req() req) {
+  async update(
+    @Param('id') id: string,
+    @Body() updateSettingDto: UpdateSettingDto,
+    @Req() req,
+  ) {
     const companyId = req.user.companyId?.toString() || req.user.companyId;
     if (!companyId) {
       throw new Error('User must belong to a company');
     }
-    const setting = await this.settingsService.update(id, updateSettingDto, companyId);
+    const setting = await this.settingsService.update(
+      id,
+      updateSettingDto,
+      companyId,
+    );
     return {
       success: true,
       setting,

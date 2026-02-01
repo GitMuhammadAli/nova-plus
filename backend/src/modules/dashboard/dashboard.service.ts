@@ -3,7 +3,11 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User, UserDocument } from '../user/entities/user.entity';
 import { Task, TaskDocument } from '../task/entities/task.entity';
-import { Activity, ActivityDocument, ActivityType } from './entities/activity.entity';
+import {
+  Activity,
+  ActivityDocument,
+  ActivityType,
+} from './entities/activity.entity';
 import { DashboardSummaryDto } from './dto/dashboard-summary.dto';
 import { DashboardStatsDto, StatPoint } from './dto/dashboard-stats.dto';
 import { RecentActivityDto } from './dto/recent-activity.dto';
@@ -19,7 +23,9 @@ export class DashboardService {
   async getSummary(): Promise<DashboardSummaryDto> {
     const now = new Date();
     const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    const previous30Days = new Date(last30Days.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const previous30Days = new Date(
+      last30Days.getTime() - 30 * 24 * 60 * 60 * 1000,
+    );
 
     // Get user stats
     const totalUsers = await this.userModel.countDocuments({});
@@ -34,9 +40,13 @@ export class DashboardService {
     const currentPeriodUsers = await this.userModel.countDocuments({
       createdAt: { $gte: last30Days },
     });
-    const userGrowth = previousPeriodUsers > 0 
-      ? ((currentPeriodUsers - previousPeriodUsers) / previousPeriodUsers) * 100 
-      : currentPeriodUsers > 0 ? 100 : 0;
+    const userGrowth =
+      previousPeriodUsers > 0
+        ? ((currentPeriodUsers - previousPeriodUsers) / previousPeriodUsers) *
+          100
+        : currentPeriodUsers > 0
+          ? 100
+          : 0;
 
     // Get activity stats
     const totalActivities = await this.activityModel.countDocuments({});
@@ -46,9 +56,14 @@ export class DashboardService {
     const currentPeriodActivities = await this.activityModel.countDocuments({
       createdAt: { $gte: last30Days },
     });
-    const activityGrowth = previousPeriodActivities > 0
-      ? ((currentPeriodActivities - previousPeriodActivities) / previousPeriodActivities) * 100
-      : currentPeriodActivities > 0 ? 100 : 0;
+    const activityGrowth =
+      previousPeriodActivities > 0
+        ? ((currentPeriodActivities - previousPeriodActivities) /
+            previousPeriodActivities) *
+          100
+        : currentPeriodActivities > 0
+          ? 100
+          : 0;
 
     // Calculate revenue (mock for now - can be replaced with actual billing data)
     const revenueTotal = 0; // TODO: Replace with actual revenue calculation from billing module
@@ -84,7 +99,7 @@ export class DashboardService {
   async getStats(period: string = '30d'): Promise<DashboardStatsDto> {
     const now = new Date();
     let days: number;
-    
+
     switch (period) {
       case '7d':
         days = 7;
@@ -103,13 +118,13 @@ export class DashboardService {
     }
 
     const startDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
-    
+
     // User growth over time
     const userGrowth = await this.getUserGrowthStats(startDate, days);
-    
+
     // Activity trend over time
     const activityTrend = await this.getActivityTrendStats(startDate, days);
-    
+
     // Task completion trend
     const taskCompletion = await this.getTaskCompletionStats(startDate, days);
 
@@ -120,7 +135,10 @@ export class DashboardService {
     };
   }
 
-  private async getUserGrowthStats(startDate: Date, days: number): Promise<StatPoint[]> {
+  private async getUserGrowthStats(
+    startDate: Date,
+    days: number,
+  ): Promise<StatPoint[]> {
     const points: StatPoint[] = [];
     const interval = days <= 7 ? 1 : days <= 30 ? 1 : days <= 90 ? 7 : 30;
 
@@ -137,14 +155,20 @@ export class DashboardService {
       points.push({
         date: date.toISOString().split('T')[0],
         value: count,
-        label: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        label: date.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+        }),
       });
     }
 
     return points;
   }
 
-  private async getActivityTrendStats(startDate: Date, days: number): Promise<StatPoint[]> {
+  private async getActivityTrendStats(
+    startDate: Date,
+    days: number,
+  ): Promise<StatPoint[]> {
     const points: StatPoint[] = [];
     const interval = days <= 7 ? 1 : days <= 30 ? 1 : days <= 90 ? 7 : 30;
 
@@ -161,14 +185,20 @@ export class DashboardService {
       points.push({
         date: date.toISOString().split('T')[0],
         value: count,
-        label: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        label: date.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+        }),
       });
     }
 
     return points;
   }
 
-  private async getTaskCompletionStats(startDate: Date, days: number): Promise<StatPoint[]> {
+  private async getTaskCompletionStats(
+    startDate: Date,
+    days: number,
+  ): Promise<StatPoint[]> {
     const points: StatPoint[] = [];
     const interval = days <= 7 ? 1 : days <= 30 ? 1 : days <= 90 ? 7 : 30;
 
@@ -186,7 +216,10 @@ export class DashboardService {
       points.push({
         date: date.toISOString().split('T')[0],
         value: count,
-        label: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        label: date.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+        }),
       });
     }
 
@@ -207,14 +240,17 @@ export class DashboardService {
       user: activity.userId
         ? {
             id: String((activity.userId as any)._id),
-            name: (activity.userId as any).name || activity.userName || 'Unknown',
+            name:
+              (activity.userId as any).name || activity.userName || 'Unknown',
             email: (activity.userId as any).email || 'unknown@example.com',
           }
         : undefined,
       action: activity.action,
       description: activity.description,
       target: activity.target,
-      timestamp: activity.createdAt ? activity.createdAt.toISOString() : new Date().toISOString(),
+      timestamp: activity.createdAt
+        ? activity.createdAt.toISOString()
+        : new Date().toISOString(),
       icon: this.getActivityIcon(activity.type),
     }));
   }
@@ -264,4 +300,3 @@ export class DashboardService {
     return activity.save();
   }
 }
-

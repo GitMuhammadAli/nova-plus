@@ -6,7 +6,10 @@ import getRawBody from 'raw-body';
 export class RawBodyMiddleware implements NestMiddleware {
   use(req: Request, res: Response, next: NextFunction) {
     // Only capture raw body for webhook routes
-    if (req.path.includes('/billing/webhook') || req.path.includes('/webhooks')) {
+    if (
+      req.path.includes('/billing/webhook') ||
+      req.path.includes('/webhooks')
+    ) {
       getRawBody(req, {
         length: req.headers['content-length'],
         limit: '10mb',
@@ -24,4 +27,3 @@ export class RawBodyMiddleware implements NestMiddleware {
     }
   }
 }
-

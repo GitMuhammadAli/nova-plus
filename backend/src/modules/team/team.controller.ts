@@ -46,7 +46,11 @@ export class TeamsController {
   // add member to team
   @Post(':id/members')
   @Roles(UserRole.MANAGER, UserRole.ADMIN, UserRole.SUPERADMIN)
-  async addMember(@Param('id') id: string, @Body() dto: AddMemberDto, @Req() req) {
+  async addMember(
+    @Param('id') id: string,
+    @Body() dto: AddMemberDto,
+    @Req() req,
+  ) {
     const user = req.user;
     return this.teamsService.addMember(id, dto, user);
   }
@@ -54,7 +58,11 @@ export class TeamsController {
   // remove member
   @Delete(':id/members/:memberId')
   @Roles(UserRole.MANAGER, UserRole.ADMIN, UserRole.SUPERADMIN)
-  async removeMember(@Param('id') id: string, @Param('memberId') memberId: string, @Req() req) {
+  async removeMember(
+    @Param('id') id: string,
+    @Param('memberId') memberId: string,
+    @Req() req,
+  ) {
     const user = req.user;
     return this.teamsService.removeMember(id, memberId, user);
   }

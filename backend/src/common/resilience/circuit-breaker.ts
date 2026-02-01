@@ -79,7 +79,9 @@ export class CircuitBreaker {
       if (timeSinceLastFailure >= this.options.resetTimeout) {
         this.transitionToHalfOpen();
       } else {
-        throw new Error(`Circuit breaker ${this.name} is OPEN. Service unavailable.`);
+        throw new Error(
+          `Circuit breaker ${this.name} is OPEN. Service unavailable.`,
+        );
       }
     }
 
@@ -262,7 +264,9 @@ export class CircuitBreakerManager {
     failureCount: number;
     lastFailureTime: number | null;
   }> {
-    return Array.from(this.breakers.values()).map((breaker) => breaker.getHealthStatus());
+    return Array.from(this.breakers.values()).map((breaker) =>
+      breaker.getHealthStatus(),
+    );
   }
 
   /**
@@ -272,4 +276,3 @@ export class CircuitBreakerManager {
     this.breakers.forEach((breaker) => breaker.reset());
   }
 }
-

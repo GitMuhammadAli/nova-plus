@@ -19,4 +19,3 @@ import { QueueModule } from '../../providers/queue/queue.module';
   exports: [WebhookService],
 })
 export class WebhookModule {}
-

@@ -17,55 +17,64 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 async function bootstrap() {
   // Initialize OpenTelemetry tracing
   const configService = new ConfigService();
-  const serviceName = configService.get<string>('SERVICE_NAME') || 'novapulse-api';
+  const serviceName =
+    configService.get<string>('SERVICE_NAME') || 'novapulse-api';
   tracing.initializeTracing(serviceName);
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     rawBody: true, // Enable raw body for webhooks
   });
   const appConfigService = app.get(ConfigService);
-  
+
   // Apply raw body middleware for webhook routes
   app.use(new RawBodyMiddleware().use.bind(new RawBodyMiddleware()));
-  
+
   // Security Headers
-  app.use(helmet({
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
-        scriptSrc: ["'self'"],
-        imgSrc: ["'self'", 'data:', 'https:'],
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          scriptSrc: ["'self'"],
+          imgSrc: ["'self'", 'data:', 'https:'],
+        },
       },
-    },
-    crossOriginEmbedderPolicy: false,
-  }));
+      crossOriginEmbedderPolicy: false,
+    }),
+  );
 
   // Response Compression
   app.use(compression());
 
   // Request ID Tracking
   app.useGlobalInterceptors(new RequestIdInterceptor());
-  
+
   // Global Filters & Interceptors
   app.useGlobalFilters(new AllExceptionsFilter());
-  app.useGlobalInterceptors(new LoggingInterceptor(), new TransformInterceptor());
-  app.useGlobalPipes(new ValidationPipe({ 
-    whitelist: true, 
-    transform: true,
-    forbidNonWhitelisted: true,
-    transformOptions: {
-      enableImplicitConversion: true,
-    },
-  }));
-  
+  app.useGlobalInterceptors(
+    new LoggingInterceptor(),
+    new TransformInterceptor(),
+  );
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      forbidNonWhitelisted: true,
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
+    }),
+  );
+
   app.use(cookieParser());
-  
+
   // CORS - Environment-based configuration
   const nodeEnv = appConfigService.get<string>('NODE_ENV') || 'development';
-  const allowedOrigins = nodeEnv === 'production'
-    ? (appConfigService.get<string>('ALLOWED_ORIGINS')?.split(',') || [])
-    : ['http://localhost:3100', 'http://127.0.0.1:3100'];
+  const allowedOrigins =
+    nodeEnv === 'production'
+      ? appConfigService.get<string>('ALLOWED_ORIGINS')?.split(',') || []
+      : ['http://localhost:3100', 'http://127.0.0.1:3100'];
 
   app.enableCors({
     origin: (origin, callback) => {
@@ -81,16 +90,16 @@ async function bootstrap() {
     credentials: true,
     maxAge: 86400, // 24 hours
   });
-  
+
   // Global API prefix
   app.setGlobalPrefix('api/v1');
-  
+
   const port = appConfigService.get<number>('port') ?? 5500;
-  
+
   // Graceful shutdown
   const gracefulShutdown = async (signal: string) => {
     logger.info(`Received ${signal}, starting graceful shutdown...`);
-    
+
     // Stop accepting new requests
     const server = app.getHttpServer();
     server.close(() => {
@@ -98,8 +107,8 @@ async function bootstrap() {
     });
 
     // Shutdown OpenTelemetry
-        await tracing.shutdownTracing();
-    
+    await tracing.shutdownTracing();
+
     // Close application
     await app.close();
     logger.info('Application closed, exiting...');
@@ -123,6 +132,8 @@ async function bootstrap() {
   await app.listen(port);
   logger.info(`🚀 Server started on port ${port} in ${nodeEnv} mode`);
   logger.info(`📝 API available at http://localhost:${port}/api/v1`);
-  logger.info(`🏥 Health checks available at http://localhost:${port}/api/v1/health`);
+  logger.info(
+    `🏥 Health checks available at http://localhost:${port}/api/v1/health`,
+  );
 }
 bootstrap();

@@ -6,7 +6,10 @@ import { User, UserSchema } from '../user/entities/user.entity';
 import { Project, ProjectSchema } from '../project/entities/project.entity';
 import { Task, TaskSchema } from '../task/entities/task.entity';
 import { Invite, InviteSchema } from '../invite/entities/invite.entity';
-import { AnalyticsVisit, AnalyticsVisitSchema } from './entities/analytics-visit.entity';
+import {
+  AnalyticsVisit,
+  AnalyticsVisitSchema,
+} from './entities/analytics-visit.entity';
 
 @Module({
   imports: [

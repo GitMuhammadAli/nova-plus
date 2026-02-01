@@ -8,7 +8,9 @@ export class TokenService implements OnModuleInit {
   constructor(private config: ConfigService) {}
 
   async onModuleInit() {
-    const url = this.config.get<string>('REDIS_URL') || this.config.get<string>('redisUrl');
+    const url =
+      this.config.get<string>('REDIS_URL') ||
+      this.config.get<string>('redisUrl');
     this.client = createClient({ url });
     this.client.on('error', (err) => console.error('Redis error', err));
     await this.client.connect();

@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException, ForbiddenException, Inject, forwardRef } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Department, DepartmentDocument } from './entities/department.entity';
@@ -11,13 +17,18 @@ import { AuditAction, AuditResource } from '../audit/entities/audit-log.entity';
 @Injectable()
 export class DepartmentService {
   constructor(
-    @InjectModel(Department.name) private departmentModel: Model<DepartmentDocument>,
+    @InjectModel(Department.name)
+    private departmentModel: Model<DepartmentDocument>,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @Inject(forwardRef(() => AuditService))
     private auditService: AuditService,
   ) {}
 
-  async create(createDepartmentDto: CreateDepartmentDto, companyId: string, userId: string): Promise<DepartmentDocument> {
+  async create(
+    createDepartmentDto: CreateDepartmentDto,
+    companyId: string,
+    userId: string,
+  ): Promise<DepartmentDocument> {
     // Check if department name already exists for this company
     const existing = await this.departmentModel.findOne({
       companyId: new Types.ObjectId(companyId),
@@ -30,9 +41,13 @@ export class DepartmentService {
 
     // Validate manager if provided
     if (createDepartmentDto.managerId) {
-      const manager = await this.userModel.findById(createDepartmentDto.managerId);
+      const manager = await this.userModel.findById(
+        createDepartmentDto.managerId,
+      );
       if (!manager || manager.companyId?.toString() !== companyId) {
-        throw new NotFoundException('Manager not found or does not belong to company');
+        throw new NotFoundException(
+          'Manager not found or does not belong to company',
+        );
       }
     }
 
@@ -40,7 +55,9 @@ export class DepartmentService {
       ...createDepartmentDto,
       companyId: new Types.ObjectId(companyId),
       createdBy: new Types.ObjectId(userId),
-      members: createDepartmentDto.memberIds?.map(id => new Types.ObjectId(id)) || [],
+      members:
+        createDepartmentDto.memberIds?.map((id) => new Types.ObjectId(id)) ||
+        [],
     });
 
     const saved = await department.save();
@@ -63,16 +80,24 @@ export class DepartmentService {
   }
 
   async findAll(companyId: string): Promise<DepartmentDocument[]> {
-    return this.departmentModel.find({
-      companyId: new Types.ObjectId(companyId),
-    }).populate('managerId', 'name email').populate('members', 'name email').exec();
+    return this.departmentModel
+      .find({
+        companyId: new Types.ObjectId(companyId),
+      })
+      .populate('managerId', 'name email')
+      .populate('members', 'name email')
+      .exec();
   }
 
   async findOne(id: string, companyId: string): Promise<DepartmentDocument> {
-    const department = await this.departmentModel.findOne({
-      _id: id,
-      companyId: new Types.ObjectId(companyId),
-    }).populate('managerId', 'name email').populate('members', 'name email').exec();
+    const department = await this.departmentModel
+      .findOne({
+        _id: id,
+        companyId: new Types.ObjectId(companyId),
+      })
+      .populate('managerId', 'name email')
+      .populate('members', 'name email')
+      .exec();
 
     if (!department) {
       throw new NotFoundException('Department not found');
@@ -81,7 +106,11 @@ export class DepartmentService {
     return department;
   }
 
-  async update(id: string, updateDepartmentDto: UpdateDepartmentDto, companyId: string): Promise<DepartmentDocument> {
+  async update(
+    id: string,
+    updateDepartmentDto: UpdateDepartmentDto,
+    companyId: string,
+  ): Promise<DepartmentDocument> {
     const department = await this.departmentModel.findOne({
       _id: id,
       companyId: new Types.ObjectId(companyId),
@@ -93,15 +122,21 @@ export class DepartmentService {
 
     // Validate manager if being updated
     if (updateDepartmentDto.managerId) {
-      const manager = await this.userModel.findById(updateDepartmentDto.managerId);
+      const manager = await this.userModel.findById(
+        updateDepartmentDto.managerId,
+      );
       if (!manager || manager.companyId?.toString() !== companyId) {
-        throw new NotFoundException('Manager not found or does not belong to company');
+        throw new NotFoundException(
+          'Manager not found or does not belong to company',
+        );
       }
     }
 
     // Update members if provided
     if (updateDepartmentDto.memberIds) {
-      department.members = updateDepartmentDto.memberIds.map(id => new Types.ObjectId(id));
+      department.members = updateDepartmentDto.memberIds.map(
+        (id) => new Types.ObjectId(id),
+      );
     }
 
     const oldData = { ...department.toObject() };
@@ -116,7 +151,7 @@ export class DepartmentService {
         userId: companyId, // Will be set from request context
         companyId: companyId,
         resourceId: saved._id,
-        metadata: { 
+        metadata: {
           changes: updateDepartmentDto,
           previous: oldData,
         },
@@ -129,19 +164,23 @@ export class DepartmentService {
   }
 
   async remove(id: string, companyId: string, userId?: string): Promise<void> {
-    const department = await this.departmentModel.findOne({
-      _id: id,
-      companyId: new Types.ObjectId(companyId),
-    }).exec();
+    const department = await this.departmentModel
+      .findOne({
+        _id: id,
+        companyId: new Types.ObjectId(companyId),
+      })
+      .exec();
 
     if (!department) {
       throw new NotFoundException('Department not found');
     }
 
-    const result = await this.departmentModel.deleteOne({
-      _id: id,
-      companyId: new Types.ObjectId(companyId),
-    }).exec();
+    const result = await this.departmentModel
+      .deleteOne({
+        _id: id,
+        companyId: new Types.ObjectId(companyId),
+      })
+      .exec();
 
     if (result.deletedCount === 0) {
       throw new NotFoundException('Department not found');
@@ -162,7 +201,11 @@ export class DepartmentService {
     }
   }
 
-  async assignManager(departmentId: string, managerId: string, companyId: string): Promise<DepartmentDocument> {
+  async assignManager(
+    departmentId: string,
+    managerId: string,
+    companyId: string,
+  ): Promise<DepartmentDocument> {
     const department = await this.departmentModel.findOne({
       _id: departmentId,
       companyId: new Types.ObjectId(companyId),
@@ -181,7 +224,11 @@ export class DepartmentService {
     return department.save();
   }
 
-  async addMember(departmentId: string, userId: string, companyId: string): Promise<DepartmentDocument> {
+  async addMember(
+    departmentId: string,
+    userId: string,
+    companyId: string,
+  ): Promise<DepartmentDocument> {
     const department = await this.departmentModel.findOne({
       _id: departmentId,
       companyId: new Types.ObjectId(companyId),
@@ -196,14 +243,18 @@ export class DepartmentService {
       throw new NotFoundException('User not found');
     }
 
-    if (!department.members.some(m => m.toString() === userId)) {
+    if (!department.members.some((m) => m.toString() === userId)) {
       department.members.push(new Types.ObjectId(userId));
     }
 
     return department.save();
   }
 
-  async removeMember(departmentId: string, userId: string, companyId: string): Promise<DepartmentDocument> {
+  async removeMember(
+    departmentId: string,
+    userId: string,
+    companyId: string,
+  ): Promise<DepartmentDocument> {
     const department = await this.departmentModel.findOne({
       _id: departmentId,
       companyId: new Types.ObjectId(companyId),
@@ -213,7 +264,9 @@ export class DepartmentService {
       throw new NotFoundException('Department not found');
     }
 
-    department.members = department.members.filter(m => m.toString() !== userId);
+    department.members = department.members.filter(
+      (m) => m.toString() !== userId,
+    );
     return department.save();
   }
 
@@ -227,10 +280,13 @@ export class DepartmentService {
       throw new NotFoundException('Department not found');
     }
 
-    const members = await this.userModel.find({
-      _id: { $in: department.members },
-      companyId: new Types.ObjectId(companyId),
-    }).select('name email role isActive').exec();
+    const members = await this.userModel
+      .find({
+        _id: { $in: department.members },
+        companyId: new Types.ObjectId(companyId),
+      })
+      .select('name email role isActive')
+      .exec();
 
     return members;
   }
@@ -250,15 +306,18 @@ export class DepartmentService {
       companyId: new Types.ObjectId(companyId),
     });
 
-    const activeUsers = members.filter(m => m.isActive).length;
+    const activeUsers = members.filter((m) => m.isActive).length;
     const totalUsers = members.length;
 
     // Count by role
-    const roleCounts = members.reduce((acc, member) => {
-      const role = member.role || 'USER';
-      acc[role] = (acc[role] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const roleCounts = members.reduce(
+      (acc, member) => {
+        const role = member.role || 'USER';
+        acc[role] = (acc[role] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
 
     return {
       departmentId: department._id,
@@ -272,4 +331,3 @@ export class DepartmentService {
     };
   }
 }
-

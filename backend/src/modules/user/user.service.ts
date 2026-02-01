@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Document, Types } from 'mongoose';
 import { User, UserRole } from './entities/user.entity';
@@ -60,15 +65,22 @@ export class UsersService {
       companyId?: string;
       department?: string;
       location?: string;
-    }
+    },
   ): Promise<User> {
     // Validate role - Cannot create super_admin or company_admin (only super admin can create company_admin)
-    if (data.role === UserRole.SUPER_ADMIN || data.role === UserRole.COMPANY_ADMIN) {
-      throw new ForbiddenException('Cannot create admin roles through this endpoint');
+    if (
+      data.role === UserRole.SUPER_ADMIN ||
+      data.role === UserRole.COMPANY_ADMIN
+    ) {
+      throw new ForbiddenException(
+        'Cannot create admin roles through this endpoint',
+      );
     }
 
     // Check if email already exists
-    const existingUser = await this.userModel.findOne({ email: data.email }).exec();
+    const existingUser = await this.userModel
+      .findOne({ email: data.email })
+      .exec();
     if (existingUser) {
       throw new BadRequestException('Email already exists');
     }
@@ -77,7 +89,9 @@ export class UsersService {
     if (data.role === UserRole.USER && data.managerId) {
       const manager = await this.userModel.findById(data.managerId).exec();
       if (!manager || manager.role !== UserRole.MANAGER) {
-        throw new BadRequestException('Invalid manager ID or manager does not exist');
+        throw new BadRequestException(
+          'Invalid manager ID or manager does not exist',
+        );
       }
       // Check company match if companyId provided, otherwise check orgId
       if (data.companyId) {
@@ -85,7 +99,9 @@ export class UsersService {
           throw new ForbiddenException('Manager must be in the same company');
         }
       } else if (manager.orgId?.toString() !== creatorOrgId) {
-        throw new ForbiddenException('Manager must be in the same organization');
+        throw new ForbiddenException(
+          'Manager must be in the same organization',
+        );
       }
     }
 
@@ -124,12 +140,14 @@ export class UsersService {
       department?: string;
       location?: string;
       companyId?: string;
-    }
+    },
   ): Promise<User> {
     // Verify creator is a manager
     const creator = await this.userModel.findById(creatorId).exec();
     if (!creator || creator.role !== UserRole.MANAGER) {
-      throw new ForbiddenException('Only managers can create users through this endpoint');
+      throw new ForbiddenException(
+        'Only managers can create users through this endpoint',
+      );
     }
 
     // Ensure manager is in the same org/company
@@ -142,7 +160,9 @@ export class UsersService {
     }
 
     // Check if email already exists
-    const existingUser = await this.userModel.findOne({ email: data.email }).exec();
+    const existingUser = await this.userModel
+      .findOne({ email: data.email })
+      .exec();
     if (existingUser) {
       throw new BadRequestException('Email already exists');
     }
@@ -171,7 +191,11 @@ export class UsersService {
   /**
    * Get all users created by a specific manager (scoped to same org)
    */
-  async findUsersByManager(managerId: string, managerOrgId: string, params?: { page?: number; limit?: number; search?: string }) {
+  async findUsersByManager(
+    managerId: string,
+    managerOrgId: string,
+    params?: { page?: number; limit?: number; search?: string },
+  ) {
     const page = params?.page || 1;
     const limit = params?.limit || 100;
     const skip = (page - 1) * limit;
@@ -217,7 +241,10 @@ export class UsersService {
   /**
    * Admin: Get all users in the organization
    */
-  async findAllForAdmin(orgId: string, params?: { page?: number; limit?: number; search?: string }) {
+  async findAllForAdmin(
+    orgId: string,
+    params?: { page?: number; limit?: number; search?: string },
+  ) {
     return this.findAll(orgId, params);
   }
 
@@ -252,10 +279,7 @@ export class UsersService {
       const searchQuery = { $regex: search, $options: 'i' };
       query.$and = [
         {
-          $or: [
-            { name: searchQuery },
-            { email: searchQuery },
-          ],
+          $or: [{ name: searchQuery }, { email: searchQuery }],
         },
       ];
     }
@@ -303,7 +327,10 @@ export class UsersService {
     };
   }
 
-  async findAll(orgId: string, params?: { page?: number; limit?: number; search?: string }) {
+  async findAll(
+    orgId: string,
+    params?: { page?: number; limit?: number; search?: string },
+  ) {
     const page = params?.page || 1;
     const limit = params?.limit || 100;
     const skip = (page - 1) * limit;
@@ -404,14 +431,26 @@ export class UsersService {
   /**
    * Bulk create users
    */
-  async bulkCreate(creatorId: string, companyId: string, users: Array<{ name: string; email: string; password: string; role?: UserRole; departmentId?: string }>) {
+  async bulkCreate(
+    creatorId: string,
+    companyId: string,
+    users: Array<{
+      name: string;
+      email: string;
+      password: string;
+      role?: UserRole;
+      departmentId?: string;
+    }>,
+  ) {
     const created: any[] = [];
     const failed: Array<{ email: string; error: string }> = [];
 
     for (const userData of users) {
       try {
         // Check if email already exists
-        const existing = await this.userModel.findOne({ email: userData.email }).exec();
+        const existing = await this.userModel
+          .findOne({ email: userData.email })
+          .exec();
         if (existing) {
           failed.push({ email: userData.email, error: 'Email already exists' });
           continue;
@@ -429,19 +468,28 @@ export class UsersService {
         });
 
         const savedUser = await user.save();
-        const userObj: any = savedUser.toObject ? savedUser.toObject() : savedUser;
+        const userObj: any = savedUser.toObject
+          ? savedUser.toObject()
+          : savedUser;
         delete userObj.password;
 
         // If departmentId provided, add user to department (would need DepartmentService)
         if (userData.departmentId) {
           // This would require injecting DepartmentService
           // For now, we'll just set the department field
-          await this.userModel.findByIdAndUpdate(savedUser._id, { department: userData.departmentId }).exec();
+          await this.userModel
+            .findByIdAndUpdate(savedUser._id, {
+              department: userData.departmentId,
+            })
+            .exec();
         }
 
         created.push(userObj);
       } catch (error: any) {
-        failed.push({ email: userData.email, error: error.message || 'Unknown error' });
+        failed.push({
+          email: userData.email,
+          error: error.message || 'Unknown error',
+        });
       }
     }
 
@@ -451,11 +499,17 @@ export class UsersService {
   /**
    * Assign user to department
    */
-  async assignDepartment(userId: string, departmentId: string | undefined, companyId: string) {
-    const user = await this.userModel.findOne({
-      _id: userId,
-      $or: [{ companyId }, { orgId: companyId }],
-    }).exec();
+  async assignDepartment(
+    userId: string,
+    departmentId: string | undefined,
+    companyId: string,
+  ) {
+    const user = await this.userModel
+      .findOne({
+        _id: userId,
+        $or: [{ companyId }, { orgId: companyId }],
+      })
+      .exec();
 
     if (!user) {
       throw new NotFoundException('User not found');
@@ -469,29 +523,40 @@ export class UsersService {
       updateData.$unset = { department: '' };
     }
 
-    const updatedUser = await this.userModel.findByIdAndUpdate(userId, updateData, { new: true }).select('-password').exec();
+    const updatedUser = await this.userModel
+      .findByIdAndUpdate(userId, updateData, { new: true })
+      .select('-password')
+      .exec();
     return updatedUser;
   }
 
   /**
    * Assign manager to user
    */
-  async assignManager(userId: string, managerId: string | undefined, companyId: string) {
-    const user = await this.userModel.findOne({
-      _id: userId,
-      $or: [{ companyId }, { orgId: companyId }],
-    }).exec();
+  async assignManager(
+    userId: string,
+    managerId: string | undefined,
+    companyId: string,
+  ) {
+    const user = await this.userModel
+      .findOne({
+        _id: userId,
+        $or: [{ companyId }, { orgId: companyId }],
+      })
+      .exec();
 
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
     if (managerId) {
-      const manager = await this.userModel.findOne({
-        _id: managerId,
-        $or: [{ companyId }, { orgId: companyId }],
-        role: UserRole.MANAGER,
-      }).exec();
+      const manager = await this.userModel
+        .findOne({
+          _id: managerId,
+          $or: [{ companyId }, { orgId: companyId }],
+          role: UserRole.MANAGER,
+        })
+        .exec();
 
       if (!manager) {
         throw new NotFoundException('Manager not found or invalid');
@@ -505,14 +570,24 @@ export class UsersService {
       updateData.$unset = { managerId: '' };
     }
 
-    const updatedUser = await this.userModel.findByIdAndUpdate(userId, updateData, { new: true }).select('-password').exec();
+    const updatedUser = await this.userModel
+      .findByIdAndUpdate(userId, updateData, { new: true })
+      .select('-password')
+      .exec();
     return updatedUser;
   }
 
   /**
    * Get user statistics for company
    */
-  async getStats(companyId: string, filters?: { role?: UserRole; department?: string; status?: 'active' | 'inactive' }) {
+  async getStats(
+    companyId: string,
+    filters?: {
+      role?: UserRole;
+      department?: string;
+      status?: 'active' | 'inactive';
+    },
+  ) {
     const baseQuery: any = {
       $or: [{ companyId }, { orgId: companyId }],
     };
@@ -529,14 +604,21 @@ export class UsersService {
       baseQuery.isActive = filters.status === 'active';
     }
 
-    const [totalUsers, activeUsers, inactiveUsers, managers, users, admins] = await Promise.all([
-      this.userModel.countDocuments(baseQuery).exec(),
-      this.userModel.countDocuments({ ...baseQuery, isActive: true }).exec(),
-      this.userModel.countDocuments({ ...baseQuery, isActive: false }).exec(),
-      this.userModel.countDocuments({ ...baseQuery, role: UserRole.MANAGER }).exec(),
-      this.userModel.countDocuments({ ...baseQuery, role: UserRole.USER }).exec(),
-      this.userModel.countDocuments({ ...baseQuery, role: UserRole.COMPANY_ADMIN }).exec(),
-    ]);
+    const [totalUsers, activeUsers, inactiveUsers, managers, users, admins] =
+      await Promise.all([
+        this.userModel.countDocuments(baseQuery).exec(),
+        this.userModel.countDocuments({ ...baseQuery, isActive: true }).exec(),
+        this.userModel.countDocuments({ ...baseQuery, isActive: false }).exec(),
+        this.userModel
+          .countDocuments({ ...baseQuery, role: UserRole.MANAGER })
+          .exec(),
+        this.userModel
+          .countDocuments({ ...baseQuery, role: UserRole.USER })
+          .exec(),
+        this.userModel
+          .countDocuments({ ...baseQuery, role: UserRole.COMPANY_ADMIN })
+          .exec(),
+      ]);
 
     // Get department breakdown
     const departmentBreakdown = await this.userModel.aggregate([
@@ -559,8 +641,14 @@ export class UsersService {
       managers,
       users,
       admins,
-      departmentBreakdown: departmentBreakdown.map(d => ({ department: d._id || 'Unassigned', count: d.count })),
-      roleBreakdown: roleBreakdown.map(r => ({ role: r._id, count: r.count })),
+      departmentBreakdown: departmentBreakdown.map((d) => ({
+        department: d._id || 'Unassigned',
+        count: d.count,
+      })),
+      roleBreakdown: roleBreakdown.map((r) => ({
+        role: r._id,
+        count: r.count,
+      })),
     };
   }
 
@@ -568,16 +656,21 @@ export class UsersService {
    * Disable user
    */
   async disableUser(userId: string, companyId: string) {
-    const user = await this.userModel.findOne({
-      _id: userId,
-      $or: [{ companyId }, { orgId: companyId }],
-    }).exec();
+    const user = await this.userModel
+      .findOne({
+        _id: userId,
+        $or: [{ companyId }, { orgId: companyId }],
+      })
+      .exec();
 
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    if (user.role === UserRole.COMPANY_ADMIN || user.role === UserRole.SUPER_ADMIN) {
+    if (
+      user.role === UserRole.COMPANY_ADMIN ||
+      user.role === UserRole.SUPER_ADMIN
+    ) {
       throw new ForbiddenException('Cannot disable admin users');
     }
 
@@ -589,10 +682,12 @@ export class UsersService {
    * Enable user
    */
   async enableUser(userId: string, companyId: string) {
-    const user = await this.userModel.findOne({
-      _id: userId,
-      $or: [{ companyId }, { orgId: companyId }],
-    }).exec();
+    const user = await this.userModel
+      .findOne({
+        _id: userId,
+        $or: [{ companyId }, { orgId: companyId }],
+      })
+      .exec();
 
     if (!user) {
       throw new NotFoundException('User not found');

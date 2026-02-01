@@ -54,4 +54,3 @@ export class AIIngestWorker extends WorkerHost {
     }
   }
 }
-

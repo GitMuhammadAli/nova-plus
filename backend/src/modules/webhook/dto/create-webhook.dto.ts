@@ -1,4 +1,12 @@
-import { IsString, IsUrl, IsArray, IsOptional, IsBoolean, Min, Max } from 'class-validator';
+import {
+  IsString,
+  IsUrl,
+  IsArray,
+  IsOptional,
+  IsBoolean,
+  Min,
+  Max,
+} from 'class-validator';
 
 export class CreateWebhookDto {
   @IsUrl()
@@ -21,4 +29,3 @@ export class CreateWebhookDto {
   @Max(10)
   retries?: number;
 }
-

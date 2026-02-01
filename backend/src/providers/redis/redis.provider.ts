@@ -7,8 +7,9 @@ export const REDIS_CLIENT = 'REDIS_CLIENT';
 export const redisProvider: Provider = {
   provide: REDIS_CLIENT,
   useFactory: (configService: ConfigService) => {
-    const redisUrl = configService.get<string>('REDIS_URL') || 'redis://localhost:6379';
-    
+    const redisUrl =
+      configService.get<string>('REDIS_URL') || 'redis://localhost:6379';
+
     const client = new Redis(redisUrl, {
       maxRetriesPerRequest: 3,
       retryStrategy: (times) => {
@@ -36,4 +37,3 @@ export const redisProvider: Provider = {
   },
   inject: [ConfigService],
 };
-

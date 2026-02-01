@@ -43,4 +43,3 @@ export const WebhookSchema = SchemaFactory.createForClass(Webhook);
 // Indexes
 WebhookSchema.index({ companyId: 1, isActive: 1 });
 WebhookSchema.index({ companyId: 1, events: 1 });
-

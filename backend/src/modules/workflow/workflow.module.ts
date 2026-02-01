@@ -4,7 +4,10 @@ import { WorkflowController } from './workflow.controller';
 import { WorkflowService } from './workflow.service';
 import { WorkflowEngineService } from './workflow-engine.service';
 import { Workflow, WorkflowSchema } from './entities/workflow.entity';
-import { WorkflowExecution, WorkflowExecutionSchema } from './entities/workflow-execution.entity';
+import {
+  WorkflowExecution,
+  WorkflowExecutionSchema,
+} from './entities/workflow-execution.entity';
 import { AuditModule } from '../audit/audit.module';
 
 @Module({
@@ -20,4 +23,3 @@ import { AuditModule } from '../audit/audit.module';
   exports: [WorkflowService, WorkflowEngineService],
 })
 export class WorkflowModule {}
-

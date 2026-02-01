@@ -41,7 +41,9 @@ const logger = createLogger({
       format: format.combine(
         format.colorize(),
         format.printf(({ timestamp, level, message, ...meta }) => {
-          const metaStr = Object.keys(meta).length ? JSON.stringify(meta, null, 2) : '';
+          const metaStr = Object.keys(meta).length
+            ? JSON.stringify(meta, null, 2)
+            : '';
           return `${timestamp} [${level}]: ${message} ${metaStr}`;
         }),
       ),
@@ -60,7 +62,9 @@ const logger = createLogger({
       filename: 'logs/error-%DATE%.log',
       datePattern: 'YYYY-MM-DD',
       level: 'error',
-      maxFiles: process.env.LOG_ERROR_RETENTION_DAYS ? `${process.env.LOG_ERROR_RETENTION_DAYS}d` : '30d',
+      maxFiles: process.env.LOG_ERROR_RETENTION_DAYS
+        ? `${process.env.LOG_ERROR_RETENTION_DAYS}d`
+        : '30d',
       zippedArchive: true,
       format: format.json(),
     }),
@@ -68,21 +72,23 @@ const logger = createLogger({
     new DailyRotateFile({
       filename: 'logs/audit-%DATE%.log',
       datePattern: 'YYYY-MM-DD',
-      maxFiles: process.env.LOG_AUDIT_RETENTION_DAYS ? `${process.env.LOG_AUDIT_RETENTION_DAYS}d` : '90d',
+      maxFiles: process.env.LOG_AUDIT_RETENTION_DAYS
+        ? `${process.env.LOG_AUDIT_RETENTION_DAYS}d`
+        : '90d',
       zippedArchive: true,
       format: format.json(),
     }),
   ],
   exceptionHandlers: [
     new transports.Console(),
-    new DailyRotateFile({ 
+    new DailyRotateFile({
       filename: 'logs/exceptions-%DATE%.log',
       maxFiles: '30d',
     }),
   ],
   rejectionHandlers: [
     new transports.Console(),
-    new DailyRotateFile({ 
+    new DailyRotateFile({
       filename: 'logs/rejections-%DATE%.log',
       maxFiles: '30d',
     }),
@@ -139,7 +145,11 @@ export class StructuredLogger {
   /**
    * Log slow query
    */
-  static logSlowQuery(query: string, duration: number, context: LogContext = {}) {
+  static logSlowQuery(
+    query: string,
+    duration: number,
+    context: LogContext = {},
+  ) {
     logger.warn('Slow Query Detected', {
       type: 'slow_query',
       query,
@@ -178,7 +188,12 @@ export class StructuredLogger {
   /**
    * Log performance metric
    */
-  static logMetric(metric: string, value: number, unit: string = 'ms', context: LogContext = {}) {
+  static logMetric(
+    metric: string,
+    value: number,
+    unit: string = 'ms',
+    context: LogContext = {},
+  ) {
     logger.info('Performance Metric', {
       type: 'metric',
       metric,
@@ -190,4 +205,3 @@ export class StructuredLogger {
 }
 
 export default logger;
-

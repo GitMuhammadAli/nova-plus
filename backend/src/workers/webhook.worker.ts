@@ -16,15 +16,15 @@ export class WebhookWorker {
 
   async start() {
     const redisClient = this.queueService.getRedisClient();
-    
+
     this.worker = new Worker(
       'nova-webhook',
       async (job) => {
         const { webhookId, url, secret, event, data } = job.data;
         const startTime = Date.now();
-        
-        logger.info('Processing webhook job', { 
-          jobId: job.id, 
+
+        logger.info('Processing webhook job', {
+          jobId: job.id,
           webhookId,
           url,
           event,
@@ -57,41 +57,73 @@ export class WebhookWorker {
           });
 
           const duration = Date.now() - startTime;
-          
+
           if (response.status >= 200 && response.status < 300) {
-            logger.info('Webhook delivered successfully', { 
-              jobId: job.id, 
+            logger.info('Webhook delivered successfully', {
+              jobId: job.id,
               webhookId,
               url,
               status: response.status,
             });
-            
+
             // Log successful delivery
-            await this.logDelivery(webhookId, event, data, 'success', response.status, JSON.stringify(response.data), undefined, job.attemptsMade + 1, duration);
-            
-            return { 
-              success: true, 
+            await this.logDelivery(
+              webhookId,
+              event,
+              data,
+              'success',
+              response.status,
+              JSON.stringify(response.data),
+              undefined,
+              job.attemptsMade + 1,
+              duration,
+            );
+
+            return {
+              success: true,
               status: response.status,
               deliveredAt: new Date().toISOString(),
             };
           } else {
             const errorMsg = `Webhook returned status ${response.status}`;
-            await this.logDelivery(webhookId, event, data, 'failed', response.status, JSON.stringify(response.data), errorMsg, job.attemptsMade + 1, duration);
+            await this.logDelivery(
+              webhookId,
+              event,
+              data,
+              'failed',
+              response.status,
+              JSON.stringify(response.data),
+              errorMsg,
+              job.attemptsMade + 1,
+              duration,
+            );
             throw new Error(errorMsg);
           }
         } catch (error: any) {
           const duration = Date.now() - startTime;
-          logger.error('Webhook job failed', { 
-            jobId: job.id, 
+          logger.error('Webhook job failed', {
+            jobId: job.id,
             webhookId,
             url,
             error: error.message,
             attempt: job.attemptsMade + 1,
           });
-          
+
           // Log failed delivery
-          await this.logDelivery(webhookId, event, data, 'failed', error.response?.status, error.response?.data ? JSON.stringify(error.response.data) : undefined, error.message, job.attemptsMade + 1, duration);
-          
+          await this.logDelivery(
+            webhookId,
+            event,
+            data,
+            'failed',
+            error.response?.status,
+            error.response?.data
+              ? JSON.stringify(error.response.data)
+              : undefined,
+            error.message,
+            job.attemptsMade + 1,
+            duration,
+          );
+
           throw error; // BullMQ will handle retries
         }
       },
@@ -113,8 +145,8 @@ export class WebhookWorker {
     });
 
     this.worker.on('failed', (job, err) => {
-      logger.error('Webhook job failed', { 
-        jobId: job?.id, 
+      logger.error('Webhook job failed', {
+        jobId: job?.id,
         error: err.message,
         attemptsMade: job?.attemptsMade,
       });
@@ -158,7 +190,7 @@ export class WebhookWorker {
       const appContext = await NestFactory.createApplicationContext(AppModule);
       const { WebhookService } = require('../modules/webhook/webhook.service');
       const webhookService = appContext.get(WebhookService);
-      
+
       if (webhookService && typeof webhookService.logDelivery === 'function') {
         await webhookService.logDelivery(
           webhookId,
@@ -177,4 +209,3 @@ export class WebhookWorker {
     }
   }
 }
-

@@ -17,4 +17,3 @@ import { RedisProvider } from './redis.provider';
   exports: [MongoProvider, RedisProvider, MongooseModule],
 })
 export class DatabaseModule {}
-

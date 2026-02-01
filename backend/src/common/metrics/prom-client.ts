@@ -132,4 +132,3 @@ export class PrometheusService implements OnModuleInit {
     return this.register;
   }
 }
-

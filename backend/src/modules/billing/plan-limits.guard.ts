@@ -14,7 +14,12 @@ export const REQUIRE_FEATURE = 'requireFeature';
 export const REQUIRE_LIMIT_CHECK = 'requireLimitCheck';
 
 // Type for limit checks
-export type LimitCheckType = 'user' | 'department' | 'project' | 'team' | 'workflow';
+export type LimitCheckType =
+  | 'user'
+  | 'department'
+  | 'project'
+  | 'team'
+  | 'workflow';
 
 // Decorators
 export const RequireFeature = (featureName: keyof PlanLimits['features']) =>
@@ -51,11 +56,14 @@ export class FeatureGuard implements CanActivate {
       throw new ForbiddenException('Company context required');
     }
 
-    const hasFeature = await this.planLimitsService.hasFeature(companyId, featureName);
+    const hasFeature = await this.planLimitsService.hasFeature(
+      companyId,
+      featureName,
+    );
 
     if (!hasFeature) {
       throw new ForbiddenException(
-        `The ${featureName} feature is not available on your current plan. Please upgrade to access this feature.`
+        `The ${featureName} feature is not available on your current plan. Please upgrade to access this feature.`,
       );
     }
 
@@ -142,4 +150,3 @@ export class LimitCheckGuard implements CanActivate {
     return null;
   }
 }
-

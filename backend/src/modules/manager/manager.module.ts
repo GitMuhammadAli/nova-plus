@@ -9,7 +9,10 @@ import { ManagerStatsService } from './stats/manager-stats.service';
 import { Project, ProjectSchema } from '../project/entities/project.entity';
 import { Task, TaskSchema } from '../task/entities/task.entity';
 import { User, UserSchema } from '../user/entities/user.entity';
-import { Department, DepartmentSchema } from '../department/entities/department.entity';
+import {
+  Department,
+  DepartmentSchema,
+} from '../department/entities/department.entity';
 import { AuditModule } from '../audit/audit.module';
 
 @Module({
@@ -39,4 +42,3 @@ import { AuditModule } from '../audit/audit.module';
   ],
 })
 export class ManagerModule {}
-

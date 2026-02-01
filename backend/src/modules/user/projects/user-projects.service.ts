@@ -1,7 +1,14 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { Project, ProjectDocument } from '../../project/entities/project.entity';
+import {
+  Project,
+  ProjectDocument,
+} from '../../project/entities/project.entity';
 import { Task, TaskDocument } from '../../task/entities/task.entity';
 
 @Injectable()
@@ -30,15 +37,18 @@ export class UserProjectsService {
     // Calculate progress for each project
     const projectsWithProgress = await Promise.all(
       projects.map(async (project) => {
-        const tasks = await this.taskModel.find({
-          projectId: project._id,
-          assignedTo: new Types.ObjectId(userId),
-          isActive: true,
-        }).exec();
+        const tasks = await this.taskModel
+          .find({
+            projectId: project._id,
+            assignedTo: new Types.ObjectId(userId),
+            isActive: true,
+          })
+          .exec();
 
         const totalTasks = tasks.length;
-        const completedTasks = tasks.filter(t => t.status === 'done').length;
-        const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+        const completedTasks = tasks.filter((t) => t.status === 'done').length;
+        const progress =
+          totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
         return {
           _id: project._id,
@@ -64,7 +74,11 @@ export class UserProjectsService {
   /**
    * Get project details
    */
-  async getProjectDetails(projectId: string, userId: string, companyId: string): Promise<any> {
+  async getProjectDetails(
+    projectId: string,
+    userId: string,
+    companyId: string,
+  ): Promise<any> {
     const project = await this.projectModel
       .findOne({
         _id: projectId,
@@ -78,7 +92,9 @@ export class UserProjectsService {
       .exec();
 
     if (!project) {
-      throw new NotFoundException('Project not found or you are not assigned to it');
+      throw new NotFoundException(
+        'Project not found or you are not assigned to it',
+      );
     }
 
     // Get all tasks for this project assigned to the user
@@ -94,8 +110,9 @@ export class UserProjectsService {
       .exec();
 
     const totalTasks = myTasks.length;
-    const completedTasks = myTasks.filter(t => t.status === 'done').length;
-    const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+    const completedTasks = myTasks.filter((t) => t.status === 'done').length;
+    const progress =
+      totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
     return {
       _id: project._id,
@@ -109,7 +126,7 @@ export class UserProjectsService {
       startDate: project.startDate,
       createdBy: project.createdBy,
       assignedUsers: project.assignedUsers,
-      tasks: myTasks.map(task => ({
+      tasks: myTasks.map((task) => ({
         _id: task._id,
         title: task.title,
         description: task.description,
@@ -124,4 +141,3 @@ export class UserProjectsService {
     };
   }
 }
-

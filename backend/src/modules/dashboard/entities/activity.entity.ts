@@ -24,7 +24,6 @@ export enum ActivityType {
 
 @Schema({ timestamps: true })
 export class Activity {
-
   readonly _id?: Types.ObjectId | string;
 
   @Prop({ type: String, enum: ActivityType, required: true, index: true })
@@ -57,4 +56,3 @@ export const ActivitySchema = SchemaFactory.createForClass(Activity);
 // Add indexes for better query performance
 ActivitySchema.index({ createdAt: -1 });
 ActivitySchema.index({ type: 1, createdAt: -1 });
-

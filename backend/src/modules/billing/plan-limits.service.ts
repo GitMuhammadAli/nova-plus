@@ -7,10 +7,16 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Subscription, SubscriptionDocument } from './entities/billing.entity';
 import { User, UserDocument } from '../user/entities/user.entity';
-import { Department, DepartmentDocument } from '../department/entities/department.entity';
+import {
+  Department,
+  DepartmentDocument,
+} from '../department/entities/department.entity';
 import { Project, ProjectDocument } from '../project/entities/project.entity';
 // Note: Team entity doesn't have companyId directly, so we track via manager's company
-import { Workflow, WorkflowDocument } from '../workflow/entities/workflow.entity';
+import {
+  Workflow,
+  WorkflowDocument,
+} from '../workflow/entities/workflow.entity';
 import { Upload, UploadDocument } from '../uploads/entities/upload.entity';
 import { getPlanLimits, PlanLimits, isUnlimited } from './plan-limits.config';
 
@@ -33,9 +39,11 @@ export interface PlanInfo {
 @Injectable()
 export class PlanLimitsService {
   constructor(
-    @InjectModel(Subscription.name) private subscriptionModel: Model<SubscriptionDocument>,
+    @InjectModel(Subscription.name)
+    private subscriptionModel: Model<SubscriptionDocument>,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
-    @InjectModel(Department.name) private departmentModel: Model<DepartmentDocument>,
+    @InjectModel(Department.name)
+    private departmentModel: Model<DepartmentDocument>,
     @InjectModel(Project.name) private projectModel: Model<ProjectDocument>,
     // Team model removed - teams are counted differently
     @InjectModel(Workflow.name) private workflowModel: Model<WorkflowDocument>,
@@ -56,9 +64,10 @@ export class PlanLimitsService {
     }
 
     // Extract plan name from planId or planName
-    const planName = subscription.planName?.toLowerCase() || 
-                     this.extractPlanFromId(subscription.planId);
-    
+    const planName =
+      subscription.planName?.toLowerCase() ||
+      this.extractPlanFromId(subscription.planId);
+
     return planName || 'free';
   }
 
@@ -99,7 +108,10 @@ export class PlanLimitsService {
   /**
    * Get current usage statistics for a company
    */
-  async getUsageStats(companyId: string, limits?: PlanLimits): Promise<UsageStats> {
+  async getUsageStats(
+    companyId: string,
+    limits?: PlanLimits,
+  ): Promise<UsageStats> {
     if (!limits) {
       limits = await this.getPlanLimits(companyId);
     }
@@ -107,56 +119,86 @@ export class PlanLimitsService {
     const companyObjectId = new Types.ObjectId(companyId);
 
     // Count resources in parallel
-    const [userCount, departmentCount, projectCount, workflowCount, storageBytes] = await Promise.all([
-      this.userModel.countDocuments({ companyId: companyObjectId, isActive: true }),
-      this.departmentModel.countDocuments({ companyId: companyObjectId, isActive: true }),
-      this.projectModel.countDocuments({ companyId: companyObjectId, isActive: true }),
+    const [
+      userCount,
+      departmentCount,
+      projectCount,
+      workflowCount,
+      storageBytes,
+    ] = await Promise.all([
+      this.userModel.countDocuments({
+        companyId: companyObjectId,
+        isActive: true,
+      }),
+      this.departmentModel.countDocuments({
+        companyId: companyObjectId,
+        isActive: true,
+      }),
+      this.projectModel.countDocuments({
+        companyId: companyObjectId,
+        isActive: true,
+      }),
       this.workflowModel.countDocuments({ companyId: companyObjectId }),
       this.calculateStorageUsage(companyId),
     ]);
 
     // Count teams via managers that belong to this company
-    const companyManagers = await this.userModel.find({ 
-      companyId: companyObjectId, 
-      role: { $in: ['manager', 'company_admin'] },
-      isActive: true 
-    }).select('_id');
-    const managerIds = companyManagers.map(m => m._id);
+    const companyManagers = await this.userModel
+      .find({
+        companyId: companyObjectId,
+        role: { $in: ['manager', 'company_admin'] },
+        isActive: true,
+      })
+      .select('_id');
+    const managerIds = companyManagers.map((m) => m._id);
     // For now, estimate teams based on departments (1 team per department is a reasonable approximation)
     const teamCount = departmentCount;
 
-    const storageGB = Math.round((storageBytes / (1024 * 1024 * 1024)) * 100) / 100;
+    const storageGB =
+      Math.round((storageBytes / (1024 * 1024 * 1024)) * 100) / 100;
 
     return {
       users: {
         current: userCount,
         max: limits.maxUsers,
-        percentage: isUnlimited(limits.maxUsers) ? 0 : Math.round((userCount / limits.maxUsers) * 100),
+        percentage: isUnlimited(limits.maxUsers)
+          ? 0
+          : Math.round((userCount / limits.maxUsers) * 100),
       },
       departments: {
         current: departmentCount,
         max: limits.maxDepartments,
-        percentage: isUnlimited(limits.maxDepartments) ? 0 : Math.round((departmentCount / limits.maxDepartments) * 100),
+        percentage: isUnlimited(limits.maxDepartments)
+          ? 0
+          : Math.round((departmentCount / limits.maxDepartments) * 100),
       },
       projects: {
         current: projectCount,
         max: limits.maxProjects,
-        percentage: isUnlimited(limits.maxProjects) ? 0 : Math.round((projectCount / limits.maxProjects) * 100),
+        percentage: isUnlimited(limits.maxProjects)
+          ? 0
+          : Math.round((projectCount / limits.maxProjects) * 100),
       },
       storage: {
         currentGB: storageGB,
         maxGB: limits.maxStorageGB,
-        percentage: isUnlimited(limits.maxStorageGB) ? 0 : Math.round((storageGB / limits.maxStorageGB) * 100),
+        percentage: isUnlimited(limits.maxStorageGB)
+          ? 0
+          : Math.round((storageGB / limits.maxStorageGB) * 100),
       },
       teams: {
         current: teamCount,
         max: limits.maxTeams,
-        percentage: isUnlimited(limits.maxTeams) ? 0 : Math.round((teamCount / limits.maxTeams) * 100),
+        percentage: isUnlimited(limits.maxTeams)
+          ? 0
+          : Math.round((teamCount / limits.maxTeams) * 100),
       },
       workflows: {
         current: workflowCount,
         max: limits.maxWorkflows,
-        percentage: isUnlimited(limits.maxWorkflows) ? 0 : Math.round((workflowCount / limits.maxWorkflows) * 100),
+        percentage: isUnlimited(limits.maxWorkflows)
+          ? 0
+          : Math.round((workflowCount / limits.maxWorkflows) * 100),
       },
     };
   }
@@ -252,20 +294,26 @@ export class PlanLimitsService {
   /**
    * Check if a company can upload more storage
    */
-  async canUploadStorage(companyId: string, additionalBytes: number): Promise<boolean> {
+  async canUploadStorage(
+    companyId: string,
+    additionalBytes: number,
+  ): Promise<boolean> {
     const limits = await this.getPlanLimits(companyId);
     if (isUnlimited(limits.maxStorageGB)) return true;
 
     const currentBytes = await this.calculateStorageUsage(companyId);
     const maxBytes = limits.maxStorageGB * 1024 * 1024 * 1024;
 
-    return (currentBytes + additionalBytes) <= maxBytes;
+    return currentBytes + additionalBytes <= maxBytes;
   }
 
   /**
    * Check if a feature is enabled for a company's plan
    */
-  async hasFeature(companyId: string, featureName: keyof PlanLimits['features']): Promise<boolean> {
+  async hasFeature(
+    companyId: string,
+    featureName: keyof PlanLimits['features'],
+  ): Promise<boolean> {
     const limits = await this.getPlanLimits(companyId);
     return limits.features[featureName] || false;
   }
@@ -277,7 +325,7 @@ export class PlanLimitsService {
     if (!(await this.canCreateUser(companyId))) {
       const limits = await this.getPlanLimits(companyId);
       throw new ForbiddenException(
-        `User limit reached (${limits.maxUsers}). Please upgrade your plan to add more users.`
+        `User limit reached (${limits.maxUsers}). Please upgrade your plan to add more users.`,
       );
     }
   }
@@ -289,7 +337,7 @@ export class PlanLimitsService {
     if (!(await this.canCreateDepartment(companyId))) {
       const limits = await this.getPlanLimits(companyId);
       throw new ForbiddenException(
-        `Department limit reached (${limits.maxDepartments}). Please upgrade your plan to add more departments.`
+        `Department limit reached (${limits.maxDepartments}). Please upgrade your plan to add more departments.`,
       );
     }
   }
@@ -301,7 +349,7 @@ export class PlanLimitsService {
     if (!(await this.canCreateProject(companyId))) {
       const limits = await this.getPlanLimits(companyId);
       throw new ForbiddenException(
-        `Project limit reached (${limits.maxProjects}). Please upgrade your plan to add more projects.`
+        `Project limit reached (${limits.maxProjects}). Please upgrade your plan to add more projects.`,
       );
     }
   }
@@ -313,7 +361,7 @@ export class PlanLimitsService {
     if (!(await this.canCreateTeam(companyId))) {
       const limits = await this.getPlanLimits(companyId);
       throw new ForbiddenException(
-        `Team limit reached (${limits.maxTeams}). Please upgrade your plan to add more teams.`
+        `Team limit reached (${limits.maxTeams}). Please upgrade your plan to add more teams.`,
       );
     }
   }
@@ -325,7 +373,7 @@ export class PlanLimitsService {
     if (!(await this.canCreateWorkflow(companyId))) {
       const limits = await this.getPlanLimits(companyId);
       throw new ForbiddenException(
-        `Workflow limit reached (${limits.maxWorkflows}). Please upgrade your plan to add more workflows.`
+        `Workflow limit reached (${limits.maxWorkflows}). Please upgrade your plan to add more workflows.`,
       );
     }
   }
@@ -333,11 +381,14 @@ export class PlanLimitsService {
   /**
    * Enforce storage limit - throws if limit exceeded
    */
-  async enforceStorageLimit(companyId: string, fileSize: number): Promise<void> {
+  async enforceStorageLimit(
+    companyId: string,
+    fileSize: number,
+  ): Promise<void> {
     if (!(await this.canUploadStorage(companyId, fileSize))) {
       const limits = await this.getPlanLimits(companyId);
       throw new ForbiddenException(
-        `Storage limit reached (${limits.maxStorageGB}GB). Please upgrade your plan for more storage.`
+        `Storage limit reached (${limits.maxStorageGB}GB). Please upgrade your plan for more storage.`,
       );
     }
   }
@@ -345,12 +396,14 @@ export class PlanLimitsService {
   /**
    * Enforce feature access - throws if feature not available
    */
-  async enforceFeature(companyId: string, featureName: keyof PlanLimits['features']): Promise<void> {
+  async enforceFeature(
+    companyId: string,
+    featureName: keyof PlanLimits['features'],
+  ): Promise<void> {
     if (!(await this.hasFeature(companyId, featureName))) {
       throw new ForbiddenException(
-        `The ${featureName} feature is not available on your current plan. Please upgrade to access this feature.`
+        `The ${featureName} feature is not available on your current plan. Please upgrade to access this feature.`,
       );
     }
   }
 }
-

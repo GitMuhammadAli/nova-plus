@@ -1,6 +1,6 @@
 /**
  * MongoDB Index Initialization Script
- * 
+ *
  * This script ensures all indexes are created on application startup.
  * Can also be run standalone: npx ts-node src/database/ensure-indexes.ts
  */
@@ -18,17 +18,24 @@ async function createCollectionIndexes(
 ): Promise<void> {
   try {
     const collection = db.collection(collectionName);
-    
+
     for (const indexDef of indexes) {
       try {
-        await collection.createIndex(indexDef.key as any, indexDef.options);
-        console.log(`✓ Created index ${indexDef.options.name} on ${collectionName}`);
+        await collection.createIndex(indexDef.key, indexDef.options);
+        console.log(
+          `✓ Created index ${indexDef.options.name} on ${collectionName}`,
+        );
       } catch (error: any) {
         // Index might already exist with different options
         if (error.code === 85 || error.code === 86) {
-          console.log(`↻ Index ${indexDef.options.name} already exists on ${collectionName}`);
+          console.log(
+            `↻ Index ${indexDef.options.name} already exists on ${collectionName}`,
+          );
         } else {
-          console.error(`✗ Error creating index ${indexDef.options.name} on ${collectionName}:`, error.message);
+          console.error(
+            `✗ Error creating index ${indexDef.options.name} on ${collectionName}:`,
+            error.message,
+          );
         }
       }
     }
@@ -40,43 +47,53 @@ async function createCollectionIndexes(
 /**
  * Ensure all indexes are created
  */
-export async function ensureAllIndexes(connection: mongoose.Connection): Promise<void> {
+export async function ensureAllIndexes(
+  connection: mongoose.Connection,
+): Promise<void> {
   console.log('\n=== Starting Index Creation ===\n');
-  
+
   for (const [collectionName, indexes] of Object.entries(allIndexes)) {
     await createCollectionIndexes(connection, collectionName, indexes);
   }
-  
+
   console.log('\n=== Index Creation Complete ===\n');
 }
 
 /**
  * Drop all custom indexes (for development/testing)
  */
-export async function dropAllCustomIndexes(connection: mongoose.Connection): Promise<void> {
+export async function dropAllCustomIndexes(
+  connection: mongoose.Connection,
+): Promise<void> {
   console.log('\n=== Dropping Custom Indexes ===\n');
-  
+
   for (const collectionName of Object.keys(allIndexes)) {
     try {
       const collection = connection.collection(collectionName);
       await collection.dropIndexes();
       console.log(`✓ Dropped indexes on ${collectionName}`);
     } catch (error: any) {
-      if (error.code !== 26) { // 26 = namespace not found
-        console.error(`✗ Error dropping indexes on ${collectionName}:`, error.message);
+      if (error.code !== 26) {
+        // 26 = namespace not found
+        console.error(
+          `✗ Error dropping indexes on ${collectionName}:`,
+          error.message,
+        );
       }
     }
   }
-  
+
   console.log('\n=== Index Drop Complete ===\n');
 }
 
 /**
  * List all indexes (for debugging)
  */
-export async function listAllIndexes(connection: mongoose.Connection): Promise<void> {
+export async function listAllIndexes(
+  connection: mongoose.Connection,
+): Promise<void> {
   console.log('\n=== Current Indexes ===\n');
-  
+
   for (const collectionName of Object.keys(allIndexes)) {
     try {
       const collection = connection.collection(collectionName);
@@ -87,7 +104,10 @@ export async function listAllIndexes(connection: mongoose.Connection): Promise<v
       });
     } catch (error: any) {
       if (error.code !== 26) {
-        console.error(`Error listing indexes for ${collectionName}:`, error.message);
+        console.error(
+          `Error listing indexes for ${collectionName}:`,
+          error.message,
+        );
       }
     }
   }
@@ -95,14 +115,16 @@ export async function listAllIndexes(connection: mongoose.Connection): Promise<v
 
 // Run if called directly
 if (require.main === module) {
-  const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/novapulse';
-  
-  mongoose.connect(mongoUri)
+  const mongoUri =
+    process.env.MONGO_URI || 'mongodb://localhost:27017/novapulse';
+
+  mongoose
+    .connect(mongoUri)
     .then(async () => {
       console.log('Connected to MongoDB');
-      
+
       const command = process.argv[2];
-      
+
       switch (command) {
         case 'drop':
           await dropAllCustomIndexes(mongoose.connection);
@@ -115,7 +137,7 @@ if (require.main === module) {
           await ensureAllIndexes(mongoose.connection);
           break;
       }
-      
+
       await mongoose.disconnect();
       console.log('Disconnected from MongoDB');
       process.exit(0);
@@ -125,4 +147,3 @@ if (require.main === module) {
       process.exit(1);
     });
 }
-

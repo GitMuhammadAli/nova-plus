@@ -107,4 +107,3 @@ export function getPlanLimits(planName: string): PlanLimits {
 export function isUnlimited(value: number): boolean {
   return value === -1;
 }
-

@@ -1,4 +1,12 @@
-import { Controller, Post, Get, Delete, Body, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Delete,
+  Body,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
 import { MfaService } from './mfa.service';
 import { VerifyMfaDto } from './dto/mfa.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -12,7 +20,12 @@ export class MfaController {
   constructor(private readonly mfaService: MfaService) {}
 
   @Post('setup')
-  @Roles(UserRole.COMPANY_ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.SUPER_ADMIN)
+  @Roles(
+    UserRole.COMPANY_ADMIN,
+    UserRole.MANAGER,
+    UserRole.USER,
+    UserRole.SUPER_ADMIN,
+  )
   async setup(@Req() req) {
     const user = req.user;
     const companyId = user.companyId?.toString() || user.companyId;
@@ -21,7 +34,10 @@ export class MfaController {
       throw new Error('User must belong to a company');
     }
 
-    const result = await this.mfaService.setupMfa(user._id || user.id, companyId);
+    const result = await this.mfaService.setupMfa(
+      user._id || user.id,
+      companyId,
+    );
 
     return {
       ...result,
@@ -30,7 +46,12 @@ export class MfaController {
   }
 
   @Post('verify')
-  @Roles(UserRole.COMPANY_ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.SUPER_ADMIN)
+  @Roles(
+    UserRole.COMPANY_ADMIN,
+    UserRole.MANAGER,
+    UserRole.USER,
+    UserRole.SUPER_ADMIN,
+  )
   async verify(@Body() verifyMfaDto: VerifyMfaDto, @Req() req) {
     const user = req.user;
     const companyId = user.companyId?.toString() || user.companyId;
@@ -52,7 +73,12 @@ export class MfaController {
   }
 
   @Delete('disable')
-  @Roles(UserRole.COMPANY_ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.SUPER_ADMIN)
+  @Roles(
+    UserRole.COMPANY_ADMIN,
+    UserRole.MANAGER,
+    UserRole.USER,
+    UserRole.SUPER_ADMIN,
+  )
   async disable(@Req() req) {
     const user = req.user;
     const companyId = user.companyId?.toString() || user.companyId;
@@ -61,7 +87,10 @@ export class MfaController {
       throw new Error('User must belong to a company');
     }
 
-    const result = await this.mfaService.disableMfa(user._id || user.id, companyId);
+    const result = await this.mfaService.disableMfa(
+      user._id || user.id,
+      companyId,
+    );
 
     return {
       ...result,
@@ -70,7 +99,12 @@ export class MfaController {
   }
 
   @Post('recovery-codes/regenerate')
-  @Roles(UserRole.COMPANY_ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.SUPER_ADMIN)
+  @Roles(
+    UserRole.COMPANY_ADMIN,
+    UserRole.MANAGER,
+    UserRole.USER,
+    UserRole.SUPER_ADMIN,
+  )
   async regenerateRecoveryCodes(@Req() req) {
     const user = req.user;
     const companyId = user.companyId?.toString() || user.companyId;
@@ -79,7 +113,10 @@ export class MfaController {
       throw new Error('User must belong to a company');
     }
 
-    const result = await this.mfaService.regenerateRecoveryCodes(user._id || user.id, companyId);
+    const result = await this.mfaService.regenerateRecoveryCodes(
+      user._id || user.id,
+      companyId,
+    );
 
     return {
       success: true,
@@ -88,7 +125,12 @@ export class MfaController {
   }
 
   @Get('status')
-  @Roles(UserRole.COMPANY_ADMIN, UserRole.MANAGER, UserRole.USER, UserRole.SUPER_ADMIN)
+  @Roles(
+    UserRole.COMPANY_ADMIN,
+    UserRole.MANAGER,
+    UserRole.USER,
+    UserRole.SUPER_ADMIN,
+  )
   async getStatus(@Req() req) {
     const user = req.user;
     const isEnabled = await this.mfaService.isMfaEnabled(user._id || user.id);
@@ -99,4 +141,3 @@ export class MfaController {
     };
   }
 }
-

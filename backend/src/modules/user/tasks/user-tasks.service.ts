@@ -1,10 +1,27 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Inject, forwardRef } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { Task, TaskDocument, TaskStatus } from '../../task/entities/task.entity';
-import { Project, ProjectDocument } from '../../project/entities/project.entity';
+import {
+  Task,
+  TaskDocument,
+  TaskStatus,
+} from '../../task/entities/task.entity';
+import {
+  Project,
+  ProjectDocument,
+} from '../../project/entities/project.entity';
 import { AuditService } from '../../audit/audit.service';
-import { AuditAction, AuditResource } from '../../audit/entities/audit-log.entity';
+import {
+  AuditAction,
+  AuditResource,
+} from '../../audit/entities/audit-log.entity';
 
 @Injectable()
 export class UserTasksService {
@@ -45,7 +62,7 @@ export class UserTasksService {
       .lean()
       .exec();
 
-    return tasks.map(task => ({
+    return tasks.map((task) => ({
       _id: task._id,
       title: task.title,
       description: task.description,
@@ -64,7 +81,11 @@ export class UserTasksService {
   /**
    * Get task details (user can only view their own tasks)
    */
-  async getTaskDetails(taskId: string, userId: string, companyId: string): Promise<any> {
+  async getTaskDetails(
+    taskId: string,
+    userId: string,
+    companyId: string,
+  ): Promise<any> {
     const task = await this.taskModel
       .findOne({
         _id: taskId,
@@ -96,12 +117,14 @@ export class UserTasksService {
     userId: string,
     companyId: string,
   ): Promise<TaskDocument> {
-    const task = await this.taskModel.findOne({
-      _id: taskId,
-      assignedTo: new Types.ObjectId(userId),
-      companyId: new Types.ObjectId(companyId),
-      isActive: true,
-    }).exec();
+    const task = await this.taskModel
+      .findOne({
+        _id: taskId,
+        assignedTo: new Types.ObjectId(userId),
+        companyId: new Types.ObjectId(companyId),
+        isActive: true,
+      })
+      .exec();
 
     if (!task) {
       throw new NotFoundException('Task not found or you do not have access');
@@ -115,9 +138,12 @@ export class UserTasksService {
     };
 
     const currentStatus = task.status;
-    if (allowedTransitions[currentStatus] && !allowedTransitions[currentStatus].includes(status)) {
+    if (
+      allowedTransitions[currentStatus] &&
+      !allowedTransitions[currentStatus].includes(status)
+    ) {
       throw new BadRequestException(
-        `Invalid status transition. From ${currentStatus}, you can only move to: ${allowedTransitions[currentStatus].join(', ')}`
+        `Invalid status transition. From ${currentStatus}, you can only move to: ${allowedTransitions[currentStatus].join(', ')}`,
       );
     }
 
@@ -151,12 +177,14 @@ export class UserTasksService {
     comment: string,
     companyId: string,
   ): Promise<TaskDocument> {
-    const task = await this.taskModel.findOne({
-      _id: taskId,
-      assignedTo: new Types.ObjectId(userId),
-      companyId: new Types.ObjectId(companyId),
-      isActive: true,
-    }).exec();
+    const task = await this.taskModel
+      .findOne({
+        _id: taskId,
+        assignedTo: new Types.ObjectId(userId),
+        companyId: new Types.ObjectId(companyId),
+        isActive: true,
+      })
+      .exec();
 
     if (!task) {
       throw new NotFoundException('Task not found or you do not have access');
@@ -181,15 +209,22 @@ export class UserTasksService {
   async addAttachment(
     taskId: string,
     userId: string,
-    attachment: { filename: string; url: string; size?: number; mimeType?: string },
+    attachment: {
+      filename: string;
+      url: string;
+      size?: number;
+      mimeType?: string;
+    },
     companyId: string,
   ): Promise<TaskDocument> {
-    const task = await this.taskModel.findOne({
-      _id: taskId,
-      assignedTo: new Types.ObjectId(userId),
-      companyId: new Types.ObjectId(companyId),
-      isActive: true,
-    }).exec();
+    const task = await this.taskModel
+      .findOne({
+        _id: taskId,
+        assignedTo: new Types.ObjectId(userId),
+        companyId: new Types.ObjectId(companyId),
+        isActive: true,
+      })
+      .exec();
 
     if (!task) {
       throw new NotFoundException('Task not found or you do not have access');
@@ -211,4 +246,3 @@ export class UserTasksService {
     return task.save();
   }
 }
-

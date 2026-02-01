@@ -1,8 +1,16 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { ConfigService } from '@nestjs/config';
-import { Integration, IntegrationDocument, IntegrationType } from './entities/integration.entity';
+import {
+  Integration,
+  IntegrationDocument,
+  IntegrationType,
+} from './entities/integration.entity';
 import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
 import { AuditService } from '../audit/audit.service';
 import { AuditAction, AuditResource } from '../audit/entities/audit-log.entity';
@@ -14,12 +22,15 @@ export class IntegrationsService {
   private readonly algorithm = 'aes-256-cbc';
 
   constructor(
-    @InjectModel(Integration.name) private integrationModel: Model<IntegrationDocument>,
+    @InjectModel(Integration.name)
+    private integrationModel: Model<IntegrationDocument>,
     private configService: ConfigService,
     private auditService: AuditService,
   ) {
     // Get encryption key from config or generate one (in production, use a secure key)
-    const key = this.configService.get<string>('INTEGRATION_ENCRYPTION_KEY') || 'default-key-32-chars-long!!';
+    const key =
+      this.configService.get<string>('INTEGRATION_ENCRYPTION_KEY') ||
+      'default-key-32-chars-long!!';
     this.encryptionKey = Buffer.from(key.padEnd(32, '0').slice(0, 32));
   }
 
@@ -50,29 +61,44 @@ export class IntegrationsService {
   /**
    * Test email integration
    */
-  async testEmail(companyId: string, userId: string, config: { smtpHost: string; smtpPort: number; username: string; password: string; to: string }): Promise<{ success: boolean; message: string }> {
+  async testEmail(
+    companyId: string,
+    userId: string,
+    config: {
+      smtpHost: string;
+      smtpPort: number;
+      username: string;
+      password: string;
+      to: string;
+    },
+  ): Promise<{ success: boolean; message: string }> {
     try {
       // Encrypt password
       const encryptedPassword = this.encrypt(config.password);
 
       // Save or update integration
-      await this.integrationModel.findOneAndUpdate(
-        { companyId: new Types.ObjectId(companyId), type: IntegrationType.EMAIL },
-        {
-          companyId: new Types.ObjectId(companyId),
-          type: IntegrationType.EMAIL,
-          name: 'Email Integration',
-          config: {
-            smtpHost: config.smtpHost,
-            smtpPort: config.smtpPort,
-            username: config.username,
-            password: encryptedPassword, // Encrypted
+      await this.integrationModel
+        .findOneAndUpdate(
+          {
+            companyId: new Types.ObjectId(companyId),
+            type: IntegrationType.EMAIL,
           },
-          isActive: true,
-          createdBy: new Types.ObjectId(userId),
-        },
-        { upsert: true, new: true },
-      ).exec();
+          {
+            companyId: new Types.ObjectId(companyId),
+            type: IntegrationType.EMAIL,
+            name: 'Email Integration',
+            config: {
+              smtpHost: config.smtpHost,
+              smtpPort: config.smtpPort,
+              username: config.username,
+              password: encryptedPassword, // Encrypted
+            },
+            isActive: true,
+            createdBy: new Types.ObjectId(userId),
+          },
+          { upsert: true, new: true },
+        )
+        .exec();
 
       // Send test email (using nodemailer would be better, but this is a stub)
       // In production, use the email service
@@ -98,23 +124,32 @@ export class IntegrationsService {
   /**
    * Test Slack integration
    */
-  async testSlack(companyId: string, userId: string, config: { webhookUrl: string }): Promise<{ success: boolean; message: string }> {
+  async testSlack(
+    companyId: string,
+    userId: string,
+    config: { webhookUrl: string },
+  ): Promise<{ success: boolean; message: string }> {
     try {
       // Save or update integration
-      await this.integrationModel.findOneAndUpdate(
-        { companyId: new Types.ObjectId(companyId), type: IntegrationType.SLACK },
-        {
-          companyId: new Types.ObjectId(companyId),
-          type: IntegrationType.SLACK,
-          name: 'Slack Integration',
-          config: {
-            webhookUrl: this.encrypt(config.webhookUrl), // Encrypt webhook URL
+      await this.integrationModel
+        .findOneAndUpdate(
+          {
+            companyId: new Types.ObjectId(companyId),
+            type: IntegrationType.SLACK,
           },
-          isActive: true,
-          createdBy: new Types.ObjectId(userId),
-        },
-        { upsert: true, new: true },
-      ).exec();
+          {
+            companyId: new Types.ObjectId(companyId),
+            type: IntegrationType.SLACK,
+            name: 'Slack Integration',
+            config: {
+              webhookUrl: this.encrypt(config.webhookUrl), // Encrypt webhook URL
+            },
+            isActive: true,
+            createdBy: new Types.ObjectId(userId),
+          },
+          { upsert: true, new: true },
+        )
+        .exec();
 
       // Send test message to Slack
       const decryptedUrl = this.decrypt(this.encrypt(config.webhookUrl));
@@ -143,16 +178,24 @@ export class IntegrationsService {
   /**
    * Start Google OAuth flow
    */
-  async startGoogleOAuth(companyId: string, userId: string): Promise<{ authUrl: string }> {
+  async startGoogleOAuth(
+    companyId: string,
+    userId: string,
+  ): Promise<{ authUrl: string }> {
     const clientId = this.configService.get<string>('GOOGLE_CLIENT_ID');
-    const redirectUri = this.configService.get<string>('GOOGLE_REDIRECT_URI') || `${this.configService.get<string>('FRONTEND_URL')}/settings/integrations/google/callback`;
-    const scope = 'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/drive';
+    const redirectUri =
+      this.configService.get<string>('GOOGLE_REDIRECT_URI') ||
+      `${this.configService.get<string>('FRONTEND_URL')}/settings/integrations/google/callback`;
+    const scope =
+      'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/drive';
 
     if (!clientId) {
       throw new BadRequestException('Google OAuth is not configured');
     }
 
-    const state = Buffer.from(JSON.stringify({ companyId, userId })).toString('base64');
+    const state = Buffer.from(JSON.stringify({ companyId, userId })).toString(
+      'base64',
+    );
     const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scope)}&state=${state}&access_type=offline&prompt=consent`;
 
     return { authUrl };
@@ -168,7 +211,9 @@ export class IntegrationsService {
   ): Promise<{ success: boolean; message: string }> {
     const clientId = this.configService.get<string>('GOOGLE_CLIENT_ID');
     const clientSecret = this.configService.get<string>('GOOGLE_CLIENT_SECRET');
-    const redirectUri = this.configService.get<string>('GOOGLE_REDIRECT_URI') || `${this.configService.get<string>('FRONTEND_URL')}/settings/integrations/google/callback`;
+    const redirectUri =
+      this.configService.get<string>('GOOGLE_REDIRECT_URI') ||
+      `${this.configService.get<string>('FRONTEND_URL')}/settings/integrations/google/callback`;
 
     if (!clientId || !clientSecret) {
       throw new BadRequestException('Google OAuth is not configured');
@@ -176,36 +221,46 @@ export class IntegrationsService {
 
     try {
       // Exchange code for tokens
-      const tokenResponse = await axios.post('https://oauth2.googleapis.com/token', {
-        code,
-        client_id: clientId,
-        client_secret: clientSecret,
-        redirect_uri: redirectUri,
-        grant_type: 'authorization_code',
-      });
+      const tokenResponse = await axios.post(
+        'https://oauth2.googleapis.com/token',
+        {
+          code,
+          client_id: clientId,
+          client_secret: clientSecret,
+          redirect_uri: redirectUri,
+          grant_type: 'authorization_code',
+        },
+      );
 
       const { access_token, refresh_token } = tokenResponse.data;
 
       // Encrypt tokens
       const encryptedAccessToken = this.encrypt(access_token);
-      const encryptedRefreshToken = refresh_token ? this.encrypt(refresh_token) : undefined;
+      const encryptedRefreshToken = refresh_token
+        ? this.encrypt(refresh_token)
+        : undefined;
 
       // Save integration
-      await this.integrationModel.findOneAndUpdate(
-        { companyId: new Types.ObjectId(companyId), type: IntegrationType.GOOGLE_OAUTH },
-        {
-          companyId: new Types.ObjectId(companyId),
-          type: IntegrationType.GOOGLE_OAUTH,
-          name: 'Google OAuth Integration',
-          config: {
-            accessToken: encryptedAccessToken,
-            refreshToken: encryptedRefreshToken,
+      await this.integrationModel
+        .findOneAndUpdate(
+          {
+            companyId: new Types.ObjectId(companyId),
+            type: IntegrationType.GOOGLE_OAUTH,
           },
-          isActive: true,
-          createdBy: new Types.ObjectId(userId),
-        },
-        { upsert: true, new: true },
-      ).exec();
+          {
+            companyId: new Types.ObjectId(companyId),
+            type: IntegrationType.GOOGLE_OAUTH,
+            name: 'Google OAuth Integration',
+            config: {
+              accessToken: encryptedAccessToken,
+              refreshToken: encryptedRefreshToken,
+            },
+            isActive: true,
+            createdBy: new Types.ObjectId(userId),
+          },
+          { upsert: true, new: true },
+        )
+        .exec();
 
       // Audit log
       await this.auditService.createLog({
@@ -221,7 +276,9 @@ export class IntegrationsService {
         message: 'Google OAuth connected successfully',
       };
     } catch (error: any) {
-      throw new BadRequestException(`Google OAuth callback failed: ${error.message}`);
+      throw new BadRequestException(
+        `Google OAuth callback failed: ${error.message}`,
+      );
     }
   }
 
@@ -238,7 +295,10 @@ export class IntegrationsService {
   /**
    * Get integration by type
    */
-  async findByType(companyId: string, type: IntegrationType): Promise<IntegrationDocument | null> {
+  async findByType(
+    companyId: string,
+    type: IntegrationType,
+  ): Promise<IntegrationDocument | null> {
     return this.integrationModel
       .findOne({
         companyId: new Types.ObjectId(companyId),
@@ -251,7 +311,11 @@ export class IntegrationsService {
   /**
    * Delete integration
    */
-  async remove(companyId: string, integrationId: string, userId: string): Promise<void> {
+  async remove(
+    companyId: string,
+    integrationId: string,
+    userId: string,
+  ): Promise<void> {
     const integration = await this.integrationModel
       .findOne({
         _id: integrationId,
@@ -276,4 +340,3 @@ export class IntegrationsService {
     });
   }
 }
-

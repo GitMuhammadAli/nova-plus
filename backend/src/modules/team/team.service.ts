@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Team, TeamDocument } from './entities/team.entity';
@@ -23,7 +27,10 @@ export class TeamsService {
   async listForUser(userId: string) {
     return this.teamModel
       .find({
-        $or: [{ manager: new Types.ObjectId(userId) }, { members: new Types.ObjectId(userId) }],
+        $or: [
+          { manager: new Types.ObjectId(userId) },
+          { members: new Types.ObjectId(userId) },
+        ],
       })
       .populate('manager', '-password -__v')
       .populate('members', '-password -__v')
@@ -33,10 +40,15 @@ export class TeamsService {
 
   // get one team by id (if user is manager or member)
   async getById(teamId: string, userId: string) {
-    const team = await this.teamModel.findById(teamId).populate('members', '-password -__v').populate('manager', '-password -__v').exec();
+    const team = await this.teamModel
+      .findById(teamId)
+      .populate('members', '-password -__v')
+      .populate('manager', '-password -__v')
+      .exec();
     if (!team) throw new NotFoundException('Team not found');
     const isRelated =
-      team.manager.toString() === userId || team.members.some((m: Types.ObjectId) => m.toString() === userId);
+      team.manager.toString() === userId ||
+      team.members.some((m: Types.ObjectId) => m.toString() === userId);
     if (!isRelated) throw new ForbiddenException('Access denied to this team');
     return team;
   }
@@ -51,11 +63,18 @@ export class TeamsService {
     const isManager = team.manager.toString() === actorId;
     const isAdmin = actor.role === 'admin' || actor.role === 'superadmin';
 
-    if (!isManager && !isAdmin) throw new ForbiddenException('Only team manager or admin can add members');
+    if (!isManager && !isAdmin)
+      throw new ForbiddenException(
+        'Only team manager or admin can add members',
+      );
 
     const newMemberId = new Types.ObjectId(dto.userId);
     // prevent duplicates
-    if (!team.members.some((m: Types.ObjectId) => m.toString() === newMemberId.toString())) {
+    if (
+      !team.members.some(
+        (m: Types.ObjectId) => m.toString() === newMemberId.toString(),
+      )
+    ) {
       team.members.push(newMemberId);
       await team.save();
     }
@@ -71,9 +90,14 @@ export class TeamsService {
     const isManager = team.manager.toString() === actorId;
     const isAdmin = actor.role === 'admin' || actor.role === 'superadmin';
 
-    if (!isManager && !isAdmin) throw new ForbiddenException('Only team manager or admin can remove members');
+    if (!isManager && !isAdmin)
+      throw new ForbiddenException(
+        'Only team manager or admin can remove members',
+      );
 
-    team.members = team.members.filter((m: Types.ObjectId) => m.toString() !== memberId);
+    team.members = team.members.filter(
+      (m: Types.ObjectId) => m.toString() !== memberId,
+    );
     await team.save();
     return team;
   }
@@ -85,9 +109,10 @@ export class TeamsService {
 
     const actorId = actor._id?.toString?.() ?? actor['id'] ?? String(actor);
     const isManager = team.manager.toString() === actorId;
-        const isAdmin = actor.role === 'admin' || actor.role === 'superadmin';
+    const isAdmin = actor.role === 'admin' || actor.role === 'superadmin';
 
-    if (!isManager && !isAdmin) throw new ForbiddenException('Only manager or admin can delete team');
+    if (!isManager && !isAdmin)
+      throw new ForbiddenException('Only manager or admin can delete team');
 
     await this.teamModel.deleteOne({ _id: team._id }).exec();
     return { ok: true };

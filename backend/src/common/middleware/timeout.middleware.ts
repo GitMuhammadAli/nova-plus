@@ -59,4 +59,3 @@ export class TimeoutMiddleware implements NestMiddleware {
     next();
   }
 }
-

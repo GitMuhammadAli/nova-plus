@@ -1,7 +1,7 @@
 /**
  * Migration script to assign existing users to a default organization
  * Run this once to migrate existing users who don't have orgId
- * 
+ *
  * Usage: This should be run manually or via a migration command
  */
 
@@ -25,11 +25,15 @@ export class AssignDefaultOrgMigration {
    */
   async run() {
     try {
-      this.logger.log('Starting migration: Assign default organization to existing users');
+      this.logger.log(
+        'Starting migration: Assign default organization to existing users',
+      );
 
       // Find or create default organization
-      let defaultOrg = await this.orgModel.findOne({ slug: 'default-org' }).exec();
-      
+      let defaultOrg = await this.orgModel
+        .findOne({ slug: 'default-org' })
+        .exec();
+
       if (!defaultOrg) {
         this.logger.log('Creating default organization...');
         defaultOrg = new this.orgModel({
@@ -43,8 +47,10 @@ export class AssignDefaultOrgMigration {
       }
 
       // Find all users without orgId
-      const usersWithoutOrg = await this.userModel.find({ orgId: { $exists: false } }).exec();
-      
+      const usersWithoutOrg = await this.userModel
+        .find({ orgId: { $exists: false } })
+        .exec();
+
       if (usersWithoutOrg.length === 0) {
         this.logger.log('No users found without orgId. Migration complete.');
         return { migrated: 0, message: 'No users to migrate' };
@@ -53,18 +59,22 @@ export class AssignDefaultOrgMigration {
       this.logger.log(`Found ${usersWithoutOrg.length} users without orgId`);
 
       // Update all users to have orgId
-      const updateResult = await this.userModel.updateMany(
-        { orgId: { $exists: false } },
-        { $set: { orgId: defaultOrg._id } }
-      ).exec();
+      const updateResult = await this.userModel
+        .updateMany(
+          { orgId: { $exists: false } },
+          { $set: { orgId: defaultOrg._id } },
+        )
+        .exec();
 
       // Update organization members list
-      const userIds = usersWithoutOrg.map(u => u._id);
-      defaultOrg.members.push(...userIds as any);
+      const userIds = usersWithoutOrg.map((u) => u._id);
+      defaultOrg.members.push(...(userIds as any));
       await defaultOrg.save();
 
-      this.logger.log(`✅ Migration complete: ${updateResult.modifiedCount} users assigned to default organization`);
-      
+      this.logger.log(
+        `✅ Migration complete: ${updateResult.modifiedCount} users assigned to default organization`,
+      );
+
       return {
         migrated: updateResult.modifiedCount,
         organizationId: defaultOrg._id,
@@ -76,4 +86,3 @@ export class AssignDefaultOrgMigration {
     }
   }
 }
-

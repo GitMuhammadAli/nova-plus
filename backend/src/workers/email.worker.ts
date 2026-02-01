@@ -15,27 +15,28 @@ export class EmailWorker {
 
   async start() {
     const redisClient = this.queueService.getRedisClient();
-    
+
     this.worker = new Worker(
       'nova-email',
       async (job) => {
         const { to, subject, template, data, html, text } = job.data;
-        
-        logger.info('Processing email job', { 
-          jobId: job.id, 
-          to, 
+
+        logger.info('Processing email job', {
+          jobId: job.id,
+          to,
           template,
           attempt: job.attemptsMade + 1,
         });
 
-            try {
-              // Import EmailService dynamically to avoid circular dependencies
-              // Using require for dynamic imports in workers to avoid TypeScript module resolution issues
-              const { AppModule } = require('../app.module');
-              const { NestFactory } = require('@nestjs/core');
-              const appContext = await NestFactory.createApplicationContext(AppModule);
-              const { EmailService } = require('../modules/email/email.service');
-              const emailService = appContext.get(EmailService);
+        try {
+          // Import EmailService dynamically to avoid circular dependencies
+          // Using require for dynamic imports in workers to avoid TypeScript module resolution issues
+          const { AppModule } = require('../app.module');
+          const { NestFactory } = require('@nestjs/core');
+          const appContext =
+            await NestFactory.createApplicationContext(AppModule);
+          const { EmailService } = require('../modules/email/email.service');
+          const emailService = appContext.get(EmailService);
 
           // For now, use sendInviteEmail if template is 'invite', otherwise log
           // TODO: Add generic sendEmail method to EmailService
@@ -50,16 +51,22 @@ export class EmailWorker {
             });
           } else {
             // Log email for now (can be extended later)
-            logger.info('Email would be sent', { to, subject, template, html, text });
+            logger.info('Email would be sent', {
+              to,
+              subject,
+              template,
+              html,
+              text,
+            });
             // In production, you'd want to add a generic sendEmail method
           }
 
           logger.info('Email sent successfully', { jobId: job.id, to });
           return { success: true, sentAt: new Date().toISOString() };
         } catch (error: any) {
-          logger.error('Email job failed', { 
-            jobId: job.id, 
-            to, 
+          logger.error('Email job failed', {
+            jobId: job.id,
+            to,
             error: error.message,
             stack: error.stack,
           });
@@ -84,8 +91,8 @@ export class EmailWorker {
     });
 
     this.worker.on('failed', (job, err) => {
-      logger.error('Email job failed', { 
-        jobId: job?.id, 
+      logger.error('Email job failed', {
+        jobId: job?.id,
         error: err.message,
         attemptsMade: job?.attemptsMade,
       });
@@ -105,4 +112,3 @@ export class EmailWorker {
     }
   }
 }
-

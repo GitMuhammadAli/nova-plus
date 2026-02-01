@@ -13,4 +13,3 @@ import { QueueModule } from '../providers/queue/queue.module';
   exports: [PrometheusService, RedisThrottleGuard],
 })
 export class CommonModule {}
-

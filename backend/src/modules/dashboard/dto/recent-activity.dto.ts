@@ -12,4 +12,3 @@ export class RecentActivityDto {
   timestamp: string;
   icon?: string;
 }
-

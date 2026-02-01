@@ -13,12 +13,14 @@ export class AutomationAgentService {
   /**
    * Suggest automations based on patterns
    */
-  async suggestAutomations(tenantId: string): Promise<Array<{
-    description: string;
-    trigger: string;
-    action: string;
-    estimatedImpact: 'low' | 'medium' | 'high';
-  }>> {
+  async suggestAutomations(tenantId: string): Promise<
+    Array<{
+      description: string;
+      trigger: string;
+      action: string;
+      estimatedImpact: 'low' | 'medium' | 'high';
+    }>
+  > {
     logger.info('Suggesting automations', { tenantId });
 
     // In production, this would analyze:
@@ -45,4 +47,3 @@ export class AutomationAgentService {
     return { success: true };
   }
 }
-

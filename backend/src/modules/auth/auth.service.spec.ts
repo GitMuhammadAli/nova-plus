@@ -132,7 +132,10 @@ describe('AuthService', () => {
       const result = await service.login(dto, 'user-agent', '127.0.0.1');
 
       expect(userModel.findOne).toHaveBeenCalledWith({ email: dto.email });
-      expect(bcrypt.compare).toHaveBeenCalledWith(dto.password, mockUser.password);
+      expect(bcrypt.compare).toHaveBeenCalledWith(
+        dto.password,
+        mockUser.password,
+      );
       expect(result).toHaveProperty('accessToken');
       expect(result).toHaveProperty('refreshToken');
     });
@@ -145,8 +148,9 @@ describe('AuthService', () => {
         password: 'anyPassword',
       };
 
-      await expect(service.login(dto, 'user-agent', '127.0.0.1'))
-        .rejects.toThrow(UnauthorizedException);
+      await expect(
+        service.login(dto, 'user-agent', '127.0.0.1'),
+      ).rejects.toThrow(UnauthorizedException);
     });
 
     it('should throw UnauthorizedException for invalid password', async () => {
@@ -158,8 +162,9 @@ describe('AuthService', () => {
         password: 'wrongPassword',
       };
 
-      await expect(service.login(dto, 'user-agent', '127.0.0.1'))
-        .rejects.toThrow(UnauthorizedException);
+      await expect(
+        service.login(dto, 'user-agent', '127.0.0.1'),
+      ).rejects.toThrow(UnauthorizedException);
     });
 
     it('should require MFA token when MFA is enabled', async () => {
@@ -200,7 +205,10 @@ describe('AuthService', () => {
 
       const result = await service.login(dto, 'user-agent', '127.0.0.1');
 
-      expect(mfaService.verifyMfaToken).toHaveBeenCalledWith(mockUser._id.toString(), '123456');
+      expect(mfaService.verifyMfaToken).toHaveBeenCalledWith(
+        mockUser._id.toString(),
+        '123456',
+      );
       expect(result).toHaveProperty('accessToken');
     });
 
@@ -219,8 +227,9 @@ describe('AuthService', () => {
         mfaToken: 'invalidToken',
       };
 
-      await expect(service.login(dto, 'user-agent', '127.0.0.1'))
-        .rejects.toThrow(UnauthorizedException);
+      await expect(
+        service.login(dto, 'user-agent', '127.0.0.1'),
+      ).rejects.toThrow(UnauthorizedException);
     });
   });
 
@@ -228,7 +237,11 @@ describe('AuthService', () => {
     it('should generate access and refresh tokens', async () => {
       sessionModel.create.mockResolvedValue(mockSession);
 
-      const result = await service.buildResponseTokens(mockUser, 'user-agent', '127.0.0.1');
+      const result = await service.buildResponseTokens(
+        mockUser,
+        'user-agent',
+        '127.0.0.1',
+      );
 
       expect(jwtService.sign).toHaveBeenCalledTimes(2);
       expect(result).toHaveProperty('accessToken');

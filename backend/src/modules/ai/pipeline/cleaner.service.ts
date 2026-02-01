@@ -50,20 +50,23 @@ export class CleanerService {
 
       case 'department':
         if (entity.name) parts.push(`Department: ${entity.name}`);
-        if (entity.description) parts.push(`Description: ${entity.description}`);
+        if (entity.description)
+          parts.push(`Description: ${entity.description}`);
         if (entity.manager) parts.push(`Manager: ${entity.manager}`);
         break;
 
       case 'task':
         if (entity.title) parts.push(`Task: ${entity.title}`);
-        if (entity.description) parts.push(`Description: ${entity.description}`);
+        if (entity.description)
+          parts.push(`Description: ${entity.description}`);
         if (entity.status) parts.push(`Status: ${entity.status}`);
         if (entity.priority) parts.push(`Priority: ${entity.priority}`);
         break;
 
       case 'project':
         if (entity.name) parts.push(`Project: ${entity.name}`);
-        if (entity.description) parts.push(`Description: ${entity.description}`);
+        if (entity.description)
+          parts.push(`Description: ${entity.description}`);
         if (entity.status) parts.push(`Status: ${entity.status}`);
         break;
 
@@ -85,4 +88,3 @@ export class CleanerService {
     return this.clean(combined);
   }
 }
-

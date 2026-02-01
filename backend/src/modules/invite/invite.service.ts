@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Invite, InviteDocument } from './entities/invite.entity';
@@ -46,11 +51,16 @@ export class InviteService {
     // Verify creator belongs to this company
     const creator = await this.userModel.findById(creatorId).exec();
     if (!creator || creator.companyId?.toString() !== companyId) {
-      throw new ForbiddenException('You can only create invites for your own company');
+      throw new ForbiddenException(
+        'You can only create invites for your own company',
+      );
     }
 
     // Role validation: Company Admin can invite managers/users, Manager can only invite users
-    if (creatorRole === UserRole.MANAGER && createInviteDto.role !== UserRole.USER) {
+    if (
+      creatorRole === UserRole.MANAGER &&
+      createInviteDto.role !== UserRole.USER
+    ) {
       throw new ForbiddenException('Managers can only invite users');
     }
 
@@ -58,29 +68,40 @@ export class InviteService {
 
     // If email is provided, check if user already exists
     if (createInviteDto.email) {
-      const existingUser = await this.userModel.findOne({ email: createInviteDto.email }).exec();
+      const existingUser = await this.userModel
+        .findOne({ email: createInviteDto.email })
+        .exec();
       if (existingUser) {
-        throw new BadRequestException('A user with this email already exists. They can log in directly without an invite.');
+        throw new BadRequestException(
+          'A user with this email already exists. They can log in directly without an invite.',
+        );
       }
 
       // Check if there's already an active (unused) invite for this email in this company
-      const existingInvite = await this.inviteModel.findOne({
-        email: createInviteDto.email,
-        companyId: new Types.ObjectId(companyId),
-        isUsed: false,
-        isActive: true,
-        expiresAt: { $gt: new Date() },
-      }).exec();
+      const existingInvite = await this.inviteModel
+        .findOne({
+          email: createInviteDto.email,
+          companyId: new Types.ObjectId(companyId),
+          isUsed: false,
+          isActive: true,
+          expiresAt: { $gt: new Date() },
+        })
+        .exec();
 
       if (existingInvite) {
-        throw new BadRequestException('An active invite already exists for this email. Please wait for it to be used or expired before creating a new one.');
+        throw new BadRequestException(
+          'An active invite already exists for this email. Please wait for it to be used or expired before creating a new one.',
+        );
       }
     }
 
     // Generate unique token
     let token = this.generateToken();
     let attempts = 0;
-    while (await this.inviteModel.findOne({ token }).exec() && attempts < 10) {
+    while (
+      (await this.inviteModel.findOne({ token }).exec()) &&
+      attempts < 10
+    ) {
       token = this.generateToken();
       attempts++;
     }
@@ -101,7 +122,9 @@ export class InviteService {
       createdBy: new Types.ObjectId(creatorId),
       email: createInviteDto.email,
       role: createInviteDto.role,
-      departmentId: createInviteDto.departmentId ? new Types.ObjectId(createInviteDto.departmentId) : undefined,
+      departmentId: createInviteDto.departmentId
+        ? new Types.ObjectId(createInviteDto.departmentId)
+        : undefined,
       expiresAt,
       isUsed: false,
       isActive: true,
@@ -115,7 +138,7 @@ export class InviteService {
     if (createInviteDto.email) {
       const company = await this.companyModel.findById(companyId).exec();
       const inviter = await this.userModel.findById(creatorId).exec();
-      
+
       try {
         await this.emailService.sendInviteEmail({
           to: createInviteDto.email,
@@ -152,10 +175,10 @@ export class InviteService {
   async getInviteByToken(token: string) {
     // Check if invite exists, is active, and not used
     const invite = await this.inviteModel
-      .findOne({ 
-        token, 
+      .findOne({
+        token,
         isActive: true,
-        isUsed: false 
+        isUsed: false,
       })
       .populate('companyId', 'name domain')
       .populate('createdBy', 'name email')
@@ -167,7 +190,9 @@ export class InviteService {
 
     // Check if expired
     if (new Date() > invite.expiresAt) {
-      throw new BadRequestException('This invite has expired. Please contact your administrator for a new invite.');
+      throw new BadRequestException(
+        'This invite has expired. Please contact your administrator for a new invite.',
+      );
     }
 
     return invite;
@@ -178,11 +203,13 @@ export class InviteService {
    */
   async acceptInvite(token: string, acceptInviteDto: AcceptInviteDto) {
     // Get invite - check for active, unused invites
-    const invite = await this.inviteModel.findOne({ 
-      token, 
-      isActive: true,
-      isUsed: false 
-    }).exec();
+    const invite = await this.inviteModel
+      .findOne({
+        token,
+        isActive: true,
+        isUsed: false,
+      })
+      .exec();
 
     if (!invite) {
       throw new NotFoundException('Invite not found or has been revoked');
@@ -190,16 +217,23 @@ export class InviteService {
 
     // Check if expired
     if (new Date() > invite.expiresAt) {
-      throw new BadRequestException('This invite has expired. Please contact your administrator for a new invite.');
+      throw new BadRequestException(
+        'This invite has expired. Please contact your administrator for a new invite.',
+      );
     }
 
     // If invite has specific email, verify it matches
-    if (invite.email && invite.email.toLowerCase() !== acceptInviteDto.email.toLowerCase()) {
+    if (
+      invite.email &&
+      invite.email.toLowerCase() !== acceptInviteDto.email.toLowerCase()
+    ) {
       throw new BadRequestException('Email does not match the invite');
     }
 
     // Check if user already exists
-    const existingUser = await this.userModel.findOne({ email: acceptInviteDto.email }).exec();
+    const existingUser = await this.userModel
+      .findOne({ email: acceptInviteDto.email })
+      .exec();
     if (existingUser) {
       // If user exists and is in the same company, this might be a duplicate submission
       // Check if they're trying to accept the same invite again
@@ -212,19 +246,25 @@ export class InviteService {
           invite.usedAt = new Date();
           await invite.save();
         }
-        
+
         // Return the existing user (allows for idempotent requests)
-        const userObj: any = existingUser.toObject ? existingUser.toObject() : existingUser;
+        const userObj: any = existingUser.toObject
+          ? existingUser.toObject()
+          : existingUser;
         delete userObj.password;
-        
-        const company = await this.companyModel.findById(invite.companyId).exec();
+
+        const company = await this.companyModel
+          .findById(invite.companyId)
+          .exec();
         return {
           user: userObj,
-          company: company ? {
-            _id: company._id,
-            name: company.name,
-            domain: company.domain,
-          } : null,
+          company: company
+            ? {
+                _id: company._id,
+                name: company.name,
+                domain: company.domain,
+              }
+            : null,
           alreadyExists: true,
         };
       }
@@ -247,15 +287,24 @@ export class InviteService {
       companyId: invite.companyId.toString(),
       orgId: invite.companyId.toString(), // Backward compatibility
       createdBy: invite.createdBy,
-      department: invite.departmentId ? invite.departmentId.toString() : undefined,
+      department: invite.departmentId
+        ? invite.departmentId.toString()
+        : undefined,
       isActive: true,
     });
 
     // Update company users array (only if not already added)
-    if (!company.users.some((uid: any) => uid.toString() === user._id.toString())) {
+    if (
+      !company.users.some((uid: any) => uid.toString() === user._id.toString())
+    ) {
       company.users.push(user._id as any);
     }
-    if (invite.role === 'manager' && !company.managers.some((uid: any) => uid.toString() === user._id.toString())) {
+    if (
+      invite.role === 'manager' &&
+      !company.managers.some(
+        (uid: any) => uid.toString() === user._id.toString(),
+      )
+    ) {
       company.managers.push(user._id as any);
     }
     await company.save();
@@ -283,15 +332,27 @@ export class InviteService {
   /**
    * Get all invites for a company (Company Admin only)
    */
-  async getCompanyInvites(companyId: string, requestUserId: string, requestUserRole: UserRole) {
+  async getCompanyInvites(
+    companyId: string,
+    requestUserId: string,
+    requestUserRole: UserRole,
+  ) {
     // Verify access
-    if (requestUserRole !== UserRole.COMPANY_ADMIN && requestUserRole !== UserRole.SUPER_ADMIN) {
+    if (
+      requestUserRole !== UserRole.COMPANY_ADMIN &&
+      requestUserRole !== UserRole.SUPER_ADMIN
+    ) {
       throw new ForbiddenException('Only company admins can view invites');
     }
 
     const user = await this.userModel.findById(requestUserId).exec();
-    if (requestUserRole === UserRole.COMPANY_ADMIN && user?.companyId?.toString() !== companyId) {
-      throw new ForbiddenException('You can only view invites for your own company');
+    if (
+      requestUserRole === UserRole.COMPANY_ADMIN &&
+      user?.companyId?.toString() !== companyId
+    ) {
+      throw new ForbiddenException(
+        'You can only view invites for your own company',
+      );
     }
 
     const invites = await this.inviteModel
@@ -320,15 +381,28 @@ export class InviteService {
   /**
    * Revoke an invite (Company Admin only)
    */
-  async revokeInvite(inviteId: string, companyId: string, requestUserId: string, requestUserRole: UserRole) {
+  async revokeInvite(
+    inviteId: string,
+    companyId: string,
+    requestUserId: string,
+    requestUserRole: UserRole,
+  ) {
     // Verify access
-    if (requestUserRole !== UserRole.COMPANY_ADMIN && requestUserRole !== UserRole.SUPER_ADMIN) {
+    if (
+      requestUserRole !== UserRole.COMPANY_ADMIN &&
+      requestUserRole !== UserRole.SUPER_ADMIN
+    ) {
       throw new ForbiddenException('Only company admins can revoke invites');
     }
 
     const user = await this.userModel.findById(requestUserId).exec();
-    if (requestUserRole === UserRole.COMPANY_ADMIN && user?.companyId?.toString() !== companyId) {
-      throw new ForbiddenException('You can only revoke invites for your own company');
+    if (
+      requestUserRole === UserRole.COMPANY_ADMIN &&
+      user?.companyId?.toString() !== companyId
+    ) {
+      throw new ForbiddenException(
+        'You can only revoke invites for your own company',
+      );
     }
 
     const invite = await this.inviteModel.findById(inviteId).exec();
@@ -344,15 +418,28 @@ export class InviteService {
   /**
    * Resend an invite email
    */
-  async resendInvite(inviteId: string, companyId: string, requestUserId: string, requestUserRole: UserRole) {
+  async resendInvite(
+    inviteId: string,
+    companyId: string,
+    requestUserId: string,
+    requestUserRole: UserRole,
+  ) {
     // Verify access
-    if (requestUserRole !== UserRole.COMPANY_ADMIN && requestUserRole !== UserRole.SUPER_ADMIN) {
+    if (
+      requestUserRole !== UserRole.COMPANY_ADMIN &&
+      requestUserRole !== UserRole.SUPER_ADMIN
+    ) {
       throw new ForbiddenException('Only company admins can resend invites');
     }
 
     const user = await this.userModel.findById(requestUserId).exec();
-    if (requestUserRole === UserRole.COMPANY_ADMIN && user?.companyId?.toString() !== companyId) {
-      throw new ForbiddenException('You can only resend invites for your own company');
+    if (
+      requestUserRole === UserRole.COMPANY_ADMIN &&
+      user?.companyId?.toString() !== companyId
+    ) {
+      throw new ForbiddenException(
+        'You can only resend invites for your own company',
+      );
     }
 
     const invite = await this.inviteModel.findById(inviteId).exec();
@@ -369,7 +456,9 @@ export class InviteService {
     }
 
     if (!invite.email) {
-      throw new BadRequestException('Cannot resend invite without email address');
+      throw new BadRequestException(
+        'Cannot resend invite without email address',
+      );
     }
 
     // Resend email
@@ -406,15 +495,28 @@ export class InviteService {
   /**
    * Cancel an invite (deactivate it)
    */
-  async cancelInvite(inviteId: string, companyId: string, requestUserId: string, requestUserRole: UserRole) {
+  async cancelInvite(
+    inviteId: string,
+    companyId: string,
+    requestUserId: string,
+    requestUserRole: UserRole,
+  ) {
     // Verify access
-    if (requestUserRole !== UserRole.COMPANY_ADMIN && requestUserRole !== UserRole.SUPER_ADMIN) {
+    if (
+      requestUserRole !== UserRole.COMPANY_ADMIN &&
+      requestUserRole !== UserRole.SUPER_ADMIN
+    ) {
       throw new ForbiddenException('Only company admins can cancel invites');
     }
 
     const user = await this.userModel.findById(requestUserId).exec();
-    if (requestUserRole === UserRole.COMPANY_ADMIN && user?.companyId?.toString() !== companyId) {
-      throw new ForbiddenException('You can only cancel invites for your own company');
+    if (
+      requestUserRole === UserRole.COMPANY_ADMIN &&
+      user?.companyId?.toString() !== companyId
+    ) {
+      throw new ForbiddenException(
+        'You can only cancel invites for your own company',
+      );
     }
 
     const invite = await this.inviteModel.findById(inviteId).exec();
@@ -445,13 +547,23 @@ export class InviteService {
     invites: Array<{ email?: string; role: string; expiresInDays?: number }>,
   ) {
     // Verify access
-    if (creatorRole !== UserRole.COMPANY_ADMIN && creatorRole !== UserRole.SUPER_ADMIN) {
-      throw new ForbiddenException('Only company admins can bulk create invites');
+    if (
+      creatorRole !== UserRole.COMPANY_ADMIN &&
+      creatorRole !== UserRole.SUPER_ADMIN
+    ) {
+      throw new ForbiddenException(
+        'Only company admins can bulk create invites',
+      );
     }
 
     const user = await this.userModel.findById(creatorId).exec();
-    if (creatorRole === UserRole.COMPANY_ADMIN && user?.companyId?.toString() !== companyId) {
-      throw new ForbiddenException('You can only create invites for your own company');
+    if (
+      creatorRole === UserRole.COMPANY_ADMIN &&
+      user?.companyId?.toString() !== companyId
+    ) {
+      throw new ForbiddenException(
+        'You can only create invites for your own company',
+      );
     }
 
     const company = await this.companyModel.findById(companyId).exec();
@@ -473,9 +585,14 @@ export class InviteService {
 
         // Check if email already exists (if provided)
         if (inviteData.email) {
-          const existingUser = await this.userModel.findOne({ email: inviteData.email }).exec();
+          const existingUser = await this.userModel
+            .findOne({ email: inviteData.email })
+            .exec();
           if (existingUser) {
-            failed.push({ email: inviteData.email, error: 'User with this email already exists' });
+            failed.push({
+              email: inviteData.email,
+              error: 'User with this email already exists',
+            });
             continue;
           }
         }
@@ -483,13 +600,19 @@ export class InviteService {
         // Generate unique token
         let token = this.generateToken();
         let attempts = 0;
-        while (await this.inviteModel.findOne({ token }).exec() && attempts < 10) {
+        while (
+          (await this.inviteModel.findOne({ token }).exec()) &&
+          attempts < 10
+        ) {
           token = this.generateToken();
           attempts++;
         }
 
         if (attempts >= 10) {
-          failed.push({ email: inviteData.email, error: 'Failed to generate unique token' });
+          failed.push({
+            email: inviteData.email,
+            error: 'Failed to generate unique token',
+          });
           continue;
         }
 
@@ -539,7 +662,10 @@ export class InviteService {
           expiresAt: savedInvite.expiresAt,
         });
       } catch (error: any) {
-        failed.push({ email: inviteData.email, error: error.message || 'Unknown error' });
+        failed.push({
+          email: inviteData.email,
+          error: error.message || 'Unknown error',
+        });
       }
     }
 
@@ -553,4 +679,3 @@ export class InviteService {
     };
   }
 }
-

@@ -9,8 +9,14 @@ export default () => ({
   mongoUri: process.env.MONGO_URI,
   mongoMaxPoolSize: parseInt(process.env.MONGO_MAX_POOL_SIZE ?? '10', 10),
   mongoMinPoolSize: parseInt(process.env.MONGO_MIN_POOL_SIZE ?? '2', 10),
-  mongoMaxIdleTimeMS: parseInt(process.env.MONGO_MAX_IDLE_TIME_MS ?? '30000', 10),
-  mongoServerSelectionTimeout: parseInt(process.env.MONGO_SERVER_SELECTION_TIMEOUT ?? '5000', 10),
+  mongoMaxIdleTimeMS: parseInt(
+    process.env.MONGO_MAX_IDLE_TIME_MS ?? '30000',
+    10,
+  ),
+  mongoServerSelectionTimeout: parseInt(
+    process.env.MONGO_SERVER_SELECTION_TIMEOUT ?? '5000',
+    10,
+  ),
   mongoSocketTimeout: parseInt(process.env.MONGO_SOCKET_TIMEOUT ?? '45000', 10),
   mongoReadPreference: process.env.MONGO_READ_PREFERENCE || 'primaryPreferred',
 
@@ -37,8 +43,14 @@ export default () => ({
   logLevel: process.env.LOG_LEVEL ?? 'info',
   logFileMaxSize: process.env.LOG_FILE_MAX_SIZE || '20m',
   logFileMaxFiles: process.env.LOG_FILE_MAX_FILES || '14d',
-  logAuditRetentionDays: parseInt(process.env.LOG_AUDIT_RETENTION_DAYS ?? '90', 10),
-  logErrorRetentionDays: parseInt(process.env.LOG_ERROR_RETENTION_DAYS ?? '30', 10),
+  logAuditRetentionDays: parseInt(
+    process.env.LOG_AUDIT_RETENTION_DAYS ?? '90',
+    10,
+  ),
+  logErrorRetentionDays: parseInt(
+    process.env.LOG_ERROR_RETENTION_DAYS ?? '30',
+    10,
+  ),
 
   // Timeouts
   requestTimeoutMs: parseInt(process.env.REQUEST_TIMEOUT_MS ?? '30000', 10),
@@ -47,10 +59,22 @@ export default () => ({
 
   // Circuit Breaker
   circuitBreaker: {
-    failureThreshold: parseInt(process.env.CIRCUIT_BREAKER_FAILURE_THRESHOLD ?? '5', 10),
-    resetTimeoutMs: parseInt(process.env.CIRCUIT_BREAKER_RESET_TIMEOUT_MS ?? '60000', 10),
-    monitoringPeriodMs: parseInt(process.env.CIRCUIT_BREAKER_MONITORING_PERIOD_MS ?? '60000', 10),
-    halfOpenMaxCalls: parseInt(process.env.CIRCUIT_BREAKER_HALF_OPEN_MAX_CALLS ?? '3', 10),
+    failureThreshold: parseInt(
+      process.env.CIRCUIT_BREAKER_FAILURE_THRESHOLD ?? '5',
+      10,
+    ),
+    resetTimeoutMs: parseInt(
+      process.env.CIRCUIT_BREAKER_RESET_TIMEOUT_MS ?? '60000',
+      10,
+    ),
+    monitoringPeriodMs: parseInt(
+      process.env.CIRCUIT_BREAKER_MONITORING_PERIOD_MS ?? '60000',
+      10,
+    ),
+    halfOpenMaxCalls: parseInt(
+      process.env.CIRCUIT_BREAKER_HALF_OPEN_MAX_CALLS ?? '3',
+      10,
+    ),
   },
 
   // Queue
@@ -67,7 +91,9 @@ export default () => ({
   },
   rateLimitEnabled: process.env.RATE_LIMIT_ENABLED !== 'false',
   corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:3100',
-  allowedOrigins: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3100'],
+  allowedOrigins: process.env.ALLOWED_ORIGINS?.split(',') || [
+    'http://localhost:3100',
+  ],
 
   // Email
   email: {
@@ -93,7 +119,10 @@ export default () => ({
     region: process.env.AWS_S3_REGION || 'us-east-1',
     accessKeyId: process.env.AWS_S3_ACCESS_KEY_ID,
     secretAccessKey: process.env.AWS_S3_SECRET_ACCESS_KEY,
-    presignedUrlExpiry: parseInt(process.env.S3_PRESIGNED_URL_EXPIRY ?? '3600', 10),
+    presignedUrlExpiry: parseInt(
+      process.env.S3_PRESIGNED_URL_EXPIRY ?? '3600',
+      10,
+    ),
   },
 
   // Observability
@@ -128,7 +157,8 @@ export default () => ({
   enableDdosProtection: process.env.ENABLE_DDOS_PROTECTION !== 'false',
   encryptEnvVars: process.env.ENCRYPT_ENV_VARS === 'true',
   kmsKeyId: process.env.KMS_KEY_ID,
-  sessionSecret: process.env.SESSION_SECRET || 'your-session-secret-change-in-production',
+  sessionSecret:
+    process.env.SESSION_SECRET || 'your-session-secret-change-in-production',
 
   // AI Configuration
   ai: {
@@ -138,7 +168,10 @@ export default () => ({
     pineconeEnvironment: process.env.PINECONE_ENVIRONMENT || 'us-east-1',
     pineconeIndexName: process.env.PINECONE_INDEX_NAME || 'novapulse',
     embeddingModel: process.env.EMBEDDING_MODEL || 'text-embedding-3-small',
-    embeddingDimensions: parseInt(process.env.EMBEDDING_DIMENSIONS ?? '1536', 10),
+    embeddingDimensions: parseInt(
+      process.env.EMBEDDING_DIMENSIONS ?? '1536',
+      10,
+    ),
     chunkSize: parseInt(process.env.AI_CHUNK_SIZE ?? '1000', 10),
     chunkOverlap: parseInt(process.env.AI_CHUNK_OVERLAP ?? '200', 10),
     maxTokens: parseInt(process.env.AI_MAX_TOKENS ?? '500', 10),

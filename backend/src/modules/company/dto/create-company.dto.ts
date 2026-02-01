@@ -1,4 +1,10 @@
-import { IsString, IsEmail, IsOptional, IsNotEmpty, IsUrl } from 'class-validator';
+import {
+  IsString,
+  IsEmail,
+  IsOptional,
+  IsNotEmpty,
+  IsUrl,
+} from 'class-validator';
 
 export class CreateCompanyDto {
   @IsString()
@@ -31,4 +37,3 @@ export class CreateCompanyDto {
   @IsNotEmpty()
   companyAdminPassword: string;
 }
-

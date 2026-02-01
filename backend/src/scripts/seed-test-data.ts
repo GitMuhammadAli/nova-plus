@@ -1,9 +1,9 @@
 /**
  * Script to seed test data for Phase 2 testing
- * 
+ *
  * Usage:
  *   ts-node src/scripts/seed-test-data.ts
- * 
+ *
  * Or via npm:
  *   npm run seed:test
  */
@@ -15,7 +15,7 @@ import { TestDataSeed } from '../modules/user/seed/test-data.seed';
 async function bootstrap() {
   const app = await NestFactory.createApplicationContext(AppModule);
   const testDataSeed = app.get(TestDataSeed);
-  
+
   try {
     await testDataSeed.seedTestData();
     console.log('\n✅ Test data seeded successfully!');
@@ -29,4 +29,3 @@ async function bootstrap() {
 }
 
 bootstrap();
-

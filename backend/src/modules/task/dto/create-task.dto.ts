@@ -1,4 +1,10 @@
-import { IsMongoId, IsOptional, IsString, IsEnum, IsDateString } from 'class-validator';
+import {
+  IsMongoId,
+  IsOptional,
+  IsString,
+  IsEnum,
+  IsDateString,
+} from 'class-validator';
 import { TaskStatus, TaskPriority } from '../entities/task.entity';
 
 export class CreateTaskDto {

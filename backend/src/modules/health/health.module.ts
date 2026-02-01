@@ -6,11 +6,7 @@ import { QueueModule } from '../../providers/queue/queue.module';
 import { REDIS_CLIENT } from '../../providers/redis/redis.provider';
 
 @Module({
-  imports: [
-    TerminusModule,
-    MongooseModule,
-    QueueModule,
-  ],
+  imports: [TerminusModule, MongooseModule, QueueModule],
   controllers: [HealthController],
   providers: [],
 })

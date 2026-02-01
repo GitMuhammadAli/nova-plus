@@ -89,8 +89,15 @@ export class QueueService {
       ...options,
     };
 
-    const job = await this.webhookQueue.add('dispatchWebhook', payload, jobOptions);
-    logger.info('Webhook job enqueued', { jobId: job.id, webhookId: payload.webhookId });
+    const job = await this.webhookQueue.add(
+      'dispatchWebhook',
+      payload,
+      jobOptions,
+    );
+    logger.info('Webhook job enqueued', {
+      jobId: job.id,
+      webhookId: payload.webhookId,
+    });
     return job;
   }
 
@@ -113,8 +120,15 @@ export class QueueService {
       ...options,
     };
 
-    const job = await this.workflowQueue.add('executeWorkflow', payload, jobOptions);
-    logger.info('Workflow job enqueued', { jobId: job.id, workflowId: payload.workflowId });
+    const job = await this.workflowQueue.add(
+      'executeWorkflow',
+      payload,
+      jobOptions,
+    );
+    logger.info('Workflow job enqueued', {
+      jobId: job.id,
+      workflowId: payload.workflowId,
+    });
     return job;
   }
 
@@ -139,32 +153,44 @@ export class QueueService {
       ...options,
     };
 
-    const job = await this.reportQueue.add('generateReport', payload, jobOptions);
-    logger.info('Report job enqueued', { jobId: job.id, reportType: payload.reportType });
+    const job = await this.reportQueue.add(
+      'generateReport',
+      payload,
+      jobOptions,
+    );
+    logger.info('Report job enqueued', {
+      jobId: job.id,
+      reportType: payload.reportType,
+    });
     return job;
   }
 
   /**
    * Generic method to add job to any queue
    */
-  async add(queueName: string, jobName: string, payload: any, options?: JobOptions) {
+  async add(
+    queueName: string,
+    jobName: string,
+    payload: any,
+    options?: JobOptions,
+  ) {
     let queue: Queue;
-        switch (queueName) {
-          case 'nova-email':
-            queue = this.emailQueue;
-            break;
-          case 'nova-webhook':
-            queue = this.webhookQueue;
-            break;
-          case 'nova-workflow':
-            queue = this.workflowQueue;
-            break;
-          case 'nova-report':
-            queue = this.reportQueue;
-            break;
-          case 'nova-upload-cleanup':
-            queue = this.uploadCleanupQueue;
-            break;
+    switch (queueName) {
+      case 'nova-email':
+        queue = this.emailQueue;
+        break;
+      case 'nova-webhook':
+        queue = this.webhookQueue;
+        break;
+      case 'nova-workflow':
+        queue = this.workflowQueue;
+        break;
+      case 'nova-report':
+        queue = this.reportQueue;
+        break;
+      case 'nova-upload-cleanup':
+        queue = this.uploadCleanupQueue;
+        break;
       default:
         throw new Error(`Unknown queue: ${queueName}`);
     }
@@ -186,7 +212,11 @@ export class QueueService {
       ...options,
     };
 
-    const job = await this.uploadCleanupQueue.add('cleanupExpiredUploads', {}, jobOptions);
+    const job = await this.uploadCleanupQueue.add(
+      'cleanupExpiredUploads',
+      {},
+      jobOptions,
+    );
     logger.info('Upload cleanup job enqueued', { jobId: job.id });
     return job;
   }
@@ -195,7 +225,13 @@ export class QueueService {
    * Get queue statistics
    */
   async getQueueStats() {
-    const [emailStats, webhookStats, workflowStats, reportStats, uploadCleanupStats] = await Promise.all([
+    const [
+      emailStats,
+      webhookStats,
+      workflowStats,
+      reportStats,
+      uploadCleanupStats,
+    ] = await Promise.all([
       this.emailQueue.getJobCounts(),
       this.webhookQueue.getJobCounts(),
       this.workflowQueue.getJobCounts(),
@@ -219,4 +255,3 @@ export class QueueService {
     return this.redisClient;
   }
 }
-

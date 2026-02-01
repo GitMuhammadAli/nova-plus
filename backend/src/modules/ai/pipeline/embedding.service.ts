@@ -82,4 +82,3 @@ export class EmbeddingService {
     return 1536;
   }
 }
-

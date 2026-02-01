@@ -24,11 +24,13 @@ export class RolesGuard implements CanActivate {
 
     // Normalize user role - handle various formats
     const userRole = this.normalizeRole(user.role);
-    
+
     // Normalize required roles and check if user's role matches any
-    const normalizedRequiredRoles = requiredRoles.map(role => this.normalizeRole(role));
+    const normalizedRequiredRoles = requiredRoles.map((role) =>
+      this.normalizeRole(role),
+    );
     const hasRequiredRole = normalizedRequiredRoles.some(
-      (role) => role === userRole
+      (role) => role === userRole,
     );
 
     // Debug logging in development
@@ -45,7 +47,7 @@ export class RolesGuard implements CanActivate {
 
     if (!hasRequiredRole) {
       throw new ForbiddenException(
-        `Access denied: requires one of [${requiredRoles.join(', ')}] role(s), but user has role: ${user.role || 'unknown'}`
+        `Access denied: requires one of [${requiredRoles.join(', ')}] role(s), but user has role: ${user.role || 'unknown'}`,
       );
     }
     return true;
@@ -60,14 +62,18 @@ export class RolesGuard implements CanActivate {
    */
   private normalizeRole(role: string | undefined): string {
     if (!role) return '';
-    
+
     const normalized = role.toLowerCase().trim();
-    
+
     // Handle legacy role mappings for backward compatibility
-    if (normalized === 'admin' && role !== 'super_admin' && role !== 'superadmin') {
+    if (
+      normalized === 'admin' &&
+      role !== 'super_admin' &&
+      role !== 'superadmin'
+    ) {
       return 'company_admin';
     }
-    
+
     return normalized;
   }
 }

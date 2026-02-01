@@ -28,4 +28,3 @@ export class ChatResponseDto {
   };
   result?: any;
 }
-

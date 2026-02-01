@@ -41,7 +41,15 @@ export interface WorkflowNode {
 export interface Condition {
   id: string;
   field: string;
-  operator: 'equals' | 'not_equals' | 'contains' | 'not_contains' | 'greater_than' | 'less_than' | 'starts_with' | 'ends_with';
+  operator:
+    | 'equals'
+    | 'not_equals'
+    | 'contains'
+    | 'not_contains'
+    | 'greater_than'
+    | 'less_than'
+    | 'starts_with'
+    | 'ends_with';
   value: string;
 }
 
@@ -69,7 +77,12 @@ export class Workflow {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
   createdBy: Types.ObjectId;
 
-  @Prop({ type: String, enum: WorkflowStatus, default: WorkflowStatus.DRAFT, index: true })
+  @Prop({
+    type: String,
+    enum: WorkflowStatus,
+    default: WorkflowStatus.DRAFT,
+    index: true,
+  })
   status: WorkflowStatus;
 
   @Prop({ type: [Object], required: true })
@@ -97,4 +110,3 @@ export const WorkflowSchema = SchemaFactory.createForClass(Workflow);
 WorkflowSchema.index({ companyId: 1, status: 1 });
 WorkflowSchema.index({ createdBy: 1 });
 WorkflowSchema.index({ status: 1 });
-

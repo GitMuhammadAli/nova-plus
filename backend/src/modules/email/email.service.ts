@@ -19,8 +19,10 @@ export class EmailService {
     const mailtrapPort = this.configService.get<number>('MAILTRAP_PORT');
     const mailtrapUser = this.configService.get<string>('MAILTRAP_USER');
     const mailtrapPass = this.configService.get<string>('MAILTRAP_PASS');
-    const emailFrom = this.configService.get<string>('EMAIL_FROM') || 'noreply@novapulse.com';
-    const emailFromName = this.configService.get<string>('EMAIL_FROM_NAME') || 'NovaPulse';
+    const emailFrom =
+      this.configService.get<string>('EMAIL_FROM') || 'noreply@novapulse.com';
+    const emailFromName =
+      this.configService.get<string>('EMAIL_FROM_NAME') || 'NovaPulse';
 
     // Use Mailtrap if configured, otherwise use SMTP settings
     if (mailtrapHost && mailtrapUser && mailtrapPass) {
@@ -35,8 +37,12 @@ export class EmailService {
       this.logger.log('✅ Email service initialized with Mailtrap');
     } else {
       // Fallback: Log only mode (development)
-      this.logger.warn('⚠️ Mailtrap not configured. Emails will be logged only.');
-      this.logger.warn('   Set MAILTRAP_HOST, MAILTRAP_USER, MAILTRAP_PASS in .env');
+      this.logger.warn(
+        '⚠️ Mailtrap not configured. Emails will be logged only.',
+      );
+      this.logger.warn(
+        '   Set MAILTRAP_HOST, MAILTRAP_USER, MAILTRAP_PASS in .env',
+      );
     }
   }
 
@@ -52,8 +58,10 @@ export class EmailService {
     expiresAt: Date;
   }) {
     const { to, inviteLink, companyName, inviterName, role, expiresAt } = data;
-    const emailFrom = this.configService.get<string>('EMAIL_FROM') || 'noreply@novapulse.com';
-    const emailFromName = this.configService.get<string>('EMAIL_FROM_NAME') || 'NovaPulse';
+    const emailFrom =
+      this.configService.get<string>('EMAIL_FROM') || 'noreply@novapulse.com';
+    const emailFromName =
+      this.configService.get<string>('EMAIL_FROM_NAME') || 'NovaPulse';
 
     // Email template
     const emailHtml = this.getInviteEmailTemplate({
@@ -89,7 +97,11 @@ If you didn't expect this invitation, you can safely ignore this email.
 
         this.logger.log(`✅ Invite email sent to: ${to}`);
         this.logger.debug(`   Message ID: ${info.messageId}`);
-        return { success: true, message: 'Invite email sent successfully', messageId: info.messageId };
+        return {
+          success: true,
+          message: 'Invite email sent successfully',
+          messageId: info.messageId,
+        };
       } catch (error) {
         this.logger.error(`❌ Failed to send invite email to ${to}:`, error);
         throw error;
@@ -102,12 +114,15 @@ If you didn't expect this invitation, you can safely ignore this email.
       this.logger.log(`   Role: ${role}`);
       this.logger.log(`   Link: ${inviteLink}`);
       this.logger.log(`   Expires: ${expiresAt}`);
-      
+
       if (process.env.NODE_ENV === 'development') {
         this.logger.debug('Email HTML:', emailHtml);
       }
 
-      return { success: true, message: 'Invite email logged (Mailtrap not configured)' };
+      return {
+        success: true,
+        message: 'Invite email logged (Mailtrap not configured)',
+      };
     }
   }
 
@@ -178,4 +193,3 @@ If you didn't expect this invitation, you can safely ignore this email.
     `.trim();
   }
 }
-

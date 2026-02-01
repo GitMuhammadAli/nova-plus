@@ -1,4 +1,10 @@
-import { IsEmail, IsString, MinLength, IsEnum, IsOptional } from 'class-validator';
+import {
+  IsEmail,
+  IsString,
+  MinLength,
+  IsEnum,
+  IsOptional,
+} from 'class-validator';
 import { UserRole } from '../entities/user.entity';
 
 export class CreateUserByAdminDto {
@@ -28,4 +34,3 @@ export class CreateUserByAdminDto {
   @IsString()
   location?: string;
 }
-

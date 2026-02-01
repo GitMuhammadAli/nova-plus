@@ -39,16 +39,44 @@ describe('Phase 3 - Complete Role Integration (e2e)', () => {
     // Clean up any existing test data first
     const companyModel = app.get<Model<Company>>(getModelToken(Company.name));
     const userModel = app.get<Model<User>>(getModelToken(User.name));
-    const departmentModel = app.get<Model<Department>>(getModelToken(Department.name));
+    const departmentModel = app.get<Model<Department>>(
+      getModelToken(Department.name),
+    );
     const projectModel = app.get<Model<Project>>(getModelToken(Project.name));
     const taskModel = app.get<Model<Task>>(getModelToken(Task.name));
-    
-    await userModel.deleteMany({ 
-      email: { $in: ['admin@test.com', 'manager@test.com', 'user@test.com', 'outside@test.com', 'other@test.com'] } 
-    }).exec();
-    await departmentModel.deleteMany({ name: { $in: ['Engineering', 'Sales'] } }).exec();
-    await projectModel.deleteMany({ name: { $in: ['Integration Project', 'Cross-Role Task'] } }).exec();
-    await taskModel.deleteMany({ title: { $in: ['Manager Created Task', 'Cross-Role Task', 'Invalid Task', 'Other Dept Task', 'Other User Task'] } }).exec();
+
+    await userModel
+      .deleteMany({
+        email: {
+          $in: [
+            'admin@test.com',
+            'manager@test.com',
+            'user@test.com',
+            'outside@test.com',
+            'other@test.com',
+          ],
+        },
+      })
+      .exec();
+    await departmentModel
+      .deleteMany({ name: { $in: ['Engineering', 'Sales'] } })
+      .exec();
+    await projectModel
+      .deleteMany({ name: { $in: ['Integration Project', 'Cross-Role Task'] } })
+      .exec();
+    await taskModel
+      .deleteMany({
+        title: {
+          $in: [
+            'Manager Created Task',
+            'Cross-Role Task',
+            'Invalid Task',
+            'Other Dept Task',
+            'Other User Task',
+          ],
+        },
+      })
+      .exec();
     await companyModel.deleteMany({ name: 'Integration Test Company' }).exec();
 
     // Create test company
@@ -122,7 +150,7 @@ describe('Phase 3 - Complete Role Integration (e2e)', () => {
     adminToken = 'test-admin-token-placeholder';
     managerToken = 'test-manager-token-placeholder';
     userToken = 'test-user-token-placeholder';
-    
+
     // Note: In production tests, you would:
     // 1. Hash passwords properly with bcrypt
     // 2. Login via /api/v1/auth/login for each user
@@ -133,16 +161,44 @@ describe('Phase 3 - Complete Role Integration (e2e)', () => {
     // Cleanup test data
     const userModel = app.get<Model<User>>(getModelToken(User.name));
     const companyModel = app.get<Model<Company>>(getModelToken(Company.name));
-    const departmentModel = app.get<Model<Department>>(getModelToken(Department.name));
+    const departmentModel = app.get<Model<Department>>(
+      getModelToken(Department.name),
+    );
     const projectModel = app.get<Model<Project>>(getModelToken(Project.name));
     const taskModel = app.get<Model<Task>>(getModelToken(Task.name));
 
-    await userModel.deleteMany({ 
-      email: { $in: ['admin@test.com', 'manager@test.com', 'user@test.com', 'outside@test.com', 'other@test.com'] } 
-    }).exec();
-    await departmentModel.deleteMany({ name: { $in: ['Engineering', 'Sales'] } }).exec();
-    await projectModel.deleteMany({ name: { $in: ['Integration Project', 'Cross-Role Task'] } }).exec();
-    await taskModel.deleteMany({ title: { $in: ['Manager Created Task', 'Cross-Role Task', 'Invalid Task', 'Other Dept Task', 'Other User Task'] } }).exec();
+    await userModel
+      .deleteMany({
+        email: {
+          $in: [
+            'admin@test.com',
+            'manager@test.com',
+            'user@test.com',
+            'outside@test.com',
+            'other@test.com',
+          ],
+        },
+      })
+      .exec();
+    await departmentModel
+      .deleteMany({ name: { $in: ['Engineering', 'Sales'] } })
+      .exec();
+    await projectModel
+      .deleteMany({ name: { $in: ['Integration Project', 'Cross-Role Task'] } })
+      .exec();
+    await taskModel
+      .deleteMany({
+        title: {
+          $in: [
+            'Manager Created Task',
+            'Cross-Role Task',
+            'Invalid Task',
+            'Other Dept Task',
+            'Other User Task',
+          ],
+        },
+      })
+      .exec();
     await companyModel.deleteMany({ name: 'Integration Test Company' }).exec();
 
     await app.close();
@@ -156,7 +212,9 @@ describe('Phase 3 - Complete Role Integration (e2e)', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
-      expect(usersResponse.body.success || Array.isArray(usersResponse.body.data)).toBe(true);
+      expect(
+        usersResponse.body.success || Array.isArray(usersResponse.body.data),
+      ).toBe(true);
 
       // Admin can see company stats
       const statsResponse = await request(app.getHttpServer())
@@ -366,7 +424,7 @@ describe('Phase 3 - Complete Role Integration (e2e)', () => {
         .expect(200);
 
       const userTask = userTasksResponse.body.data.find(
-        (t: any) => t._id === newTaskId
+        (t: any) => t._id === newTaskId,
       );
       expect(userTask).toBeDefined();
 
@@ -435,7 +493,9 @@ describe('Phase 3 - Complete Role Integration (e2e)', () => {
 
     it('Manager cannot access tasks outside their department', async () => {
       // Create another department
-      const departmentModel = app.get<Model<Department>>(getModelToken(Department.name));
+      const departmentModel = app.get<Model<Department>>(
+        getModelToken(Department.name),
+      );
       const otherDept = await departmentModel.create({
         name: 'Sales',
         companyId: companyId,
@@ -459,4 +519,3 @@ describe('Phase 3 - Complete Role Integration (e2e)', () => {
     });
   });
 });
-
