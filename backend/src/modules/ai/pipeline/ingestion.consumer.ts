@@ -1,17 +1,10 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { EventEmitterService } from '../../../common/events/event-emitter.service';
 import { CleanerService } from './cleaner.service';
 import { ChunkService } from './chunk.service';
 import { EmbeddingService } from './embedding.service';
 import { PineconeService } from '../vector/pinecone.service';
 import logger from '../../../common/logger/winston.logger';
-// EventType enum - defined locally to avoid cross-project dependency
-enum EventType {
-  USER_CREATED = 'user.created',
-  COMPANY_UPDATED = 'company.updated',
-  INVITE_SENT = 'invite.sent',
-}
 
 /**
  * Ingestion Consumer
@@ -25,7 +18,6 @@ export class IngestionConsumer implements OnModuleInit {
     private readonly chunker: ChunkService,
     private readonly embedder: EmbeddingService,
     private readonly pinecone: PineconeService,
-    private readonly eventEmitter: EventEmitterService,
   ) {}
 
   async onModuleInit() {

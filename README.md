@@ -5,8 +5,8 @@
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 18+ and npm
-- MongoDB (local or Atlas)
+- Node.js 22+ and npm
+- Docker Desktop (for MongoDB & Redis)
 - Git
 
 ### Installation
@@ -25,18 +25,49 @@ cd ../Frontend
 npm install
 ```
 
-### Environment Setup
+### Step 1: Start Infrastructure (Docker)
+
+```bash
+cd Novapulsee
+docker-compose up -d mongodb redis
+```
+
+This starts:
+- **MongoDB** on port `27017`
+- **Redis** on port `6380`
+
+Wait ~30 seconds for health checks to pass.
+
+### Step 2: Environment Setup
 
 **Backend (`backend/.env`):**
 ```env
+# Core settings
 NODE_ENV=development
 PORT=5500
-MONGO_URI=mongodb://localhost:27017/novapulse
-JWT_SECRET=your-secure-secret-key
-JWT_REFRESH_SECRET=your-refresh-secret-key
+
+# MongoDB
+MONGO_URI=mongodb://root:password@localhost:27017/novapulse?authSource=admin
+
+# Redis
+REDIS_URL=redis://localhost:6380
+REDIS_HOST=localhost
+REDIS_PORT=6380
+
+# JWT secrets (generate secure values for production)
+JWT_SECRET=your-secure-secret-key-min-32-chars
+JWT_ACCESS_SECRET=your-access-token-secret-min-32-chars
+JWT_REFRESH_SECRET=your-refresh-token-secret-min-32-chars
+ACCESS_TOKEN_EXPIRE=15m
+REFRESH_TOKEN_EXPIRE=7d
+
+# Frontend URL
 FRONTEND_URL=http://localhost:3100
 
-# Mailtrap Configuration (for email invites)
+# Stripe (required)
+STRIPE_SECRET_KEY=sk_test_your_stripe_key
+
+# Mailtrap Configuration (optional - for email invites)
 MAILTRAP_HOST=sandbox.smtp.mailtrap.io
 MAILTRAP_PORT=2525
 MAILTRAP_USER=your_mailtrap_username
@@ -50,19 +81,63 @@ EMAIL_FROM_NAME=NovaPulse
 NEXT_PUBLIC_API_URL=http://localhost:5500
 ```
 
-### Running the Application
+### Step 3: Start Backend
 
 ```bash
-# Terminal 1: Start backend
 cd backend
-npm run start:dev
+npm run build        # Build TypeScript
+node dist/backend/src/main.js
+```
 
-# Terminal 2: Start frontend
+Or for development with hot-reload:
+```bash
+npm run start:dev
+```
+
+Backend runs on: **http://localhost:5500**
+
+### Step 4: Start Frontend
+
+```bash
 cd Frontend
 npm run dev
 ```
 
-Visit `http://localhost:3100` in your browser.
+Frontend runs on: **http://localhost:3100**
+
+### Quick Start (All Commands)
+
+```bash
+# Terminal 1 - Infrastructure
+cd Novapulsee
+docker-compose up -d mongodb redis
+
+# Terminal 2 - Backend
+cd backend
+node dist/backend/src/main.js
+
+# Terminal 3 - Frontend
+cd Frontend
+npm run dev
+```
+
+### Access Points
+
+| Service | URL |
+|---------|-----|
+| Frontend | http://localhost:3100 |
+| Backend API | http://localhost:5500 |
+| API Health | http://localhost:5500/api/v1/health |
+
+### Stop Services
+
+```bash
+# Stop Docker containers
+docker-compose down
+
+# Or stop all including volumes
+docker-compose down -v
+```
 
 ## 🏗️ Architecture
 

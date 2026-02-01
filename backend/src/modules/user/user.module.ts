@@ -12,7 +12,11 @@ import { UserTasksService } from './tasks/user-tasks.service';
 import { UserProjectsService } from './projects/user-projects.service';
 import { UserStatsService } from './stats/user-stats.service';
 import { TestDataSeed } from './seed/test-data.seed';
+import { BulkSeedService } from './seed/bulk-seed.service';
 import { AuditModule } from '../audit/audit.module';
+import { Department, DepartmentSchema } from '../department/entities/department.entity';
+import { Team, TeamSchema } from '../team/entities/team.entity';
+import { Workflow, WorkflowSchema } from '../workflow/entities/workflow.entity';
 
 @Module({
   imports: [
@@ -22,6 +26,9 @@ import { AuditModule } from '../audit/audit.module';
       { name: Company.name, schema: CompanySchema },
       { name: Task.name, schema: TaskSchema },
       { name: Project.name, schema: ProjectSchema },
+      { name: Department.name, schema: DepartmentSchema },
+      { name: Team.name, schema: TeamSchema },
+      { name: Workflow.name, schema: WorkflowSchema },
     ]),
     AuditModule,
   ],
@@ -31,6 +38,7 @@ import { AuditModule } from '../audit/audit.module';
     UserProjectsService,
     UserStatsService,
     TestDataSeed,
+    BulkSeedService,
   ],
   controllers: [UserController, UsersController],
   exports: [UsersService, UserTasksService, UserProjectsService, UserStatsService],

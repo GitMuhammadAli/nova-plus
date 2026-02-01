@@ -87,15 +87,6 @@ export default () => ({
     cloudWatchLogGroup: process.env.AWS_CLOUDWATCH_LOG_GROUP || 'novapulse-api',
   },
 
-  // SQS
-  sqs: {
-    queueUrl: process.env.SQS_QUEUE_URL,
-    dlqUrl: process.env.SQS_DLQ_URL,
-    visibilityTimeout: parseInt(process.env.SQS_VISIBILITY_TIMEOUT ?? '300', 10),
-    messageRetentionPeriod: parseInt(process.env.SQS_MESSAGE_RETENTION_PERIOD ?? '345600', 10),
-    maxReceiveCount: parseInt(process.env.SQS_MAX_RECEIVE_COUNT ?? '3', 10),
-  },
-
   // S3
   s3: {
     bucket: process.env.AWS_S3_BUCKET,

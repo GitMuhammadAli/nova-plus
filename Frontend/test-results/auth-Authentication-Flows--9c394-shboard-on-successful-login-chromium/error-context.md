@@ -1,0 +1,54 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - img [ref=e7]
+        - generic [ref=e9]: NovaPulse
+      - heading "Welcome back to NovaPulse." [level=1] [ref=e10]:
+        - text: Welcome back to
+        - text: NovaPulse.
+      - paragraph [ref=e11]: Access your control center for automation, analytics, and team management.
+    - generic [ref=e13]:
+      - generic [ref=e14]:
+        - heading "Sign in to your account" [level=2] [ref=e15]
+        - paragraph [ref=e16]:
+          - text: New here?
+          - link "Create an account" [ref=e17] [cursor=pointer]:
+            - /url: /register
+      - alert [ref=e18]:
+        - img [ref=e19]
+        - generic [ref=e21]: Internal server error
+      - generic [ref=e22]:
+        - generic [ref=e23]:
+          - generic [ref=e24]: Email address
+          - generic [ref=e25]:
+            - img [ref=e26]
+            - textbox "Email address" [ref=e29]:
+              - /placeholder: you@company.com
+              - text: test@example.com
+        - generic [ref=e30]:
+          - generic [ref=e31]:
+            - generic [ref=e32]: Password
+            - link "Forgot password?" [ref=e33] [cursor=pointer]:
+              - /url: /forgot-password
+          - generic [ref=e34]:
+            - img [ref=e35]
+            - textbox "Password" [ref=e38]:
+              - /placeholder: ••••••••
+              - text: Password123!
+        - button "Sign in" [ref=e39]:
+          - text: Sign in
+          - img
+  - region "Notifications (F8)":
+    - list
+  - generic [ref=e40]:
+    - img [ref=e42]
+    - button "Open Tanstack query devtools" [ref=e90] [cursor=pointer]:
+      - img [ref=e91]
+  - button "Open Next.js Dev Tools" [ref=e144] [cursor=pointer]:
+    - img [ref=e145]
+  - alert [ref=e148]
+```

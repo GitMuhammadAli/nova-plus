@@ -46,7 +46,7 @@ services:
     restart: unless-stopped
     command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
     ports:
-      - "6379:6379"
+      - "6380:6379"  # Using 6380 externally to avoid conflict with other projects
     volumes:
       - redis_data:/data
     healthcheck:

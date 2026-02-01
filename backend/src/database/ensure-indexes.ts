@@ -14,14 +14,14 @@ import { allIndexes } from './indexes';
 async function createCollectionIndexes(
   db: mongoose.Connection,
   collectionName: string,
-  indexes: Array<{ key: Record<string, number>; options: Record<string, any> }>,
+  indexes: Array<{ key: any; options: Record<string, any> }>,
 ): Promise<void> {
   try {
     const collection = db.collection(collectionName);
     
     for (const indexDef of indexes) {
       try {
-        await collection.createIndex(indexDef.key, indexDef.options);
+        await collection.createIndex(indexDef.key as any, indexDef.options);
         console.log(`✓ Created index ${indexDef.options.name} on ${collectionName}`);
       } catch (error: any) {
         // Index might already exist with different options

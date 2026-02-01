@@ -82,9 +82,9 @@ export const analyticsAPI = {
 };
 
 // ============================================
-// BILLING API
+// BILLING API (Basic CRUD - see below for extended billing operations)
 // ============================================
-export const billingAPI = {
+export const billingBasicAPI = {
   getAll: (params?: any) => api.get('/billing', { params }),
   
   getById: (id: string) => api.get(`/billing/${id}`),

@@ -30,7 +30,7 @@ export class BillingService {
       throw new Error('STRIPE_SECRET_KEY is not configured');
     }
     this.stripe = new Stripe(stripeSecretKey, {
-      apiVersion: '2025-11-17.clover',
+      apiVersion: '2026-01-28.clover' as any,
     });
   }
 

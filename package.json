@@ -1,0 +1,42 @@
+{
+  "name": "novapulsee",
+  "version": "1.0.0",
+  "description": "Modern SaaS platform built with NestJS and Next.js 15 for managing companies, users, projects, and tasks with complete multi-tenant isolation.",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -n \"DOCKER,BACKEND,FRONTEND\" -c \"blue,green,magenta\" \"npm run docker:up\" \"npm run backend:dev\" \"npm run frontend:dev\"",
+    "start": "concurrently -n \"BACKEND,FRONTEND\" -c \"green,magenta\" \"npm run backend:start\" \"npm run frontend:dev\"",
+    "docker:up": "docker-compose up -d mongodb redis && echo Docker services started",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "backend:dev": "cd backend && npm run start:dev",
+    "backend:start": "cd backend && node dist/backend/src/main.js",
+    "backend:build": "cd backend && npm run build",
+    "backend:install": "cd backend && npm install",
+    "frontend:dev": "cd Frontend && npm run dev",
+    "frontend:build": "cd Frontend && npm run build",
+    "frontend:install": "cd Frontend && npm install",
+    "install:all": "npm install && npm run backend:install && npm run frontend:install",
+    "build:all": "npm run backend:build && npm run frontend:build",
+    "test:backend": "cd backend && npm test",
+    "test:e2e": "cd Frontend && npm run test:e2e",
+    "stop": "npm run docker:down"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GitMuhammadAli/nova-plus.git"
+  },
+  "keywords": ["saas", "nestjs", "nextjs", "multi-tenant"],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/GitMuhammadAli/nova-plus/issues"
+  },
+  "homepage": "https://github.com/GitMuhammadAli/nova-plus#readme",
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

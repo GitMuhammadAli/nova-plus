@@ -14,7 +14,6 @@ import { AutomationAgentService } from './agents/automation-agent.service';
 import { AIInsightsService } from './analytics/ai-insights.service';
 import { RiskScoreService } from './analytics/risk-score.service';
 import { PredictionService } from './analytics/prediction.service';
-import { EventEmitterService } from '../../common/events/event-emitter.service';
 import { AISchedulerService } from './jobs/ai-scheduler.service';
 
 @Module({
@@ -41,8 +40,6 @@ import { AISchedulerService } from './jobs/ai-scheduler.service';
     PredictionService,
     // Jobs
     AISchedulerService,
-    // Events
-    EventEmitterService,
   ],
   exports: [
     IngestionConsumer,

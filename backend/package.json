@@ -20,12 +20,12 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "seed:test": "ts-node -r tsconfig-paths/register src/scripts/seed-test-data.ts",
+    "seed:bulk": "ts-node -r tsconfig-paths/register src/scripts/seed-bulk-data.ts",
     "db:indexes": "ts-node -r tsconfig-paths/register src/database/ensure-indexes.ts",
     "db:indexes:drop": "ts-node -r tsconfig-paths/register src/database/ensure-indexes.ts drop",
     "db:indexes:list": "ts-node -r tsconfig-paths/register src/database/ensure-indexes.ts list"
   },
   "dependencies": {
-    "@aws-sdk/client-sqs": "^3.940.0",
     "@langchain/community": "^0.3.0",
     "@langchain/openai": "^0.3.0",
     "@nestjs/bullmq": "^11.0.4",
