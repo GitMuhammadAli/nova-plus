@@ -68,6 +68,7 @@ Implementation status and completion summaries for each phase.
 | [Phase 5 Progress](./status/phase5-progress.md) | Phase 5 frontend implementation progress |
 | [Phase 7 Complete](./status/phase7-complete.md) | Phase 7 microservices status |
 | [Phase 8 Complete](./status/phase8-complete.md) | Phase 8 AI intelligence layer status |
+| [Phase 9-10 Complete](./status/phase9-10-complete.md) | Notifications, export, system status, tests |
 | [Complete System Summary](./status/complete-system-summary.md) | Full system implementation summary |
 
 ### Frontend
@@ -121,6 +122,7 @@ docs/
 │   ├── phase5-progress.md                 # Phase 5 progress
 │   ├── phase7-complete.md                 # Phase 7 status
 │   ├── phase8-complete.md                 # Phase 8 status
+│   ├── phase9-10-complete.md              # Phase 9-10 status
 │   └── complete-system-summary.md         # System summary
 ├── frontend/
 │   ├── production-ready-improvements.md   # Production improvements
