@@ -400,3 +400,24 @@ export const integrationsAPI = {
   
   delete: (id: string) => api.delete(`/integrations/${id}`),
 };
+
+// ============================================
+// NOTIFICATION API
+// ============================================
+export const notificationAPI = {
+  getAll: (page = 1, limit = 20) => api.get(`/notifications?page=${page}&limit=${limit}`),
+  getUnreadCount: () => api.get('/notifications/unread-count'),
+  markAsRead: (id: string) => api.patch(`/notifications/${id}/read`),
+  markAllAsRead: () => api.patch('/notifications/read-all'),
+  delete: (id: string) => api.delete(`/notifications/${id}`),
+};
+
+// ============================================
+// EXPORT API
+// ============================================
+export const exportAPI = {
+  users: (format = 'csv') => api.get(`/export/users?format=${format}`, { responseType: 'blob' }),
+  tasks: (params?: any) => api.get('/export/tasks', { params: { format: 'csv', ...params }, responseType: 'blob' }),
+  projects: () => api.get('/export/projects?format=csv', { responseType: 'blob' }),
+  auditLogs: (params?: any) => api.get('/export/audit-logs', { params: { format: 'csv', ...params }, responseType: 'blob' }),
+};

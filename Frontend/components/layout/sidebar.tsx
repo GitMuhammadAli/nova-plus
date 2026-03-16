@@ -21,6 +21,10 @@ import {
   MessageSquare,
   Brain,
   FileBarChart,
+  Bell,
+  Monitor,
+  Download,
+  UsersRound,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -107,6 +111,30 @@ const allNavItems = [
     label: "AI Reports",
     path: "/ai-reports",
     roles: ["admin", "manager"],
+  },
+  {
+    icon: UsersRound,
+    label: "Teams",
+    path: "/teams",
+    roles: ["admin", "manager"],
+  },
+  {
+    icon: Download,
+    label: "Uploads",
+    path: "/uploads",
+    roles: ["admin", "manager"],
+  },
+  {
+    icon: Monitor,
+    label: "System Status",
+    path: "/system-status",
+    roles: ["admin"],
+  },
+  {
+    icon: Bell,
+    label: "Notifications",
+    path: "/notifications",
+    roles: ["admin", "manager", "user"],
   },
   {
     icon: Settings,

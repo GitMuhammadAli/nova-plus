@@ -1,79 +1,57 @@
-# NovaPulse - Multi-Tenant SaaS Platform
+# NovaPulse - Production-Ready Multi-Tenant SaaS Platform
 
-> Modern SaaS platform built with NestJS and Next.js 15 for managing companies, users, projects, and tasks with complete multi-tenant isolation.
+> Enterprise-grade SaaS admin & operations platform built with NestJS and Next.js 15. Features multi-tenant isolation, AI intelligence, real-time notifications, workflow automation, and comprehensive analytics.
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 - Node.js 22+ and npm
 - Docker Desktop (for MongoDB & Redis)
-- Git
 
 ### Installation
 
 ```bash
-# Clone repository
 git clone <repository-url>
 cd Novapulsee
 
-# Install backend dependencies
-cd backend
-npm install
-
-# Install frontend dependencies
-cd ../Frontend
-npm install
+# Install all dependencies
+cd backend && npm install && cd ../Frontend && npm install && cd ..
 ```
 
-### Step 1: Start Infrastructure (Docker)
+### Start Services
 
 ```bash
-cd Novapulsee
+# Terminal 1 - Infrastructure
 docker-compose up -d mongodb redis
+
+# Terminal 2 - Backend (http://localhost:5500)
+cd backend && npm run start:dev
+
+# Terminal 3 - Frontend (http://localhost:3100)
+cd Frontend && npm run dev
 ```
 
-This starts:
-- **MongoDB** on port `27017`
-- **Redis** on port `6380`
-
-Wait ~30 seconds for health checks to pass.
-
-### Step 2: Environment Setup
+### Environment Setup
 
 **Backend (`backend/.env`):**
 ```env
-# Core settings
 NODE_ENV=development
 PORT=5500
-
-# MongoDB
 MONGO_URI=mongodb://root:password@localhost:27017/novapulse?authSource=admin
-
-# Redis
 REDIS_URL=redis://localhost:6380
-REDIS_HOST=localhost
-REDIS_PORT=6380
-
-# JWT secrets (generate secure values for production)
 JWT_SECRET=your-secure-secret-key-min-32-chars
 JWT_ACCESS_SECRET=your-access-token-secret-min-32-chars
 JWT_REFRESH_SECRET=your-refresh-token-secret-min-32-chars
-ACCESS_TOKEN_EXPIRE=15m
-REFRESH_TOKEN_EXPIRE=7d
-
-# Frontend URL
 FRONTEND_URL=http://localhost:3100
-
-# Stripe (required)
 STRIPE_SECRET_KEY=sk_test_your_stripe_key
 
-# Mailtrap Configuration (optional - for email invites)
+# Optional
 MAILTRAP_HOST=sandbox.smtp.mailtrap.io
 MAILTRAP_PORT=2525
 MAILTRAP_USER=your_mailtrap_username
 MAILTRAP_PASS=your_mailtrap_password
-EMAIL_FROM=noreply@novapulse.com
-EMAIL_FROM_NAME=NovaPulse
+OPENAI_API_KEY=your_openai_key          # For AI features
+PINECONE_API_KEY=your_pinecone_key      # For AI vector search
 ```
 
 **Frontend (`Frontend/.env.local`):**
@@ -81,345 +59,198 @@ EMAIL_FROM_NAME=NovaPulse
 NEXT_PUBLIC_API_URL=http://localhost:5500
 ```
 
-### Step 3: Start Backend
+## Architecture
 
-```bash
-cd backend
-npm run build        # Build TypeScript
-node dist/backend/src/main.js
 ```
-
-Or for development with hot-reload:
-```bash
-npm run start:dev
+NovaPulse Platform
+├── Frontend (Next.js 15 + React 19 + Redux Toolkit + Tailwind + shadcn/ui)
+├── Backend (NestJS + MongoDB + Redis + WebSocket)
+├── AI Layer (OpenAI + Pinecone + RAG Pipeline)
+└── Infrastructure (Docker + MongoDB + Redis)
 ```
-
-Backend runs on: **http://localhost:5500**
-
-### Step 4: Start Frontend
-
-```bash
-cd Frontend
-npm run dev
-```
-
-Frontend runs on: **http://localhost:3100**
-
-### Quick Start (All Commands)
-
-```bash
-# Terminal 1 - Infrastructure
-cd Novapulsee
-docker-compose up -d mongodb redis
-
-# Terminal 2 - Backend
-cd backend
-node dist/backend/src/main.js
-
-# Terminal 3 - Frontend
-cd Frontend
-npm run dev
-```
-
-### Access Points
-
-| Service | URL |
-|---------|-----|
-| Frontend | http://localhost:3100 |
-| Backend API | http://localhost:5500 |
-| API Health | http://localhost:5500/api/v1/health |
-
-### Stop Services
-
-```bash
-# Stop Docker containers
-docker-compose down
-
-# Or stop all including volumes
-docker-compose down -v
-```
-
-## 🏗️ Architecture
 
 ### Tech Stack
 
-**Backend:**
-- NestJS 10+ (Node.js framework)
-- MongoDB with Mongoose
-- JWT authentication (Passport.js)
-- Nodemailer (Mailtrap integration)
-- TypeScript
-
-**Frontend:**
-- Next.js 15 (App Router)
-- React 19
-- Redux Toolkit (state management)
-- Tailwind CSS + shadcn/ui
-- TypeScript
+| Layer | Technology |
+|-------|-----------|
+| Frontend | Next.js 15, React 19, Redux Toolkit, Tailwind CSS, shadcn/ui, Framer Motion, Recharts |
+| Backend | NestJS 11, MongoDB/Mongoose, Passport JWT, Socket.IO, BullMQ |
+| AI | OpenAI GPT-4o, Pinecone Vector DB, LangChain, RAG Pipeline |
+| Infrastructure | Docker, Redis, Cloudinary, Stripe, Mailtrap |
+| Testing | Jest, Playwright, Supertest |
 
 ### Project Structure
 
 ```
 Novapulsee/
-├── backend/          # NestJS backend API
-│   ├── src/
-│   │   ├── modules/  # Feature modules (auth, user, company, etc.)
-│   │   ├── common/   # Shared utilities, guards, decorators
-│   │   └── config/   # Configuration files
-│   └── package.json
+├── backend/src/
+│   ├── modules/
+│   │   ├── auth/           # JWT auth, MFA, sessions
+│   │   ├── user/           # User CRUD, roles
+│   │   ├── company/        # Multi-tenant companies
+│   │   ├── project/        # Project management
+│   │   ├── task/           # Task tracking
+│   │   ├── department/     # Department management
+│   │   ├── team/           # Team management
+│   │   ├── invite/         # Invitation system
+│   │   ├── dashboard/      # Dashboard stats
+│   │   ├── analytics/      # Real-time analytics
+│   │   ├── workflow/       # Automation workflows
+│   │   ├── audit/          # Audit logging
+│   │   ├── billing/        # Stripe billing
+│   │   ├── uploads/        # File uploads (Cloudinary)
+│   │   ├── webhook/        # Webhook system
+│   │   ├── notifications/  # Real-time notifications (WebSocket)
+│   │   ├── export/         # CSV data export
+│   │   ├── integrations/   # Third-party integrations
+│   │   ├── email/          # Email (Mailtrap)
+│   │   ├── health/         # Health checks & system status
+│   │   ├── ai/             # AI intelligence layer
+│   │   │   ├── agents/     # HR, Manager, Workflow, Automation agents
+│   │   │   ├── analytics/  # AI insights, risk scoring, predictions
+│   │   │   ├── chat/       # RAG-powered AI assistant
+│   │   │   ├── pipeline/   # Ingestion, chunking, embedding
+│   │   │   └── vector/     # Pinecone integration
+│   │   └── settings/       # Company settings
+│   └── common/             # Guards, filters, interceptors, logging
 │
-└── Frontend/         # Next.js frontend
-    ├── app/         # App Router pages
-    ├── components/  # React components
-    └── app/store/   # Redux store
+└── Frontend/
+    ├── app/
+    │   ├── (dashboard)/    # Protected dashboard pages
+    │   ├── (marketing)/    # Public marketing pages
+    │   ├── store/          # Redux slices
+    │   └── services/       # API service layer
+    ├── components/
+    │   ├── ui/             # shadcn/ui components
+    │   ├── layout/         # Sidebar, Topbar, AppShell
+    │   ├── ai/             # AI components
+    │   ├── automation/     # Workflow builder
+    │   └── notifications/  # Notification bell
+    └── hooks/              # Custom React hooks
 ```
 
-## ✨ Features
+## Features
 
-### Phase 1: Foundation ✅
-- JWT-based authentication with refresh tokens
-- User management (CRUD operations)
-- Role-based access control (RBAC)
-- Session management
-- Secure cookie-based auth
+### Core Platform
+| Feature | Status | Description |
+|---------|--------|-------------|
+| Authentication | Complete | JWT + MFA + refresh tokens + sessions |
+| Multi-Tenancy | Complete | Company isolation with RBAC |
+| User Management | Complete | CRUD, roles, departments, bulk ops |
+| Project Management | Complete | CRUD, status, user assignment |
+| Task Management | Complete | CRUD, comments, status, priority, recurring |
+| Department Management | Complete | CRUD, manager assignment, members |
+| Team Management | Complete | Team CRUD, member assignment |
+| Invite System | Complete | Email invites with token acceptance |
 
-### Phase 2: Multi-Tenancy ✅
-- Company/tenant isolation
-- Company registration flow
-- Invite system (email + token-based via Mailtrap)
-- Company-scoped data access
-- Enhanced RBAC with company context
+### Operations & Analytics
+| Feature | Status | Description |
+|---------|--------|-------------|
+| Dashboard | Complete | Role-based dashboards (admin, manager, user) |
+| Analytics | Complete | Real-time traffic, devices, conversion funnel |
+| Audit Logs | Complete | Complete activity tracking with CSV export |
+| Reports | Complete | Configurable reports with filters |
+| Data Export | Complete | CSV export for users, tasks, projects, audit logs |
 
-### Phase 3: Projects & Tasks (Coming Soon)
-- Project management
-- Task assignment and tracking
-- Team collaboration
-- Status workflows
+### Automation & AI
+| Feature | Status | Description |
+|---------|--------|-------------|
+| NovaFlow Workflows | Complete | Visual drag-and-drop workflow builder |
+| AI Chat Assistant | Complete | RAG-powered chat with source citations |
+| AI Insights | Complete | Company-wide insights, risk scoring |
+| AI Agents | Complete | HR, Manager, Workflow, Automation agents |
+| AI Reports | Complete | Daily/weekly AI-generated summaries |
+| Predictions | Complete | Churn risk, capacity, project completion |
 
-## 🔐 Authentication
+### Infrastructure
+| Feature | Status | Description |
+|---------|--------|-------------|
+| Real-time Notifications | Complete | WebSocket gateway + bell indicator |
+| File Uploads | Complete | Cloudinary with thumbnails, signed URLs |
+| Billing | Complete | Stripe subscriptions, plan limits |
+| Webhooks | Complete | HMAC-signed, retry, delivery logs |
+| Integrations | Complete | Email, Slack, Google OAuth |
+| Health Monitoring | Complete | MongoDB, Redis, memory, system status |
+| Email | Complete | Mailtrap SMTP with templates |
+| System Status | Complete | Real-time service monitoring dashboard |
 
-### Default Super Admin
+## API Endpoints
 
-The Super Admin is automatically created on backend startup:
-- **Email:** `admin@novapulse.com`
-- **Password:** `admin123`
-- **Role:** `SUPER_ADMIN`
+All endpoints prefixed with `/api/v1`
 
-⚠️ **Change the default password in production!**
-
-### User Roles
-
-| Role | Description | Capabilities |
-|------|-------------|--------------|
-| `SUPER_ADMIN` | Platform administrator | Manage all companies, create companies |
-| `COMPANY_ADMIN` | Company owner/admin | Manage company users, projects, settings, create invites |
-| `MANAGER` | Team manager | Create projects, assign tasks, manage team, invite users |
-| `USER` | Regular user | View assigned tasks, update status |
-| `EDITOR` | Content editor | Edit content, limited access |
-| `VIEWER` | Read-only | View-only access |
-
-## 📡 API Endpoints
-
-### Authentication
 ```
-POST   /auth/login          # Login user
-POST   /auth/register       # Register user
-POST   /auth/refresh        # Refresh access token
-POST   /auth/logout         # Logout user
-GET    /auth/me             # Get current user
-```
-
-### Company
-```
-POST   /company/register    # Public company registration
-POST   /company/create       # Create company (Super Admin)
-POST   /company/invite       # Create invite (Company Admin/Manager)
-GET    /company/all          # List all companies (Super Admin)
-GET    /company/:id          # Get company details
-PATCH  /company/:id         # Update company
-GET    /company/:id/users    # Get company users
-```
-
-### Users
-```
-GET    /users               # List users (company-scoped)
-GET    /user/:id            # Get user details
-POST   /users/create        # Create user (Admin)
-PATCH  /user/:id            # Update user
-DELETE /user/:id            # Delete user
+Auth:           POST /auth/login|register|logout|refresh, GET /auth/me
+                POST /auth/mfa/setup|verify|disable
+Users:          GET|POST /user, GET|PATCH|DELETE /user/:id
+Company:        POST /company/register, GET|PATCH /company/:id, GET /company/:id/stats
+Departments:    GET|POST /departments, GET|PATCH|DELETE /departments/:id
+Projects:       GET|POST /projects, GET|PATCH|DELETE /projects/:id
+Tasks:          GET|POST /tasks, GET /tasks/me, PATCH /tasks/:id/status
+Analytics:      GET /analytics/stats|traffic|devices|conversion|top-pages
+Workflows:      GET|POST /workflow, POST /workflow/:id/execute
+Audit:          GET /audit
+Billing:        GET|POST /billing, POST /billing/webhook
+Uploads:        POST /uploads, GET /uploads, POST /uploads/signed-url
+Webhooks:       GET|POST /webhooks, POST /webhooks/:id/test
+Notifications:  GET /notifications, PATCH /notifications/:id/read, PATCH /notifications/read-all
+Export:         GET /export/users|tasks|projects|audit-logs|analytics
+Health:         GET /health, GET /health/live, GET /health/ready, GET /health/status
+AI:             POST /ai/chat|search, GET /ai/insights|risks|summary/:type
+Integrations:   POST /integrations/email/test|slack/test, GET /integrations/oauth/google/start
 ```
 
-### Invites
-```
-POST   /invite/company/:id  # Create invite
-GET    /invite/:token       # Get invite details
-POST   /invite/:token/accept # Accept invite
-```
+## User Roles
 
-## 🧪 Testing
+| Role | Capabilities |
+|------|-------------|
+| `SUPER_ADMIN` | Full platform access, manage all companies |
+| `COMPANY_ADMIN` | Manage company users, projects, settings, billing |
+| `MANAGER` | Create projects/tasks, manage team, view analytics |
+| `USER` | View assigned tasks, update status, personal dashboard |
 
-### Quick Test
+Default super admin: `admin@novapulse.com` / `admin123`
+
+## Security
+
+- JWT with HttpOnly cookies (15min access, 7d refresh)
+- MFA via TOTP (Google Authenticator / Authy)
+- bcrypt password hashing (10 rounds)
+- Helmet.js security headers
+- Rate limiting (Throttler + Redis)
+- Company-scoped data isolation
+- Role-based guards on all endpoints
+- AES-256-CBC encryption for integration secrets
+- HMAC-SHA256 webhook payload signing
+- Input validation (class-validator, whitelist mode)
+- CORS with environment-based origins
+
+## Testing
 
 ```bash
-# Backend tests
-cd backend
-npm run test
-npm run test:e2e
+# Backend unit tests
+cd backend && npm test
+
+# Backend e2e tests
+cd backend && npm run test:e2e
+
+# Frontend e2e tests (Playwright)
+cd Frontend && npm run test:e2e
 ```
 
-### Manual Testing Checklist
-
-**Authentication:**
-- ✅ Login flow works correctly
-- ✅ Token generation and validation
-- ✅ Token refresh mechanism
-- ✅ JWT payload contains `companyId` and `role`
-
-**Company Isolation:**
-- ✅ Users can only access their own company data
-- ✅ Cross-company access returns 403
-- ✅ Company-scoped queries filter correctly
-
-**RBAC:**
-- ✅ Each role only accesses permitted endpoints
-- ✅ 403 errors for unauthorized roles
-- ✅ Role guards work correctly
-
-**Company Registration:**
-- ✅ Public registration creates company + admin
-- ✅ Admin is automatically assigned to company
-- ✅ Returns token and company info
-
-**Invite System:**
-- ✅ Company Admin can create invites
-- ✅ Manager can create invites (users only)
-- ✅ Invite tokens are generated correctly
-- ✅ Email sent via Mailtrap (if configured)
-- ✅ Invite link works for registration
-- ✅ **Automatic login after invite acceptance** (cookies set)
-- ✅ **Invite automatically deleted after use** (single-use enforcement)
-- ✅ Default expiration: 3 days
-
-**Database Validation:**
-- ✅ All users have `companyId`
-- ✅ Company arrays contain correct user IDs
-- ✅ No cross-company references
-
-## 🔒 Security
-
-- **JWT Tokens:** HttpOnly cookies, 15-minute expiration
-- **Refresh Tokens:** 30-day expiration, stored as bcrypt hashes
-- **Password Hashing:** bcrypt with 10 rounds
-- **CORS:** Configured for specific origins
-- **Company Isolation:** All data scoped by `companyId`
-- **Role Guards:** Endpoint-level access control
-- **Company Guards:** Prevent cross-tenant access
-
-## 📧 Email Configuration (Mailtrap)
-
-The application uses Mailtrap for sending invite emails in development/testing.
-
-**Setup:**
-1. Sign up at [mailtrap.io](https://mailtrap.io)
-2. Get SMTP credentials from Email Testing → Inboxes
-3. Add credentials to `backend/.env`:
-   ```env
-   MAILTRAP_HOST=sandbox.smtp.mailtrap.io
-   MAILTRAP_PORT=2525
-   MAILTRAP_USER=your_username
-   MAILTRAP_PASS=your_password
-   EMAIL_FROM=noreply@novapulse.com
-   EMAIL_FROM_NAME=NovaPulse
-   ```
-
-**How it works:**
-- With Mailtrap configured: Emails sent to Mailtrap inbox
-- Without Mailtrap: Emails logged to console (development fallback)
-- Invite links are always returned in API response for manual sharing
-
-## 🐛 Troubleshooting
-
-**401 Unauthorized:**
-- Check JWT token is being sent (cookies or Authorization header)
-- Verify JWT secret is consistent
-- Check token expiration
-
-**403 Forbidden:**
-- Verify user's role matches endpoint requirements
-- Check `companyId` matches resource's company
-- Verify company guard is not blocking legitimate access
-
-**Company Isolation Issues:**
-- Verify `companyId` is in JWT payload
-- Check service methods filter by `companyId`
-- Ensure company guard is applied to routes
-
-**Invite System Issues:**
-- Verify invite token is valid and not expired
-- Check if invite is already used
-- Verify company exists and is active
-- Check Mailtrap configuration if emails not sending
-
-**Token Issues:**
-- Verify cookie settings (httpOnly, secure, sameSite)
-- Check CORS settings allow credentials
-- Verify `companyId` is included in token payload
-
-## 📦 Development
-
-### Backend Commands
+## Deployment
 
 ```bash
-cd backend
+# Backend
+cd backend && npm run build && npm run start:prod
 
-# Development
-npm run start:dev
-
-# Production build
-npm run build
-npm run start:prod
-
-# Tests
-npm run test
-npm run test:e2e
+# Frontend
+cd Frontend && npm run build && npm start
 ```
 
-### Frontend Commands
-
-```bash
-cd Frontend
-
-# Development
-npm run dev
-
-# Production build
-npm run build
-npm start
-
-# Lint
-npm run lint
-```
-
-## 🚢 Deployment
-
-### Backend Deployment
-
-1. Set environment variables (including Mailtrap for production SMTP)
-2. Build: `npm run build`
-3. Start: `npm run start:prod`
-
-### Frontend Deployment
-
-1. Set `NEXT_PUBLIC_API_URL` to production backend URL
-2. Build: `npm run build`
-3. Deploy to Vercel/Netlify or run: `npm start`
-
-## 📝 License
-
-Proprietary - All rights reserved
+Set `NEXT_PUBLIC_API_URL` to your production backend URL.
 
 ---
 
-**Version:** 2.0  
-**Last Updated:** 2024  
-**Status:** Phase 2 Complete (Multi-Tenancy)
+**Version:** 3.0
+**Last Updated:** March 2026
+**Status:** Production Ready

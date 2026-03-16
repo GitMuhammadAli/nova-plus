@@ -12,6 +12,7 @@ import analyticsReducer from "./analyticsSlice";
 import auditReducer from "./auditSlice";
 import workflowReducer from "./workflowSlice";
 import dashboardReducer from "./dashboardSlice";
+import notificationsReducer from "./notificationsSlice";
 import { requestDeduplicationMiddleware } from "./middleware/requestDeduplication";
 
 const createNoopStorage = () => {
@@ -44,6 +45,7 @@ const rootReducer = combineReducers({
   audit: auditReducer,
   workflow: workflowReducer,
   dashboard: dashboardReducer,
+  notifications: notificationsReducer,
 });
 
 const persistConfig = {
