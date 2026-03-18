@@ -1,0 +1,75 @@
+# ============================================
+# NOVAPULSE - PRODUCTION DOCKER COMPOSE
+# ============================================
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# This OVERRIDES values from the base docker-compose.yml
+# for production settings. This is called "compose file merging".
+#
+# WHY separate files?
+# - Base file has all service definitions
+# - This file only overrides what's different in production
+# - DRY principle: don't repeat service definitions
+# ============================================
+
+services:
+  backend:
+    # In production, pull pre-built image from GHCR instead of building locally
+    image: ghcr.io/gitmuhammadali/nova-plus/backend:latest
+    build: !override  # Don't build locally
+    restart: always
+    environment:
+      NODE_ENV: production
+    # Production logging
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+
+  worker:
+    image: ghcr.io/gitmuhammadali/nova-plus/worker:latest
+    build: !override
+    restart: always
+    environment:
+      NODE_ENV: production
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+  frontend:
+    image: ghcr.io/gitmuhammadali/nova-plus/frontend:latest
+    build: !override
+    restart: always
+    profiles: []  # Remove dev-only profile restriction
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  mongodb:
+    restart: always
+    # In production, use stronger credentials via .env
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  redis:
+    restart: always
+    # Enable Redis password in production
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru --requirepass ${REDIS_PASSWORD}

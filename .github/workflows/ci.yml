@@ -1,0 +1,255 @@
+# ============================================
+# NOVAPULSE - CONTINUOUS INTEGRATION (CI)
+# ============================================
+# Runs on every push and pull request
+# Jobs: lint, test, build (backend + frontend)
+#
+# WHY CI?
+# - Catches bugs BEFORE they reach main branch
+# - Ensures code quality standards are met
+# - Runs tests automatically so nothing breaks
+# - Validates that Docker images can be built
+# ============================================
+
+name: CI Pipeline
+
+# TRIGGERS: When does this run?
+on:
+  push:
+    branches: [main, develop]       # Run on pushes to main/develop
+  pull_request:
+    branches: [main, develop]       # Run on PRs targeting main/develop
+
+# Cancel previous runs if a new commit is pushed
+# (saves GitHub Actions minutes)
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# ============================================
+# JOBS - These run in parallel by default
+# ============================================
+jobs:
+
+  # ------------------------------------------
+  # JOB 1: Backend Lint & Type Check
+  # ------------------------------------------
+  backend-lint:
+    name: Backend Lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      # Step 1: Checkout code from the repo
+      - uses: actions/checkout@v4
+
+      # Step 2: Setup Node.js with caching
+      # Cache means npm install is faster on repeat runs
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      # Step 3: Install dependencies
+      # `npm ci` is like `npm install` but:
+      #   - Uses exact versions from package-lock.json
+      #   - Faster and more reliable in CI
+      - run: npm ci
+
+      # Step 4: Run ESLint to check code quality
+      - name: Lint
+        run: npm run lint
+
+      # Step 5: Run TypeScript compiler to check types
+      - name: Type Check
+        run: npx tsc --noEmit
+
+  # ------------------------------------------
+  # JOB 2: Backend Unit Tests
+  # ------------------------------------------
+  backend-test:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    # Services: spin up real MongoDB & Redis for tests
+    # This is like docker-compose but built into GitHub Actions
+    services:
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        env:
+          MONGO_INITDB_ROOT_USERNAME: root
+          MONGO_INITDB_ROOT_PASSWORD: password
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ping:1})' --quiet"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - run: npm ci
+
+      # Run tests with coverage report
+      - name: Run Tests
+        run: npm run test:cov
+        env:
+          NODE_ENV: test
+          MONGO_URI: mongodb://root:password@localhost:27017/novapulse-test?authSource=admin
+          REDIS_URL: redis://localhost:6379
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+          JWT_SECRET: test-jwt-secret-minimum-32-characters-long
+          JWT_ACCESS_SECRET: test-access-secret-minimum-32-characters
+          JWT_REFRESH_SECRET: test-refresh-secret-minimum-32-characters
+          ACCESS_TOKEN_EXPIRE: 15m
+          REFRESH_TOKEN_EXPIRE: 7d
+
+      # Upload coverage report as an artifact
+      # You can download this from the Actions tab
+      - name: Upload Coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-coverage
+          path: backend/coverage/
+          retention-days: 7
+
+  # ------------------------------------------
+  # JOB 3: Backend Build
+  # ------------------------------------------
+  backend-build:
+    name: Backend Build
+    runs-on: ubuntu-latest
+    needs: [backend-lint]  # Wait for lint to pass first
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - run: npm ci
+
+      # Build the NestJS application
+      - name: Build
+        run: npm run build
+
+      # Save the build output for later jobs
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-dist
+          path: backend/dist/
+          retention-days: 1
+
+  # ------------------------------------------
+  # JOB 4: Frontend Lint & Type Check
+  # ------------------------------------------
+  frontend-lint:
+    name: Frontend Lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: Frontend/package-lock.json
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+  # ------------------------------------------
+  # JOB 5: Frontend Build
+  # ------------------------------------------
+  frontend-build:
+    name: Frontend Build
+    runs-on: ubuntu-latest
+    needs: [frontend-lint]
+    defaults:
+      run:
+        working-directory: Frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: Frontend/package-lock.json
+
+      - run: npm ci
+
+      - name: Build
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:5500
+
+  # ------------------------------------------
+  # JOB 6: Docker Build Validation
+  # ------------------------------------------
+  docker-build:
+    name: Docker Build Check
+    runs-on: ubuntu-latest
+    needs: [backend-build, frontend-build]
+    strategy:
+      matrix:
+        include:
+          - service: backend
+            context: ./backend
+            dockerfile: ./backend/Dockerfile
+          - service: frontend
+            context: ./Frontend
+            dockerfile: ./Frontend/Dockerfile
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Build Docker image but don't push
+      # This validates the Dockerfile works
+      - name: Build ${{ matrix.service }} Image
+        uses: docker/build-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: false
+          tags: novapulse-${{ matrix.service }}:test

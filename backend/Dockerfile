@@ -4,34 +4,33 @@
 # Multi-stage build for optimal image size
 
 # ============================================
-# Stage 1: Dependencies
+# Stage 1: Build
+# ============================================
+# Install ALL deps (including devDependencies like @nestjs/cli)
+# because we need them to run "nest build"
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+RUN apk add --no-cache libc6-compat python3 make g++
+
+COPY package.json package-lock.json* .npmrc* ./
+RUN npm install --legacy-peer-deps
+
+COPY . .
+RUN npm run build
+
+# ============================================
+# Stage 2: Production Dependencies Only
 # ============================================
 FROM node:20-alpine AS deps
 
 WORKDIR /app
 
-# Install dependencies for native modules
 RUN apk add --no-cache libc6-compat python3 make g++
 
-# Copy package files
-COPY package.json package-lock.json* ./
-
-# Install dependencies
-RUN npm ci --only=production
-
-# ============================================
-# Stage 2: Builder
-# ============================================
-FROM node:20-alpine AS builder
-
-WORKDIR /app
-
-# Copy dependencies from deps stage
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
-
-# Build the application
-RUN npm run build
+COPY package.json package-lock.json* .npmrc* ./
+RUN npm install --omit=dev --legacy-peer-deps
 
 # ============================================
 # Stage 3: Production Runner
@@ -51,6 +50,9 @@ RUN adduser --system --uid 1001 nestjs
 COPY --from=builder --chown=nestjs:nodejs /app/dist ./dist
 COPY --from=deps --chown=nestjs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nestjs:nodejs /app/package.json ./package.json
+
+# Create logs directory (winston needs it)
+RUN mkdir -p logs && chown nestjs:nodejs logs
 
 # Switch to non-root user
 USER nestjs

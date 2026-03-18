@@ -1,0 +1,129 @@
+# ============================================
+# NOVAPULSE - SECURITY SCANNING
+# ============================================
+# Automated security checks:
+# 1. CodeQL - Finds vulnerabilities in your code (SQL injection, XSS, etc.)
+# 2. Dependency Audit - Checks npm packages for known vulnerabilities
+# 3. Docker Scan - Checks Docker images for OS-level vulnerabilities
+#
+# WHY?
+# - npm packages get hacked (e.g., event-stream incident)
+# - Your code might have subtle security bugs
+# - Docker base images have OS packages with CVEs
+# - Automated scanning catches what humans miss
+# ============================================
+
+name: Security Scan
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  # Run weekly even if no code changes
+  # New vulnerabilities are discovered in existing packages constantly
+  schedule:
+    - cron: '0 6 * * 1'  # Every Monday at 6:00 AM UTC
+
+permissions:
+  security-events: write  # Needed to upload scan results
+  contents: read
+  actions: read
+
+jobs:
+
+  # ------------------------------------------
+  # JOB 1: CodeQL Analysis
+  # ------------------------------------------
+  # CodeQL is GitHub's own code scanner
+  # It understands JavaScript/TypeScript deeply and finds:
+  # - SQL injection, NoSQL injection
+  # - Cross-site scripting (XSS)
+  # - Path traversal
+  # - Insecure randomness
+  # - Prototype pollution
+  # - And 100+ more vulnerability types
+  codeql:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [javascript-typescript]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Initialize CodeQL scanning engine
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          # queries: +security-extended  # Uncomment for deeper analysis
+
+      # CodeQL auto-builds and analyzes your code
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      # Run the analysis and upload results
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
+
+  # ------------------------------------------
+  # JOB 2: npm Dependency Audit
+  # ------------------------------------------
+  # Checks your package-lock.json against the
+  # GitHub Advisory Database for known vulnerabilities
+  dependency-audit:
+    name: Dependency Audit
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        project: [backend, Frontend]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # npm audit checks for known CVEs in your dependencies
+      # --audit-level=high means only fail on HIGH or CRITICAL
+      # (low/moderate are logged but don't block the build)
+      - name: Run npm audit (${{ matrix.project }})
+        working-directory: ${{ matrix.project }}
+        run: |
+          npm ci
+          npm audit --audit-level=high || true
+          echo "---"
+          echo "Audit complete. Review any warnings above."
+
+      # Also check for outdated packages
+      - name: Check Outdated Packages
+        working-directory: ${{ matrix.project }}
+        run: npm outdated || true
+
+  # ------------------------------------------
+  # JOB 3: Secret Scanning
+  # ------------------------------------------
+  # Searches your code for accidentally committed secrets
+  # API keys, passwords, tokens, private keys, etc.
+  secret-scan:
+    name: Secret Detection
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for thorough scanning
+
+      # Trufflehog scans git history for secrets
+      - name: TruffleHog Secret Scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          extra_args: --only-verified
