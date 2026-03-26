@@ -39,7 +39,8 @@ import {
 } from "lucide-react";
 import { taskAPI, projectAPI, usersAPI } from "@/app/services";
 import { toast } from "@/hooks/use-toast";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
+import { StaggerContainer, StaggerItem } from "@/components/motion/stagger-container";
 import { User } from "@/types/user";
 
 interface Task {
@@ -401,14 +402,9 @@ export default function TasksPage() {
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
         ) : (
-          <div className="space-y-3">
+          <StaggerContainer className="space-y-3">
             {filteredTasks.map((task, index) => (
-              <motion.div
-                key={task._id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-              >
+              <StaggerItem key={task._id}>
                 <Card className="p-4 hover:shadow-md transition-shadow">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -501,9 +497,9 @@ export default function TasksPage() {
                     </div>
                   </div>
                 </Card>
-              </motion.div>
+              </StaggerItem>
             ))}
-          </div>
+          </StaggerContainer>
         )}
 
         {filteredTasks.length === 0 && !loading && (

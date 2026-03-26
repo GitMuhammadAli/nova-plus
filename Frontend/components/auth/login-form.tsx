@@ -6,10 +6,11 @@ import { useDispatch, useSelector } from "react-redux";
 import { login, clearError } from "@/app/store/authSlice";
 import { AppDispatch, RootState } from "@/app/store/store";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { FloatingLabelInput } from "@/components/ui/floating-label-input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { fadeInUp, shake } from "@/lib/animations";
 import Link from "next/link";
 
 export function LoginForm() {
@@ -63,8 +64,15 @@ export function LoginForm() {
     });
   };
 
+  const shouldReduceMotion = useReducedMotion();
+
   return (
-    <div className="w-full max-w-md space-y-6">
+    <motion.div
+      className="w-full max-w-md space-y-6"
+      initial={shouldReduceMotion ? false : "hidden"}
+      animate="visible"
+      variants={fadeInUp}
+    >
       <div className="text-center">
         <h1 className="text-3xl font-bold">Welcome back</h1>
         <p className="text-muted-foreground mt-2">
@@ -72,41 +80,48 @@ export function LoginForm() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {error && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
+      <motion.form
+        onSubmit={handleSubmit}
+        className="space-y-4"
+        animate={error ? "shake" : undefined}
+        variants={shake}
+      >
+        <AnimatePresence>
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden"
+            >
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            </motion.div>
+          )}
+        </AnimatePresence>
         
-        <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            name="email"
-            type="email"
-            placeholder="ali@example.com"
-            value={formData.email}
-            onChange={handleChange}
-            required
-            disabled={isLoading}
-          />
-        </div>
-        
-        <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
-          <Input
-            id="password"
-            name="password"
-            type="password"
-            placeholder="••••••••"
-            value={formData.password}
-            onChange={handleChange}
-            required
-            disabled={isLoading}
-          />
-        </div>
+        <FloatingLabelInput
+          label="Email"
+          name="email"
+          type="email"
+          value={formData.email}
+          onChange={handleChange}
+          required
+          disabled={isLoading}
+        />
+
+        <FloatingLabelInput
+          label="Password"
+          name="password"
+          type="password"
+          value={formData.password}
+          onChange={handleChange}
+          required
+          disabled={isLoading}
+        />
         
         <Button type="submit" className="w-full" disabled={isLoading}>
           {isLoading ? "Logging in..." : "Login"}
@@ -118,7 +133,7 @@ export function LoginForm() {
             Sign up
           </Link>
         </p>
-      </form>
-    </div>
+      </motion.form>
+    </motion.div>
   );
 }

@@ -8,6 +8,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Send, Bot, User, Loader2 } from "lucide-react";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { fadeInUp } from "@/lib/animations";
 import axios from "axios";
 
 interface Message {
@@ -100,9 +102,13 @@ export default function AIChatPage() {
         <CardContent className="flex-1 flex flex-col p-0">
           <ScrollArea className="flex-1 p-6" ref={scrollRef}>
             <div className="space-y-4">
+              <AnimatePresence initial={false}>
               {messages.map((message, index) => (
-                <div
+                <motion.div
                   key={index}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, ease: "easeOut" }}
                   className={`flex gap-3 ${
                     message.role === "user" ? "justify-end" : "justify-start"
                   }`}
@@ -145,8 +151,9 @@ export default function AIChatPage() {
                       <User className="w-4 h-4 text-primary-foreground" />
                     </div>
                   )}
-                </div>
+                </motion.div>
               ))}
+              </AnimatePresence>
               {loading && (
                 <div className="flex gap-3 justify-start">
                   <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">

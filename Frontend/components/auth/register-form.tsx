@@ -11,6 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertCircle } from "lucide-react";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { fadeInUp, shake } from "@/lib/animations";
 import Link from "next/link";
 
 export function RegisterForm() {
@@ -72,9 +74,15 @@ export function RegisterForm() {
   };
 
   const displayError = validationError || error;
+  const shouldReduceMotion = useReducedMotion();
 
   return (
-    <div className="w-full max-w-md space-y-6">
+    <motion.div
+      className="w-full max-w-md space-y-6"
+      initial={shouldReduceMotion ? false : "hidden"}
+      animate="visible"
+      variants={fadeInUp}
+    >
       <div className="text-center">
         <h1 className="text-3xl font-bold">Create an account</h1>
         <p className="text-muted-foreground mt-2">
@@ -82,13 +90,28 @@ export function RegisterForm() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {displayError && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{displayError}</AlertDescription>
-          </Alert>
-        )}
+      <motion.form
+        onSubmit={handleSubmit}
+        className="space-y-4"
+        animate={displayError ? "shake" : undefined}
+        variants={shake}
+      >
+        <AnimatePresence>
+          {displayError && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden"
+            >
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{displayError}</AlertDescription>
+              </Alert>
+            </motion.div>
+          )}
+        </AnimatePresence>
         
         <div className="space-y-2">
           <Label htmlFor="name">Full Name</Label>
@@ -176,7 +199,7 @@ export function RegisterForm() {
             Login
           </Link>
         </p>
-      </form>
-    </div>
+      </motion.form>
+    </motion.div>
   );
 }

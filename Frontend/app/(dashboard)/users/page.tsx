@@ -16,7 +16,9 @@ import { AppDispatch, RootState } from "@/app/store/store";
 import { useRolePermissions } from "@/hooks/useRolePermissions";
 import { normalizeRole as normalizeRoleUtil } from "@/lib/roles-config";
 import { User } from "@/types/user";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
+import { StaggerContainer, StaggerItem } from "@/components/motion/stagger-container";
+import { staggerItem } from "@/lib/animations";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -678,12 +680,8 @@ export default function UsersPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-        >
+      <StaggerContainer className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <StaggerItem>
           <Card className="p-6">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -695,13 +693,9 @@ export default function UsersPage() {
               </div>
             </div>
           </Card>
-        </motion.div>
+        </StaggerItem>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.1 }}
-        >
+        <StaggerItem>
           <Card className="p-6">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-lg bg-green-500/10 flex items-center justify-center">
@@ -720,13 +714,9 @@ export default function UsersPage() {
               </div>
             </div>
           </Card>
-        </motion.div>
+        </StaggerItem>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.2 }}
-        >
+        <StaggerItem>
           <Card className="p-6">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-lg bg-purple-500/10 flex items-center justify-center">
@@ -738,13 +728,9 @@ export default function UsersPage() {
               </div>
             </div>
           </Card>
-        </motion.div>
+        </StaggerItem>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.3 }}
-        >
+        <StaggerItem>
           <Card className="p-6">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-lg bg-blue-500/10 flex items-center justify-center">
@@ -759,13 +745,9 @@ export default function UsersPage() {
               </div>
             </div>
           </Card>
-        </motion.div>
+        </StaggerItem>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.4 }}
-        >
+        <StaggerItem>
           <Card className="p-6">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-lg bg-orange-500/10 flex items-center justify-center">
@@ -777,8 +759,8 @@ export default function UsersPage() {
               </div>
             </div>
           </Card>
-        </motion.div>
-      </div>
+        </StaggerItem>
+      </StaggerContainer>
 
       {/* Tabs */}
       <Tabs

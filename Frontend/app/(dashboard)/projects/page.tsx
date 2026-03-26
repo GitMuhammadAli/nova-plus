@@ -38,7 +38,8 @@ import {
 } from "lucide-react";
 import { projectAPI, usersAPI } from "@/app/services";
 import { toast } from "@/hooks/use-toast";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
+import { StaggerContainer, StaggerItem } from "@/components/motion/stagger-container";
 
 interface Project {
   _id: string;
@@ -332,14 +333,9 @@ export default function ProjectsPage() {
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <StaggerContainer className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {filteredProjects.map((project, index) => (
-              <motion.div
-                key={project._id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-              >
+              <StaggerItem key={project._id}>
                 <Card className="p-6 hover:shadow-md transition-shadow">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
@@ -397,9 +393,9 @@ export default function ProjectsPage() {
                     )}
                   </div>
                 </Card>
-              </motion.div>
+              </StaggerItem>
             ))}
-          </div>
+          </StaggerContainer>
         )}
 
         {filteredProjects.length === 0 && !loading && (

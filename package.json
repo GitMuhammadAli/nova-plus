@@ -43,5 +43,8 @@
   "homepage": "https://github.com/GitMuhammadAli/nova-plus#readme",
   "engines": {
     "node": ">=22.0.0"
+  },
+  "dependencies": {
+    "framer-motion": "^12.38.0"
   }
 }

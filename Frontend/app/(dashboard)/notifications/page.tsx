@@ -24,7 +24,8 @@ import {
   Inbox,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { fadeInUp } from "@/lib/animations";
 import type { Notification } from "@/app/store/notificationsSlice";
 
 function getRelativeTime(dateStr: string): string {

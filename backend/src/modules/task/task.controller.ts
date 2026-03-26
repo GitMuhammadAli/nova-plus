@@ -32,11 +32,15 @@ export class TasksController {
     @Query('projectId') projectId?: string,
     @Query('status') status?: TaskStatus,
     @Query('assignedTo') assignedTo?: string,
+    @Query('cursor') cursor?: string,
+    @Query('limit') limit?: string,
   ) {
     return this.tasksService.findAll(req.user, {
       projectId,
       status,
       assignedTo,
+      cursor,
+      limit: limit ? parseInt(limit, 10) : undefined,
     });
   }
 

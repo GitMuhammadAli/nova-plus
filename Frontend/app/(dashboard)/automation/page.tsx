@@ -3,7 +3,9 @@
 import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "@/app/store/store";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
+import { StaggerContainer, StaggerItem } from "@/components/motion/stagger-container";
+import { FadeIn } from "@/components/motion/fade-in";
 import { AppShell } from "@/components/layout/AppShell";
 import { WorkflowList } from "@/components/automation/WorkflowList";
 import { WorkflowCanvas } from "@/components/automation/WorkflowCanvas";
@@ -141,12 +143,8 @@ export default function Automation() {
               </Button>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-3">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-              >
+            <StaggerContainer className="grid gap-4 md:grid-cols-3">
+              <StaggerItem>
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Total Workflows</CardTitle>
@@ -159,13 +157,9 @@ export default function Automation() {
                     </p>
                   </CardContent>
                 </Card>
-              </motion.div>
+              </StaggerItem>
 
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-              >
+              <StaggerItem>
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Total Runs</CardTitle>
@@ -178,13 +172,9 @@ export default function Automation() {
                     </p>
                   </CardContent>
                 </Card>
-              </motion.div>
+              </StaggerItem>
 
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-              >
+              <StaggerItem>
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Avg. Nodes</CardTitle>
@@ -192,7 +182,7 @@ export default function Automation() {
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
-                      {workflows.length > 0 
+                      {workflows.length > 0
                         ? (workflows.reduce((sum, w) => sum + w.nodes.length, 0) / workflows.length).toFixed(1)
                         : "0"}
                     </div>
@@ -201,9 +191,10 @@ export default function Automation() {
                     </p>
                   </CardContent>
                 </Card>
-              </motion.div>
-            </div>
+              </StaggerItem>
+            </StaggerContainer>
 
+            <FadeIn delay={0.3}>
             <Tabs defaultValue="workflows" className="w-full">
               <TabsList>
                 <TabsTrigger value="workflows">My Workflows</TabsTrigger>
@@ -223,6 +214,7 @@ export default function Automation() {
                 <WorkflowTemplates onUseTemplate={handleUseTemplate} />
               </TabsContent>
             </Tabs>
+            </FadeIn>
           </motion.div>
         </div>
       )}

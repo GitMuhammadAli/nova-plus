@@ -4,6 +4,8 @@ import { Search, Settings, User } from "lucide-react";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { motion, useReducedMotion } from "framer-motion";
+import { fadeIn } from "@/lib/animations";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,8 +40,15 @@ export function Topbar() {
       .toUpperCase()
       .slice(0, 2);
   };
+  const shouldReduceMotion = useReducedMotion();
+
   return (
-    <header className="h-16 border-b border-border bg-background flex items-center justify-between px-6">
+    <motion.header
+      initial={shouldReduceMotion ? false : "hidden"}
+      animate="visible"
+      variants={fadeIn}
+      className="h-16 border-b border-border bg-background flex items-center justify-between px-6"
+    >
       {/* Search */}
       <div className="flex items-center gap-4 flex-1 max-w-xl">
         <div className="relative w-full">
@@ -86,6 +95,6 @@ export function Topbar() {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-    </header>
+    </motion.header>
   );
 }

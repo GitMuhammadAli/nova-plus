@@ -92,7 +92,13 @@ export class TasksService {
 
   async findAll(
     user: UserDocument,
-    filters?: { projectId?: string; status?: TaskStatus; assignedTo?: string },
+    filters?: {
+      projectId?: string;
+      status?: TaskStatus;
+      assignedTo?: string;
+      cursor?: string;
+      limit?: number;
+    },
   ) {
     if (!user.companyId) {
       throw new BadRequestException('User must belong to a company');
@@ -119,13 +125,33 @@ export class TasksService {
       query.status = filters.status;
     }
 
-    return this.taskModel
+    // Cursor-based pagination: fetch one extra to determine hasNext
+    if (filters?.cursor) {
+      query._id = { $lt: filters.cursor };
+    }
+
+    const take = Math.min(filters?.limit ?? 50, 100);
+
+    const tasks = await this.taskModel
       .find(query)
       .populate('assignedBy', 'name email')
       .populate('assignedTo', 'name email role')
       .populate('projectId', 'name')
       .sort({ createdAt: -1 })
+      .limit(take + 1)
       .exec();
+
+    const hasNext = tasks.length > take;
+    const results = hasNext ? tasks.slice(0, take) : tasks;
+    const nextCursor =
+      hasNext && results.length > 0
+        ? results[results.length - 1]._id?.toString()
+        : null;
+
+    return {
+      data: results,
+      meta: { hasNext, nextCursor, count: results.length },
+    };
   }
 
   async findOne(id: string, user: UserDocument) {

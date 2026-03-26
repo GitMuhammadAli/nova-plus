@@ -1,6 +1,8 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { useCallback, useRef } from "react";
+import { motion, useReducedMotion } from "framer-motion";
+import { staggerContainer, staggerItem } from "@/lib/animations";
 import {
   LayoutDashboard,
   Users,
@@ -146,7 +148,18 @@ const allNavItems = [
 
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const pathname = usePathname();
+  const navRef = useRef<HTMLElement>(null);
   const { user } = useSelector((state: RootState) => state.auth);
+
+  const handleNavKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+    e.preventDefault();
+    const links = navRef.current?.querySelectorAll<HTMLAnchorElement>("a[href]");
+    if (!links?.length) return;
+    const idx = Array.from(links).findIndex((l) => l === document.activeElement);
+    const next = e.key === "ArrowDown" ? (idx < links.length - 1 ? idx + 1 : 0) : (idx > 0 ? idx - 1 : links.length - 1);
+    links[next]?.focus();
+  }, []);
   const userRole = user?.role || "";
   const normalizedRole = normalizeRole(userRole);
 
@@ -215,38 +228,50 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-4 px-2">
-        <ul className="space-y-1">
+      <nav ref={navRef} className="flex-1 overflow-y-auto py-4 px-2" role="navigation" aria-label="Main" onKeyDown={handleNavKeyDown}>
+        <motion.ul
+          className="space-y-1"
+          initial="hidden"
+          animate="visible"
+          variants={staggerContainer}
+        >
           {navItems.map((item) => {
             const isActive = pathname === item.path;
 
             return (
-              <li key={item.path}>
+              <motion.li key={item.path} variants={staggerItem}>
                 <Link
                   href={item.path}
                   className={cn(
-                    "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors",
+                    "relative flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors",
                     "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                     isActive
-                      ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                      ? "text-sidebar-accent-foreground font-medium"
                       : "text-sidebar-foreground"
                   )}
                 >
-                  <item.icon className="w-5 h-5 shrink-0" />
+                  {isActive && (
+                    <motion.div
+                      layoutId="sidebar-indicator"
+                      className="absolute inset-0 rounded-lg bg-sidebar-accent"
+                      transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                    />
+                  )}
+                  <item.icon className="relative z-10 w-5 h-5 shrink-0" />
                   {!collapsed && (
                     <motion.span
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
-                      className="text-sm"
+                      className="relative z-10 text-sm"
                     >
                       {item.label}
                     </motion.span>
                   )}
                 </Link>
-              </li>
+              </motion.li>
             );
           })}
-        </ul>
+        </motion.ul>
       </nav>
 
       {/* Toggle Button */}

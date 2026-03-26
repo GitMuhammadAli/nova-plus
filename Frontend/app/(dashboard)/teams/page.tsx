@@ -36,7 +36,8 @@ import {
 } from "lucide-react";
 import { teamAPI, usersAPI } from "@/app/services";
 import { toast } from "@/hooks/use-toast";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
+import { StaggerContainer, StaggerItem } from "@/components/motion/stagger-container";
 import { fetchCompanyUsers } from "@/app/store/usersSlice";
 import { useRolePermissions } from "@/hooks/useRolePermissions";
 import {
@@ -315,13 +316,9 @@ export default function TeamsPage() {
             )}
           </Card>
         ) : (
-          <div className="grid gap-6">
+          <StaggerContainer className="grid gap-6">
             {filteredTeams.map((team) => (
-              <motion.div
-                key={team._id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-              >
+              <StaggerItem key={team._id}>
                 <Card className="p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div>
@@ -426,9 +423,9 @@ export default function TeamsPage() {
                     )}
                   </div>
                 </Card>
-              </motion.div>
+              </StaggerItem>
             ))}
-          </div>
+          </StaggerContainer>
         )}
 
         {/* Create Team Dialog */}

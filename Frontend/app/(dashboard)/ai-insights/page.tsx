@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, TrendingUp, TrendingDown, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
+import { StaggerContainer, StaggerItem } from "@/components/motion/stagger-container";
+import { FadeIn } from "@/components/motion/fade-in";
 import axios from "axios";
 import { InsightCard } from "@/components/ai/InsightCard";
 import { RiskCard } from "@/components/ai/RiskCard";
@@ -109,6 +111,7 @@ export default function AIInsightsPage() {
 
       {/* Risk Overview */}
       {risks.company && (
+        <FadeIn>
         <Card>
           <CardHeader>
             <CardTitle>Company Risk Score</CardTitle>
@@ -118,6 +121,7 @@ export default function AIInsightsPage() {
             <RiskCard risk={risks.company} />
           </CardContent>
         </Card>
+        </FadeIn>
       )}
 
       {/* High-Risk Departments */}
@@ -152,11 +156,13 @@ export default function AIInsightsPage() {
       {/* Insights Grid */}
       <div>
         <h2 className="text-2xl font-semibold mb-4">Insights</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <StaggerContainer className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {insights.map((insight, index) => (
-            <InsightCard key={index} insight={insight} />
+            <StaggerItem key={index}>
+              <InsightCard insight={insight} />
+            </StaggerItem>
           ))}
-        </div>
+        </StaggerContainer>
         {insights.length === 0 && (
           <Card>
             <CardContent className="py-8 text-center text-muted-foreground">

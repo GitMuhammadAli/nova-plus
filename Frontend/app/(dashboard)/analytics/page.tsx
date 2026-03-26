@@ -31,7 +31,9 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
+import { StaggerContainer, StaggerItem } from "@/components/motion/stagger-container";
+import { FadeIn } from "@/components/motion/fade-in";
 import {
   TrendingUp,
   Users,
@@ -276,16 +278,11 @@ export default function Analytics() {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StaggerContainer className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {statsCards.map((stat, index) => {
             const Icon = stat.icon;
             return (
-              <motion.div
-                key={stat.label}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.1 }}
-              >
+              <StaggerItem key={stat.label}>
                 <Card className="p-6">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium text-muted-foreground">
@@ -299,12 +296,13 @@ export default function Analytics() {
                     {stat.change} from last period
                   </div>
                 </Card>
-              </motion.div>
+              </StaggerItem>
             );
           })}
-        </div>
+        </StaggerContainer>
 
         {/* Main Content Tabs */}
+        <FadeIn delay={0.3}>
         <Tabs defaultValue="traffic" className="space-y-6">
           <TabsList>
             <TabsTrigger value="traffic">Traffic</TabsTrigger>
@@ -580,6 +578,7 @@ export default function Analytics() {
             </Card>
           </TabsContent>
         </Tabs>
+        </FadeIn>
       </div>
     </AppShell>
   );

@@ -1,10 +1,12 @@
 "use client"
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
+import { motion, AnimatePresence } from "framer-motion";
+import { pageTransition } from "@/lib/animations";
 
 
 export default function DashboardLayout({
@@ -14,6 +16,7 @@ export default function DashboardLayout({
 }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
   const { isAuthenticated, isLoading, user } = useAuthGuard();
   
   // Reset loading state if stuck
@@ -59,9 +62,18 @@ export default function DashboardLayout({
         <div className="flex-1 flex flex-col overflow-hidden">
           <Topbar />
           <main className="flex-1 overflow-y-auto">
-            <div className="p-6">
-              {children}
-            </div>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={pathname}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                variants={pageTransition}
+                className="p-6"
+              >
+                {children}
+              </motion.div>
+            </AnimatePresence>
           </main>
         </div>
       </div>

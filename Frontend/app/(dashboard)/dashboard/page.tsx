@@ -4,7 +4,10 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 import { RootState } from "@/app/store/store";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
+import { StaggerContainer, StaggerItem } from "@/components/motion/stagger-container";
+import { FadeIn } from "@/components/motion/fade-in";
+import { staggerContainer, staggerItem, fadeInUp } from "@/lib/animations";
 import {
   TrendingUp,
   Users,
@@ -572,7 +575,7 @@ const DashboardPage = () => {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <StaggerContainer className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {loading && !summary
           ? [...Array(4)].map((_, i) => (
               <Card key={i} className="p-6 animate-pulse">
@@ -589,12 +592,7 @@ const DashboardPage = () => {
               else trendColorClass = "text-muted-foreground";
 
               return (
-                <motion.div
-                  key={kpi.title}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.1 }}
-                >
+                <StaggerItem key={kpi.title}>
                   <Card className="p-6 hover:shadow-xl transition-shadow duration-300">
                     <div className="flex items-start justify-between">
                       <div>
@@ -613,25 +611,17 @@ const DashboardPage = () => {
                       </div>
                     </div>
                   </Card>
-                </motion.div>
+                </StaggerItem>
               );
             })}
-      </div>
+      </StaggerContainer>
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.5 }}
-        >
+        <FadeIn delay={0.3}>
           <UserActivityChart stats={stats} loading={loading} />
-        </motion.div>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.6 }}
-        >
+        </FadeIn>
+        <FadeIn delay={0.4}>
           {/* Placeholder for second chart - can be added later */}
           <Card className="p-6">
             <h3 className="text-lg font-semibold text-foreground mb-4">
@@ -692,27 +682,21 @@ const DashboardPage = () => {
               </div>
             )}
           </Card>
-        </motion.div>
+        </FadeIn>
       </div>
 
       {/* Quick Actions & Activity Feed */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.7 }}
-          className="lg:col-span-1"
-        >
-          <QuickActions />
-        </motion.div>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.8 }}
-          className="lg:col-span-2"
-        >
-          <ActivityFeed activities={activities} loading={loading} />
-        </motion.div>
+        <FadeIn delay={0.5}>
+          <div className="lg:col-span-1">
+            <QuickActions />
+          </div>
+        </FadeIn>
+        <FadeIn delay={0.6}>
+          <div className="lg:col-span-2">
+            <ActivityFeed activities={activities} loading={loading} />
+          </div>
+        </FadeIn>
       </div>
     </div>
   );
