@@ -92,7 +92,8 @@ export default function BlogPostPage({ params }: { params: { id: string } }) {
 
           <FadeIn delay={0.2}>
             <div className="prose prose-invert mt-12 max-w-none text-foreground">
-              <div dangerouslySetInnerHTML={{ __html: post.content }} />
+              {/* Sanitize HTML to prevent XSS — post.content may come from CMS or user input */}
+              <div dangerouslySetInnerHTML={{ __html: (post.content || "").replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "").replace(/on\w+="[^"]*"/gi, "").replace(/on\w+='[^']*'/gi, "") }} />
             </div>
           </FadeIn>
 
