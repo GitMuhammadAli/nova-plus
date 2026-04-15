@@ -1,8 +1,10 @@
 # NovaPulse Master Guide
 
-> **Version:** 3.0
+> **Version:** 3.0 (original curriculum)
 > **Last Updated:** March 2026
-> **Status:** All Phases Complete - Production Ready
+> **Status:** Curriculum frozen — implementation diverged
+
+> ⚠ **Stack divergence notice (2026-04-15):** This guide prescribes the **Supabase + Vite + React** path that was the original learning curriculum. The shipped codebase took a different route: **NestJS 11 + MongoDB + Redis + Next.js 15 + Pinecone + Stripe** (see the root [README.md](../README.md) for the actual stack). Treat this file as a frozen historical curriculum, not a build reference. Phase concepts (auth, multi-tenancy, RBAC, billing, AI) carry over conceptually; concrete code, env vars, and SDK calls do not.
 
 The comprehensive guide for building NovaPulse - a production-ready SaaS Admin & Operations Platform. Follow this document from top to bottom.
 

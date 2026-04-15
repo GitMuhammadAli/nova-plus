@@ -1,6 +1,6 @@
 # NovaPulse - Production-Ready Multi-Tenant SaaS Platform
 
-> Enterprise-grade SaaS admin & operations platform built with NestJS and Next.js 15. Features multi-tenant isolation, AI intelligence, real-time notifications, workflow automation, and comprehensive analytics.
+> Enterprise-grade SaaS admin & operations platform built with NestJS 11 and Next.js 15. Features multi-tenant isolation, AI intelligence, real-time notifications, workflow automation, and comprehensive analytics.
 
 ## Quick Start
 
@@ -252,5 +252,5 @@ Set `NEXT_PUBLIC_API_URL` to your production backend URL.
 ---
 
 **Version:** 3.0
-**Last Updated:** March 2026
+**Last Updated:** April 2026
 **Status:** Production Ready
